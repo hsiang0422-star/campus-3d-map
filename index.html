@@ -669,7 +669,20 @@ BUILDINGS.forEach(b=>{const m=bMeta[b.id];const lift=LIFT[b.id]||1.1;
   const d=new THREE.Mesh(dotGeo,dotMat);d.position.copy(a);leaders.add(d);m.lead=[ln,d];
   m.label=addLabel(b.name,'bld',top,'lbl');m.label.bottom=true;});
 const ptLabels=POINTS.map(([n,x,z])=>{const[a,b]=P(x,z);return addLabel(n,'pt',new THREE.Vector3(a,0.5,b),'pts');});
-NEIGH.forEach(([t,x,z,y])=>{const[a,b]=P(x,z);addLabel(t,'nb',new THREE.Vector3(a,y||0.05,b),'nb');});
+// surroundings and road names lie flat on the board like printed map text, instead of floating over buildings
+(function(){
+  const FLAT=[['安南醫院',10.5,2.5,0,0.42,'#5b5047'],['仁愛之家',2.6,2.3,0,0.36,'#5b5047'],['和順國中',2.0,7.6,0,0.42,'#5b5047'],
+    ['文中21',24.2,12.0,0,0.42,'#5b5047'],['長和路二段',24.62,4.6,74,0.34,'#ffffff'],['長和路二段 140 巷',8.6,9.55,27.4,0.34,'#ffffff']];
+  FLAT.forEach(([t,x,z,deg,h,col])=>{
+    const fs=96,cv=document.createElement('canvas'),c=cv.getContext('2d');c.font=`700 ${fs}px "LXGW WenKai TC","Noto Sans TC",serif`;
+    const w=Math.ceil(c.measureText(t).width)+24;cv.width=w;cv.height=fs*1.3;
+    c.font=`700 ${fs}px "LXGW WenKai TC","Noto Sans TC",serif`;c.fillStyle=col;c.textBaseline='middle';c.fillText(t,12,cv.height/2);
+    const tex=new THREE.CanvasTexture(cv);tex.encoding=THREE.sRGBEncoding;tex.anisotropy=8;
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(h*w/cv.height,h),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,opacity:col==='#ffffff'?0.92:0.8}));
+    const[a,b]=P(x,z);m.position.set(a,0.065,b);m.rotation.set(-Math.PI/2,-deg*Math.PI/180,0,'YXZ');m.renderOrder=2;scene.add(m);
+    if(document.fonts&&document.fonts.load)document.fonts.load(`700 ${fs}px "LXGW WenKai TC"`).then(()=>{c.clearRect(0,0,cv.width,cv.height);c.font=`700 ${fs}px "LXGW WenKai TC","Noto Sans TC",serif`;c.fillStyle=col;c.textBaseline='middle';c.fillText(t,12,cv.height/2);tex.needsUpdate=true;}).catch(()=>{});
+  });
+})();
 // orange point pins
 const pinGroup=new THREE.Group();scene.add(pinGroup);
 POINTS.forEach(([n,x,z])=>{const[a,b]=P(x,z);
