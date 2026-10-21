@@ -783,20 +783,63 @@ Object.keys(FLOORS).forEach(fk=>{
   });
   if(wins.length){const im=new THREE.InstancedMesh(winGeo,winMat,wins.length),o=new THREE.Object3D();
     wins.forEach(([x,z,r],i)=>{o.position.set(x,FHB*0.52,z);o.rotation.set(0,r?Math.PI/2:0,0);o.updateMatrix();im.setMatrixAt(i,o.matrix);});shell.add(im);}
-  // rooms, smaller ones slightly taller so overlaps read clearly
-  const order=D.rooms.map((r,i)=>{const w=prect(r);return[i,(w.x1-w.x0)*(w.z1-w.z0)]}).sort((a,b)=>b[1]-a[1]);
+  // rooms as an open-top architectural model: tinted floor, thin walls with a doorway toward the corridor, simple furniture
+  const WH=0.24, WT=0.022, wallI=[], furnI=[];
+  const inRoom=(x,y,skip)=>D.rooms.some((q,j)=>j!==skip&&x>=q[0]&&x<=q[2]&&y>=q[1]&&y<=q[3]);
+  const isCorr=(x,y,i)=>inFoot(x,y)&&!inRoom(x,y,i);
+  const wallSeg=(x0,z0,x1,z1,door)=>{ // axis-aligned wall from (x0,z0) to (x1,z1) on the floor, optional centred doorway
+    const L=Math.hypot(x1-x0,z1-z0),alongX=Math.abs(x1-x0)>Math.abs(z1-z0);
+    const put=(a,b)=>{if(b-a<0.01)return;const m=(a+b)/2,len=b-a;
+      if(alongX)wallI.push([x0+(x1-x0)*m/L,0.05+WH/2,z0,len,WH,WT]);else wallI.push([x0,0.05+WH/2,z0+(z1-z0)*m/L,WT,WH,len]);};
+    if(door&&L>0.32){const g=0.17;put(0,L/2-g/2);put(L/2+g/2,L);}else put(0,L);};
+  const F=(x,y,z,sx,sy,sz,c)=>furnI.push([x,y,z,sx,sy,sz,c]);
   const meshes=[];
-  order.forEach(([i],rank)=>{
-    const r=D.rooms[i], w=prect(r), t=r[4], ins=0.035;
-    const W=Math.max(0.04,w.x1-w.x0-ins), Dd=Math.max(0.04,w.z1-w.z0-ins);
-    const h=t==='bal'?0.07:0.17+rank*0.0025, cx=(w.x0+w.x1)/2, cz=(w.z0+w.z1)/2;
-    const m=new THREE.Mesh(new THREE.BoxGeometry(W,h,Dd),felt(RT[t][0]));m.position.set(cx,0.05+h/2,cz);
-    m.castShadow=true;m.receiveShadow=true;m.userData={kind:'r',f,i,base:RT[t][0]};inner.add(m);pickables.push(m);meshes[i]=m;
-    if(t==='st'||t==='el'){const tw=new THREE.Mesh(new THREE.BoxGeometry(W+0.07,FHB-0.02,Dd+0.07),towerMat);tw.position.set(cx,(FHB-0.02)/2,cz);tw.castShadow=true;tw.userData={kind:'b',id:'teach'};shell.add(tw);pickables.push(tw);}
+  D.rooms.forEach((r,i)=>{
+    const w=prect(r), t=r[4], cx=(w.x0+w.x1)/2, cz=(w.z0+w.z1)/2, W=w.x1-w.x0, Dd=w.z1-w.z0;
+    const col=new THREE.Color(RT[t][0]).lerp(new THREE.Color(0xffffff),0.25).getHex();
+    const m=new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.03,W-0.01),0.016,Math.max(0.03,Dd-0.01)),felt(col));
+    m.position.set(cx,0.058,cz);m.receiveShadow=true;m.userData={kind:'r',f,i,base:col,topY:0.05+WH+0.04};inner.add(m);pickables.push(m);meshes[i]=m;
+    if(t==='st'||t==='el'){const tw=new THREE.Mesh(new THREE.BoxGeometry(W+0.035,FHB-0.02,Dd+0.035),towerMat);tw.position.set(cx,(FHB-0.02)/2,cz);tw.castShadow=true;tw.userData={kind:'b',id:'teach'};shell.add(tw);pickables.push(tw);}
+    // walls: plan top/bottom → west/east, plan left/right → south/north. Doorway on the first side that opens onto the corridor.
+    const mx=(r[0]+r[2])/2,my=(r[1]+r[3])/2,sides=[['W',r[0]+0,my,mx,r[1]-12],['E',0,0,mx,r[3]+12],['S',0,0,r[0]-12,my],['N',0,0,r[2]+12,my]];
+    let door=null;for(const s of sides){if(isCorr(s[3],s[4],i)){door=s[0];break;}}
+    if(t==='bal'){[[w.x0,w.z0,w.x1,w.z0],[w.x0,w.z1,w.x1,w.z1],[w.x0,w.z0,w.x0,w.z1],[w.x1,w.z0,w.x1,w.z1]].forEach(([a,b,c,d])=>{
+        const L=Math.hypot(c-a,d-b),ax=Math.abs(c-a)>Math.abs(d-b);F((a+c)/2,0.09,(b+d)/2,ax?L:0.012,0.06,ax?0.012:L,0xf4f2ee);});}
+    else{wallSeg(w.x0,w.z0,w.x0,w.z1,door==='W');wallSeg(w.x1,w.z0,w.x1,w.z1,door==='E');
+      wallSeg(w.x0,w.z1,w.x1,w.z1,door==='S');wallSeg(w.x0,w.z0,w.x1,w.z0,door==='N');}
+    const ix0=w.x0+0.07,ix1=w.x1-0.07,iz0=w.z0+0.07,iz1=w.z1-0.07,fy=0.066;
+    if(t==='cls'||t==='tch'){
+      const step=0.12;let n=0;
+      for(let x=ix0+0.05;x<ix1-0.03&&n<36;x+=step)for(let z=iz0+0.08;z<iz1-0.05&&n<36;z+=step){F(x,fy+0.03,z,0.07,0.012,0.05,0xc9a27a);F(x,fy+0.012,z+0.04,0.035,0.024,0.025,0x7b8a96);n++;}
+      if(t==='cls')F(w.x0+WT+0.008,0.16,cz,0.01,0.09,Math.min(Dd*0.55,0.6),0x2f4a3a);
+    }else if(t==='spc'||t==='off'){
+      const tw=Math.min(W*0.45,0.7),td=Math.min(Dd*0.35,0.4);F(cx,fy+0.035,cz,tw,0.016,td,0xb88a5a);
+      for(let k=0;k<3;k++){const ox=-tw/2+tw*(k+0.5)/3;F(cx+ox,fy+0.015,cz-td/2-0.05,0.04,0.03,0.04,0x6d7f8c);F(cx+ox,fy+0.015,cz+td/2+0.05,0.04,0.03,0.04,0x6d7f8c);}
+      if(t==='off')F(ix1-0.04,fy+0.07,cz,0.06,0.14,Math.min(Dd*0.6,0.5),0xd8d2c6);
+    }else if(t==='wcm'||t==='wcf'||t==='acc'){
+      const n=Math.max(1,Math.floor((iz1-iz0)/0.12));for(let k=0;k<=n;k++)F(ix1-0.07,0.05+WH*0.38,iz0+k*(iz1-iz0)/n,0.14,WH*0.75,0.01,0xdfe6ea);
+      F(ix0+0.03,fy+0.04,cz,0.05,0.08,Math.min(Dd*0.6,0.35),0xffffff);
+    }else if(t==='st'){
+      const n=7,along=Dd>W;for(let k=0;k<n;k++){const h=0.025*(k+1);
+        if(along)F(cx,0.05+h/2,iz0+(k+0.5)*(iz1-iz0)/n,ix1-ix0,h,(iz1-iz0)/n,0xbdb7ad);else F(ix0+(k+0.5)*(ix1-ix0)/n,0.05+h/2,cz,(ix1-ix0)/n,h,iz1-iz0,0xbdb7ad);}
+    }else if(t==='el'){F(cx,0.05+WH*0.45,cz,W*0.7,WH*0.9,Dd*0.7,0x9aa3ab);}
+    else if(t==='util'){F(cx-W*0.18,fy+0.05,cz,W*0.3,0.1,Dd*0.4,0xa69f95);F(cx+W*0.2,fy+0.035,cz+Dd*0.15,W*0.22,0.07,Dd*0.25,0xb8b0a5);}
     if(ICO[t]){const sz=Math.min(W,Dd,0.3)*0.85;const ic=new THREE.Mesh(new THREE.PlaneGeometry(sz,sz),iconMat(ICO[t]));
-      ic.rotation.x=-Math.PI/2;ic.position.set(cx,0.051+h,cz);ic.userData=m.userData;inner.add(ic);pickables.push(ic);roomIcons.push(ic);}
-    m.userData.topY=0.05+h;
+      ic.rotation.x=-Math.PI/2;ic.position.set(cx,0.05+WH+0.03,cz);ic.userData=m.userData;inner.add(ic);pickables.push(ic);roomIcons.push(ic);}
   });
+  // exterior walls follow the footprint outline
+  D.foot.forEach(r=>{const seg=46*PS;
+    for(let x=r[0]+22;x<r[2]-10;x+=46){if(!inFoot(x,r[1]-8)){const[a,c]=pw(x,r[1]);wallI.push([a,0.05+WH/2,c,WT*1.6,WH,seg]);}
+      if(!inFoot(x,r[3]+8)){const[a,c]=pw(x,r[3]);wallI.push([a,0.05+WH/2,c,WT*1.6,WH,seg]);}}
+    for(let y=r[1]+22;y<r[3]-10;y+=46){if(!inFoot(r[0]-8,y)){const[a,c]=pw(r[0],y);wallI.push([a,0.05+WH/2,c,seg,WH,WT*1.6]);}
+      if(!inFoot(r[2]+8,y)){const[a,c]=pw(r[2],y);wallI.push([a,0.05+WH/2,c,seg,WH,WT*1.6]);}}});
+  const unit=new THREE.BoxGeometry(1,1,1),o3=new THREE.Object3D();
+  const wim=new THREE.InstancedMesh(unit,felt(0xf6f2ea),wallI.length);
+  wallI.forEach(([x,y,z,sx,sy,sz],k)=>{o3.position.set(x,y,z);o3.scale.set(sx,sy,sz);o3.updateMatrix();wim.setMatrixAt(k,o3.matrix);});
+  wim.castShadow=true;wim.receiveShadow=true;inner.add(wim);
+  if(furnI.length){const fim=new THREE.InstancedMesh(unit,new THREE.MeshStandardMaterial({roughness:.9}),furnI.length);const cc=new THREE.Color();
+    furnI.forEach(([x,y,z,sx,sy,sz,c],k)=>{o3.position.set(x,y,z);o3.scale.set(sx,sy,sz);o3.updateMatrix();fim.setMatrixAt(k,o3.matrix);fim.setColorAt(k,cc.setHex(c));});
+    fim.castShadow=true;inner.add(fim);}
   // labels for rooms people look for
   const rl=[];
   D.rooms.forEach((r,i)=>{const t=r[4];const big=['cls','spc','off'].includes(t)||(t==='tch'&&+r[6]>40);
