@@ -456,7 +456,7 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
    run(23.15,2.75,24.1,7.0);run(24.82,8.95,25.75,10.0);add(fence);}
   // 風雨走廊 = white curved bus canopy from the teaching building toward the gate, with yellow school buses
   {const g=new THREE.Group();const a=at(19.0,9.7),b=at(24.5,9.7);const L=a.distanceTo(b);
-   const roof=new THREE.Mesh(new THREE.CylinderGeometry(0.8,0.8,L,28,1,true,-0.8,1.6),new THREE.MeshStandardMaterial({color:0xf2f3f1,side:THREE.DoubleSide,roughness:.8}));
+   const roof=new THREE.Mesh(new THREE.CylinderGeometry(0.8,0.8,L,28,1,true,Math.PI/2-0.8,1.6),new THREE.MeshStandardMaterial({color:0xf2f3f1,side:THREE.DoubleSide,roughness:.8}));
    roof.rotation.z=Math.PI/2;roof.position.set((a.x+b.x)/2,0.15,a.z);roof.castShadow=true;roof.receiveShadow=true;g.add(roof);
    const wood=felt(0x9a7b5c),stayMat=new THREE.LineBasicMaterial({color:0x7a6450});
    for(let x=0;x<=L+0.01;x+=0.55){
