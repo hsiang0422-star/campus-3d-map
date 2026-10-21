@@ -100,7 +100,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 
 <div class="app">
   <header>
-    <h1>臺南特教校園 3D 地圖<small>拖曳旋轉・滾輪縮放・點選建築看說明</small></h1>
+    <h1>臺南特教校園 3D 地圖<small>拖曳旋轉・Shift＋拖曳平移・滾輪縮放・雙指可平移</small></h1>
     <div class="tools">
       <button id="bReset">重設視角</button>
       <button id="bTop">俯視</button>
@@ -222,6 +222,11 @@ renderer.outputEncoding=THREE.sRGBEncoding;
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(38,1,0.1,200);
 const controls=new THREE.OrbitControls(camera,canvas);
+// Shift + left drag pans (OrbitControls swaps rotate→pan when Shift is held); right drag and two-finger drag also pan
+controls.enablePan=true; controls.screenSpacePanning=true; controls.panSpeed=1.1;
+controls.mouseButtons={LEFT:THREE.MOUSE.ROTATE,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.PAN};
+controls.touches={ONE:THREE.TOUCH.ROTATE,TWO:THREE.TOUCH.DOLLY_PAN};
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
 controls.enableDamping=true; controls.maxPolarAngle=Math.PI*0.47; controls.minDistance=6; controls.maxDistance=55;
 controls.autoRotateSpeed=0.8;
 
@@ -677,6 +682,7 @@ function loop(now){
   if(fly){let t=Math.min(1,(now-fly.s)/fly.ms);const e=t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
     camera.position.lerpVectors(fly.p0,fly.p1,e);controls.target.lerpVectors(fly.t0,fly.t1,e);if(t>=1)fly=null;}
   Object.values(floorObjs).forEach(o=>{o.grp.position.y+=(o.targetY-o.grp.position.y)*(reduce?1:0.14);});
+  controls.target.x=Math.max(-15,Math.min(15,controls.target.x));controls.target.z=Math.max(-9,Math.min(9,controls.target.z));controls.target.y=Math.max(0,Math.min(6,controls.target.y));
   controls.update();
   const k=(now/1000)%1.6/1.6;ring.scale.setScalar(1+k*2.2);ring.material.opacity=1-k;
   beacon.position.y=0.25+Math.sin(now/300)*0.05;
