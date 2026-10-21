@@ -62,8 +62,11 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
   background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:14px;
   box-shadow:0 6px 24px rgba(40,30,20,.12)}
 .panel h2{font-family:var(--f-display);font-size:1rem;margin:0 0 6px;letter-spacing:.05em}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chips button{font-size:.78rem;padding:4px 10px}
+.topbar{position:absolute;top:10px;left:max(12px,env(safe-area-inset-left,0px));right:308px;display:flex;gap:6px;
+  overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;z-index:2}
+.topbar button{flex:none;font-size:.8rem;padding:5px 12px;background:var(--panel);box-shadow:0 2px 8px rgba(40,30,20,.12)}
+.topbar button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+@media (max-width:700px){.topbar{right:max(12px,env(safe-area-inset-right,0px))}}
 .info{border-top:1px dashed var(--line);padding-top:12px;min-height:64px}
 .info .name{font-family:var(--f-display);font-size:1.25rem;font-weight:700}
 .info p{margin:4px 0;font-size:.84rem;color:var(--muted);line-height:1.6}
@@ -101,12 +104,13 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
   <div class="stage">
     <canvas id="c"></canvas>
     <div id="labels"></div>
+    <nav class="topbar" id="chips" aria-label="建築"></nav>
     <div id="tip" hidden></div>
     <aside class="panel" id="panel">
       <button class="collapse" id="bMin">收合</button>
       <div class="info" id="info" style="border-top:0;padding-top:0">
         <div class="name">選一棟建築</div>
-        <p>點模型上的建築或名稱查看說明。教學大樓可切換 1F–4F，看每一層的教室配置。</p>
+        <p>點上方的建築名稱或模型上的建築查看說明，地圖會標出它的位置。教學大樓可切換 1F–4F。</p>
       </div>
       <div>
         <h2>教學大樓樓層</h2>
@@ -120,14 +124,10 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
         </div>
       </div>
       <div class="hide-min">
-        <h2>建築</h2>
-        <div class="chips" id="chips"></div>
-      </div>
-      <div class="hide-min">
         <h2>圖層</h2>
         <div class="toggles">
           <label><input type="checkbox" id="tFac" checked> 電梯・樓梯・廁所</label>
-          <label><input type="checkbox" id="tLbl" checked> 建築名稱</label>
+          <label><input type="checkbox" id="tLbl"> 在地圖上顯示全部建築名稱</label>
         </div>
       </div>
       <div class="hide-min">
@@ -446,7 +446,7 @@ POINTS.forEach(([n,x,z])=>{const[a,b]=P(x,z);
   const st=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.4,8),new THREE.MeshStandardMaterial({color:0xf08a3c}));st.position.set(a,0.2,b);pinGroup.add(st);
   const dsk=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,0.02,20),felt(0xf08a3c));dsk.position.set(a,0.04,b);pinGroup.add(dsk);});
 
-const show={pts:false,lbl:true,nb:true,here:true,fl:false,room1:false,room2:false,room3:false,room4:false};
+const show={pts:false,lbl:false,nb:true,here:true,fl:false,room1:false,room2:false,room3:false,room4:false};
 const infoEl=document.getElementById('info');
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 pinGroup.visible=false;
@@ -455,7 +455,7 @@ function visDeep(o){while(o){if(!o.visible)return false;o=o.parent;}return true;
 function placeLabels(){
   const w=canvas.clientWidth,h=canvas.clientHeight;
   labels.forEach(L=>{
-    if(!show[L.group]){L.el.hidden=true;return;}
+    if(!show[L.group]&&!L.force){L.el.hidden=true;return;}
     if(L.obj){if(!visDeep(L.obj)){L.el.hidden=true;return;}L.obj.getWorldPosition(v);if(L.off)v.add(L.off);else v.y=L.obj.parent.parent.position.y+L.dy;}else v.copy(L.pos);
     v.project(camera);
     if(v.z>1){L.el.hidden=true;return;}
@@ -535,7 +535,7 @@ function setMode(m){
     show['room'+f]=(m===String(f));
   });
   show.fl=(m==='exp');
-  teach.lead.forEach(o=>o.visible=(m==='ext'));teach.label.el.style.visibility=(m==='ext')?'':'hidden';
+  leadVis('teach');teach.label.el.style.visibility=(m==='ext')?'':'hidden';
   document.querySelectorAll('#seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===m));
   const c=teach.center.clone();c.y=0;
   if(m==='ext')return;
@@ -563,7 +563,10 @@ function showRoom(f,i){
     <p><button id="bBackFloor">回到 ${f}F 總覽</button></p>`;
   document.getElementById('bBackFloor').onclick=()=>{if(selRoom){selRoom.material=felt(selRoom.userData.base);selRoom=null;}showFloorInfo(f);};
 }
+function leadVis(id){const b=bMeta[id];const on=(show.lbl||!!b.label.force)&&(id!=='teach'||mode==='ext');b.lead.forEach(o=>o.visible=on);}
+function focusB(id,on){bMeta[id].label.force=on;leadVis(id);}
 setMode('ext');
+BUILDINGS.forEach(b=>leadVis(b.id));
 document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{if(selRoom){selRoom.material=felt(selRoom.userData.base);selRoom=null;}setMode(b.dataset.m);});
 
 /* ---------- camera ---------- */
@@ -576,7 +579,7 @@ function flyTo(pos,target,ms=900){fly={p0:camera.position.clone(),t0:controls.ta
 let selected=null;
 function tint(id,on){bMeta[id].group.children.filter(m=>m.isMesh).forEach(m=>{m.material=on?new THREE.MeshStandardMaterial({color:new THREE.Color(m.userData.base).offsetHSL(0,0.05,-0.08),map:FT,bumpMap:FTB,bumpScale:.025,roughness:1,emissive:0x221100,emissiveIntensity:.25}):felt(m.userData.base)});}
 function select(id){
-  if(selected){tint(selected,false);bMeta[selected].label.el.classList.remove('sel');}
+  if(selected){tint(selected,false);bMeta[selected].label.el.classList.remove('sel');focusB(selected,false);}
   selected=id; const b=bMeta[id]; tint(id,true); b.label.el.classList.add('sel');
   const counts={};FAC.filter(f=>f[3]===id).forEach(f=>counts[f[0]]=(counts[f[0]]||0)+1);
   const facs=Object.entries(counts).map(([t,n])=>`<span>${FACNAME[t]} × ${n}</span>`).join('');
@@ -585,13 +588,15 @@ function select(id){
     <p>${b.floors?b.floors+' 層樓・':''}${b.desc}</p>
     ${facs?`<div class="facs">${facs}</div>`:''}
     ${near.length&&show.pts?`<p>鄰近危險角落：${[...new Set(near)].join('、')}</p>`:''}`;
+  focusB(id,true);
   document.querySelectorAll('#chips button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.id===id));
   const c=b.center.clone();c.y=0;
   const dir=camera.position.clone().sub(controls.target).normalize();
   flyTo(c.clone().add(dir.multiplyScalar(9)).setY(Math.max(5,b.top+5)),c,reduce?1:900);
 }
 const chips=document.getElementById('chips');
-BUILDINGS.forEach(b=>{const btn=document.createElement('button');btn.textContent=b.name;btn.dataset.id=b.id;btn.setAttribute('aria-pressed','false');btn.onclick=()=>select(b.id);chips.appendChild(btn);});
+BUILDINGS.forEach(b=>{const btn=document.createElement('button');btn.textContent=b.name;btn.dataset.id=b.id;btn.setAttribute('aria-pressed','false');btn.onclick=()=>select(b.id);
+  btn.onmouseenter=btn.onfocus=()=>focusB(b.id,true);btn.onmouseleave=btn.onblur=()=>{if(selected!==b.id)focusB(b.id,false);};chips.appendChild(btn);});
 
 /* ---------- picking ---------- */
 const ray=new THREE.Raycaster(),mouse=new THREE.Vector2(),tip=document.getElementById('tip');
@@ -619,7 +624,7 @@ bSpin.onclick=()=>{controls.autoRotate=!controls.autoRotate;bSpin.setAttribute('
 const bPts=document.getElementById('bPts');
 bPts.onclick=()=>{show.pts=!show.pts;pinGroup.visible=show.pts;bPts.setAttribute('aria-pressed',show.pts);};
 document.getElementById('tFac').onchange=e=>{facGroup.visible=e.target.checked;};
-document.getElementById('tLbl').onchange=e=>{show.lbl=e.target.checked;leaders.visible=e.target.checked;};
+document.getElementById('tLbl').onchange=e=>{show.lbl=e.target.checked;BUILDINGS.forEach(b=>leadVis(b.id));};
 const panel=document.getElementById('panel');
 document.getElementById('bMin').onclick=e=>{panel.classList.toggle('min');e.target.textContent=panel.classList.contains('min')?'展開':'收合';};
 if(innerWidth<=700)panel.classList.add('min'),document.getElementById('bMin').textContent='展開';
