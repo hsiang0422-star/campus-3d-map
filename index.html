@@ -724,7 +724,10 @@ BUILDINGS.forEach(b=>{const m=bMeta[b.id];const lift=LIFT[b.id]||1.1;
   const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,top]),leadMat);leaders.add(ln);
   const d=new THREE.Mesh(dotGeo,dotMat);d.position.copy(a);leaders.add(d);m.lead=[ln,d];
   m.label=addLabel(b.name,'bld',top,'lbl');m.label.bottom=true;});
-const ptLabels=POINTS.map(([n,x,z])=>{const[a,b]=P(x,z);return addLabel(n,'pt',new THREE.Vector3(a,n===17?1.95:0.5,b),'pts');});
+// danger numbers float well above roofs and building names, tied to the spot by a leader line
+function ptBase(n,x,z){if(n===17)return 1.7;let h=0.05;BUILDINGS.forEach(b=>b.parts.forEach(q=>{if(x>=q[0]&&x<=q[2]&&z>=q[1]&&z<=q[3])h=Math.max(h,q[4]+0.01);}));return h;}
+const PT_Y=POINTS.map(([n,x,z])=>{const base=ptBase(n,x,z);return{base,top:Math.max(3.3,base+2.5)};});
+const ptLabels=POINTS.map(([n,x,z],k)=>{const[a,b]=P(x,z);const L=addLabel(n,'pt',new THREE.Vector3(a,PT_Y[k].top,b),'pts');L.bottom=true;return L;});
 // surroundings and road names as small standing felt signboards (real 3D objects, hidden behind buildings like anything else)
 (function(){
   const SIGNS=[['安南醫院',6.3,1.45,0,'place'],['仁愛之家',2.2,1.75,0,'place'],['和順國中',2.0,7.6,0,'place'],
@@ -748,9 +751,11 @@ const ptLabels=POINTS.map(([n,x,z])=>{const[a,b]=P(x,z);return addLabel(n,'pt',n
 })();
 // orange point pins
 const pinGroup=new THREE.Group();scene.add(pinGroup);
-POINTS.forEach(([n,x,z])=>{const[a,b]=P(x,z);
-  const st=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.4,8),new THREE.MeshStandardMaterial({color:0xf08a3c}));st.position.set(a,0.2,b);pinGroup.add(st);
-  const dsk=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,0.02,20),felt(0xf08a3c));dsk.position.set(a,0.04,b);pinGroup.add(dsk);});
+const ptLeadMat=new THREE.LineDashedMaterial({color:0xc0392b,dashSize:0.12,gapSize:0.07});
+POINTS.forEach(([n,x,z],k)=>{const[a,b]=P(x,z);const{base,top}=PT_Y[k];
+  const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a,base,b),new THREE.Vector3(a,top,b)]),ptLeadMat);ln.computeLineDistances();pinGroup.add(ln);
+  const dot=new THREE.Mesh(new THREE.SphereGeometry(0.06,12,10),new THREE.MeshBasicMaterial({color:0xc0392b}));dot.position.set(a,base+0.02,b);pinGroup.add(dot);
+  const dsk=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,0.02,20),felt(0xf08a3c));dsk.position.set(a,base+0.005,b);pinGroup.add(dsk);});
 
 
 /* ---------- danger-corner details: photo cards and highlighted zones ---------- */
