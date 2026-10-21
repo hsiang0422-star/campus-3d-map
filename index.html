@@ -748,7 +748,8 @@ function select(id){
 }
 const chips=document.getElementById('chips');
 BUILDINGS.forEach(b=>{const btn=document.createElement('button');btn.textContent=b.name;btn.dataset.id=b.id;btn.setAttribute('aria-pressed','false');btn.onclick=()=>select(b.id);
-  btn.onmouseenter=btn.onfocus=()=>focusB(b.id,true);btn.onmouseleave=btn.onblur=()=>{if(selected!==b.id)focusB(b.id,false);};chips.appendChild(btn);});
+  // hover preview only for a real mouse; taps on touch screens would otherwise leave names stuck on
+  btn.onpointerenter=e=>{if(e.pointerType==='mouse')focusB(b.id,true);};btn.onpointerleave=e=>{if(e.pointerType==='mouse'&&selected!==b.id)focusB(b.id,false);};chips.appendChild(btn);});
 
 /* ---------- picking ---------- */
 const ray=new THREE.Raycaster(),mouse=new THREE.Vector2(),tip=document.getElementById('tip');
@@ -776,7 +777,7 @@ const bPts=document.getElementById('bPts');
 bPts.onclick=()=>{show.pts=!show.pts;pinGroup.visible=show.pts;bPts.setAttribute('aria-pressed',show.pts);};
 document.getElementById('tFac').onchange=e=>{facGroup.visible=e.target.checked;};
 const bLbl=document.getElementById('bLbl');
-bLbl.onclick=()=>{show.lbl=!show.lbl;bLbl.setAttribute('aria-pressed',show.lbl);bLbl.textContent='建築名稱：'+(show.lbl?'開啟':'關閉');BUILDINGS.forEach(b=>leadVis(b.id));};
+bLbl.onclick=()=>{show.lbl=!show.lbl;if(!show.lbl)BUILDINGS.forEach(b=>{bMeta[b.id].label.force=false;});bLbl.setAttribute('aria-pressed',show.lbl);bLbl.textContent='建築名稱：'+(show.lbl?'開啟':'關閉');BUILDINGS.forEach(b=>leadVis(b.id));};
 const panel=document.getElementById('panel');
 document.getElementById('bMin').onclick=e=>{panel.classList.toggle('min');e.target.textContent=panel.classList.contains('min')?'展開':'收合';};
 if(innerWidth<=700)panel.classList.add('min'),document.getElementById('bMin').textContent='展開';
