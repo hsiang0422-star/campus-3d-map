@@ -702,7 +702,7 @@ BUILDINGS.forEach(b=>{const m=bMeta[b.id];const lift=LIFT[b.id]||1.1;
 const ptLabels=POINTS.map(([n,x,z])=>{const[a,b]=P(x,z);return addLabel(n,'pt',new THREE.Vector3(a,0.5,b),'pts');});
 // surroundings and road names as small standing felt signboards (real 3D objects, hidden behind buildings like anything else)
 (function(){
-  const SIGNS=[['安南醫院',8.4,2.55,0,'place'],['仁愛之家',2.2,1.75,0,'place'],['和順國中',2.0,7.6,0,'place'],
+  const SIGNS=[['安南醫院',6.3,1.45,0,'place'],['仁愛之家',2.2,1.75,0,'place'],['和順國中',2.0,7.6,0,'place'],
     ['文中21',24.2,12.0,0,'place'],['交流門',20.3,1.5,0,'place'],['長和路二段',25.15,4.5,74,'road'],['長和路二段 140 巷',8.3,10.25,27.4,'road']];
   SIGNS.forEach(([t,x,z,deg,kind])=>{
     const road=kind==='road', bg=road?'#4a5763':'#fbf6ec', fg=road?'#ffffff':'#4a3f36';
