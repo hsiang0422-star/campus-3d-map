@@ -193,9 +193,10 @@ const BUILDINGS=[
  {id:'corridor',name:'風雨走廊',floors:1,color:0x9fd3ea,label:[20.9,9.7],parts:[[19.0,9.1,22.8,10.3,0.5]],
   desc:'連接南棟教學大樓與校門方向的有頂走廊。'},
  {id:'wash1',name:'南智洗車場',floors:1,color:0xd7e7ef,label:[21.1,2.8],parts:[[19.9,2.55,22.3,2.95,0.38]],desc:'行政大樓北側。'},
- {id:'wash2',name:'儀安洗車場',floors:1,color:0xa9d3ec,label:[23.35,5.3],parts:[[22.8,4.2,23.9,6.4,0.4]],desc:'沿長和路二段，編號 7 在旁。'},
+ {id:'wash2',name:'儀安洗車場',floors:1,color:0x86b08f,label:[23.35,5.3],parts:[[22.8,4.2,23.9,6.4,0.4]],desc:'沿長和路二段，編號 7 在旁。'},
  {id:'tower',name:'高壓電設施',floors:1,color:0xcfd8de,label:[23.15,3.85],parts:[[22.7,3.6,23.6,4.1,0.3]],desc:'行政大樓東北角的高壓電設施，請勿靠近。'},
- {id:'guard',name:'傳達室',floors:1,color:0x5b6068,label:[23.6,6.85],parts:[[23.0,6.6,24.2,7.1,0.42]],desc:'校門旁，訪客由此登記。'},
+ {id:'guard',name:'傳達室',floors:2,color:0x8f8679,label:[23.5,6.83],parts:[[23.05,6.6,23.95,7.06,0.84]],desc:'校門旁的兩層樓傳達室，深色斜屋頂，訪客由此登記。'},
+ {id:'gate',name:'校門口',floors:0,color:0xc8ccd0,label:[24.4,7.85],parts:[],topH:0.2,desc:'面向長和路二段：伸縮式校門、刻有校名的石座與白色小熊雕塑，校門內有白色弧形候車棚與校車停車處，沿街為木質圍籬與大王椰子。'},
  {id:'trash',name:'垃圾場',floors:0,color:0xb8cfe6,label:[16.5,12.85],parts:[[16.0,12.45,17.0,13.2,0.07]],desc:'校園南端，編號 9、10 附近。'},
  {id:'garden',name:'園藝區',floors:0,color:0x8cc46a,label:[18.25,12.55],parts:[[17.5,12.25,19.0,12.8,0.07]],desc:'垃圾場東側的園藝區。'},
 ];
@@ -358,15 +359,6 @@ flat(polyShape(GRASS),0x83bf4f,0.015,0.05);
   const m=new THREE.Mesh(extrude(polyShape(plazaPts),0.025,false),new THREE.MeshStandardMaterial({map:tex,roughness:.95}));
   m.position.y=0.065;m.receiveShadow=true;scene.add(m);
 
-  // two portable basketball hoops against the south wing's recessed west wall, backboards facing the plaza
-  function hoop(x,z,rot){const grp=new THREE.Group();const[a,b]=P(x,z);grp.position.set(a,0.09,b);grp.rotation.y=rot;
-    const base=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.14,0.26),felt(0x1f6fc0));base.position.y=0.07;grp.add(base);
-    const post=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.42,0.05),felt(0xd9dde2));post.position.set(-0.04,0.35,0);post.rotation.z=0.18;grp.add(post);
-    const arm=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.03,0.04),felt(0xd9dde2));arm.position.set(-0.13,0.55,0);grp.add(arm);
-    const board=new THREE.Mesh(new THREE.BoxGeometry(0.015,0.16,0.26),new THREE.MeshStandardMaterial({color:0xf4f8fb,transparent:true,opacity:.75}));board.position.set(-0.23,0.56,0);grp.add(board);
-    const rim=new THREE.Mesh(new THREE.TorusGeometry(0.045,0.008,8,20),new THREE.MeshStandardMaterial({color:0xe2551e}));rim.rotation.x=Math.PI/2;rim.position.set(-0.29,0.5,0);grp.add(rim);
-    grp.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(grp);}
-  hoop(17.4,5.75,0);hoop(17.4,6.6,0);
 
   // round floor mosaic
   const mc=document.createElement('canvas');mc.width=mc.height=128;const q=mc.getContext('2d');
@@ -432,6 +424,57 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
   const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.05*s,0.07*s,0.7*s,8),felt(0x7a5236));tr.position.set(a,0.35*s,b);tr.castShadow=true;scene.add(tr);
   const cr=new THREE.Mesh(new THREE.SphereGeometry(0.42*s,18,14),felt(Math.random()<.15?0xe9d44a:(Math.random()<.5?0x3f8f3c:0x6fb043)));
   cr.position.set(a,0.85*s,b);cr.scale.y=1.15;cr.castShadow=true;scene.add(cr);});
+
+/* ---------- school gate (from street photo) ---------- */
+(function(){
+  const at=(x,z,y=0)=>{const[a,b]=P(x,z);return new THREE.Vector3(a,y,b);};
+  const add=(m,shadow=true)=>{if(shadow)m.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(m);return m;};
+  // guardhouse roof: dark hipped roof with deep eaves
+  {const[a,b]=P(23.5,6.83);const roof=new THREE.Mesh(new THREE.ConeGeometry(0.62,0.22,4,1),felt(0x55595c));
+   roof.rotation.y=Math.PI/4;roof.scale.set(1.25,1,0.62);roof.position.set(a,0.84+0.11,b);add(roof);
+   const eave=new THREE.Mesh(new THREE.BoxGeometry(1.08,0.03,0.68),felt(0x6a6e70));eave.position.set(a,0.85,b);add(eave);}
+  // stone sign with the white bear sculpture, south of the gate
+  {const g=new THREE.Group();g.position.copy(at(24.72,8.65));g.rotation.y=-1.33;
+   const base=new THREE.Mesh(new THREE.BoxGeometry(0.75,0.2,0.18),felt(0xb9b4ab));base.position.y=0.1;g.add(base);
+   const plate=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.08,0.01),felt(0x8a8f96));plate.position.set(0,0.12,0.095);g.add(plate);
+   const W=felt(0xd8d6d2),bear=new THREE.Group();bear.position.set(-0.22,0.2,0);
+   const sph=(r,x,y,z,sy=1)=>{const s=new THREE.Mesh(new THREE.SphereGeometry(r,16,12),W);s.position.set(x,y,z);s.scale.y=sy;bear.add(s);};
+   sph(0.1,0,0.11,0,1.1);sph(0.075,0,0.27,0);sph(0.03,-0.055,0.33,0);sph(0.03,0.055,0.33,0);
+   sph(0.035,-0.1,0.14,0.02);sph(0.035,0.1,0.14,0.02);sph(0.04,-0.05,0.03,0.05);sph(0.04,0.05,0.03,0.05);sph(0.025,0,0.26,0.07);
+   g.add(bear);add(g);}
+  // retractable accordion gate, half drawn across the opening
+  {const g=new THREE.Group();const p0=at(24.25,7.45),p1=at(24.55,8.25);const n=18;
+   const mat=new THREE.MeshStandardMaterial({color:0xc8ccd0,metalness:.4,roughness:.5});
+   for(let i=0;i<n;i++){const t=i/(n-1);const bar=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.16,0.02),mat);
+     bar.position.lerpVectors(p0,p1,t*0.55);bar.position.y=0.09;bar.rotation.z=(i%2?0.35:-0.35);g.add(bar);}
+   add(g);}
+  // wooden picket fence along the street, north of the guardhouse
+  {const fence=new THREE.Group();const fm=felt(0x9a6b4a);
+   const run=(x0,z0,x1,z1)=>{const a=at(x0,z0),b=at(x1,z1),len=a.distanceTo(b),n=Math.floor(len/0.12);
+     const rail=new THREE.Mesh(new THREE.BoxGeometry(len,0.025,0.02),fm);rail.position.lerpVectors(a,b,.5);rail.position.y=0.15;rail.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);fence.add(rail);
+     const r2=rail.clone();r2.position.y=0.07;fence.add(r2);
+     for(let i=0;i<=n;i++){const p=new THREE.Mesh(new THREE.BoxGeometry(0.025,0.2,0.025),fm);p.position.lerpVectors(a,b,i/n);p.position.y=0.1;fence.add(p);}};
+   run(23.15,2.75,24.1,7.0);run(24.82,8.95,25.75,10.0);add(fence);}
+  // white curved bus canopy running into campus from the gate, with yellow school buses
+  {const g=new THREE.Group();const a=at(21.0,8.45),b=at(24.0,8.45);const L=a.distanceTo(b);
+   const roof=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,L,24,1,true,-0.75,1.5),new THREE.MeshStandardMaterial({color:0xf2f3f1,side:THREE.DoubleSide,roughness:.8}));
+   roof.rotation.z=Math.PI/2;roof.position.set((a.x+b.x)/2,0.28,a.z);g.add(roof);
+   for(let x=0;x<=L;x+=0.6){[-0.32,0.32].forEach(dz=>{const post=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.68,6),felt(0x8c8f93));post.position.set(a.x+x,0.34,a.z+dz);g.add(post);});}
+   add(g);
+   const bus=(x)=>{const bg=new THREE.Group();const p=at(x,8.45);bg.position.copy(p);
+     const body=new THREE.Mesh(new THREE.BoxGeometry(0.85,0.26,0.3),felt(0xf2c230));body.position.y=0.17;bg.add(body);
+     const win=new THREE.Mesh(new THREE.BoxGeometry(0.86,0.08,0.31),new THREE.MeshStandardMaterial({color:0x2f3a40}));win.position.y=0.23;bg.add(win);
+     [[-0.28,0.15],[0.28,0.15],[-0.28,-0.15],[0.28,-0.15]].forEach(([wx,wz])=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.04,12),felt(0x2b2b2b));w.rotation.x=Math.PI/2;w.position.set(wx,0.05,wz);bg.add(w);});
+     add(bg);};
+   bus(22.0);bus(23.05);}
+  // tall palms by the street
+  [[24.35,6.4],[24.55,7.15],[23.75,3.6],[25.05,9.35]].forEach(([x,z],k)=>{const g=new THREE.Group();g.position.copy(at(x,z));const h=1.5+k%2*0.3;
+    const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.045,h,8),felt(0x8d7f6c));tr.position.y=h/2;g.add(tr);
+    for(let i=0;i<8;i++){const fr=new THREE.Mesh(new THREE.ConeGeometry(0.06,0.5,4),felt(i%2?0x3f8f3c:0x5aa24a));
+      const holder=new THREE.Group();holder.rotation.y=i/8*Math.PI*2;holder.position.y=h;
+      fr.scale.set(1,1,0.35);fr.position.set(0.22,-0.06,0);fr.rotation.z=-1.95;holder.add(fr);g.add(holder);}
+    add(g);});
+})();
 
 // little car by the gate
 (function(){const[a,b]=P(25.1,8.3);const g=new THREE.Group();
@@ -499,7 +542,7 @@ ring.rotation.x=-Math.PI/2;ring.position.set(hx+0.35,0.08,hz);scene.add(ring);
 const labelsEl=document.getElementById('labels');const labels=[];
 function addLabel(text,cls,pos,group){const el=document.createElement('div');el.className='lb '+cls;el.textContent=text;labelsEl.appendChild(el);
   const L={el,pos,group};labels.push(L);return L;}
-const LIFT={plaza:1.0,dorm:1.1,canteen:1.0,kui:1.35,teach:1.1,admin:1.0,corridor:1.15,wash1:1.7,wash2:1.35,tower:2.3,guard:1.05,trash:1.0,garden:1.4};
+const LIFT={gate:1.5,plaza:1.0,dorm:1.1,canteen:1.0,kui:1.35,teach:1.1,admin:1.0,corridor:1.15,wash1:1.7,wash2:1.35,tower:2.3,guard:1.05,trash:1.0,garden:1.4};
 const leaders=new THREE.Group();scene.add(leaders);
 const leadMat=new THREE.LineBasicMaterial({color:0x5b4a3c});
 const dotGeo=new THREE.SphereGeometry(0.05,12,10),dotMat=new THREE.MeshBasicMaterial({color:0x5b4a3c});
@@ -511,7 +554,6 @@ BUILDINGS.forEach(b=>{const m=bMeta[b.id];const lift=LIFT[b.id]||1.1;
 const ptLabels=POINTS.map(([n,x,z])=>{const[a,b]=P(x,z);return addLabel(n,'pt',new THREE.Vector3(a,0.5,b),'pts');});
 NEIGH.forEach(([t,x,z])=>{const[a,b]=P(x,z);addLabel(t,'nb',new THREE.Vector3(a,0.05,b),'nb');});
 addLabel('現在位置','here',new THREE.Vector3(hx+0.35,0.75,hz),'here');
-(function(){const[a,b]=P(24.6,7.7);addLabel('校門','gate',new THREE.Vector3(a,0.3,b),'nb');})();
 // orange point pins
 const pinGroup=new THREE.Group();scene.add(pinGroup);
 POINTS.forEach(([n,x,z])=>{const[a,b]=P(x,z);
