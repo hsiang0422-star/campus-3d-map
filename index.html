@@ -131,11 +131,14 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
           <button data-m="exp" aria-pressed="false">分層展開</button>
         </div>
       </div>
+      <div>
+        <h2>地圖標示</h2>
+        <div class="seg"><button id="bLbl" aria-pressed="false">建築名稱：關閉</button></div>
+      </div>
       <div class="hide-min">
         <h2>圖層</h2>
         <div class="toggles">
           <label><input type="checkbox" id="tFac" checked> 電梯・樓梯・廁所</label>
-          <label><input type="checkbox" id="tLbl"> 在地圖上顯示全部建築名稱</label>
         </div>
       </div>
       <div class="hide-min">
@@ -772,7 +775,8 @@ bSpin.onclick=()=>{controls.autoRotate=!controls.autoRotate;bSpin.setAttribute('
 const bPts=document.getElementById('bPts');
 bPts.onclick=()=>{show.pts=!show.pts;pinGroup.visible=show.pts;bPts.setAttribute('aria-pressed',show.pts);};
 document.getElementById('tFac').onchange=e=>{facGroup.visible=e.target.checked;};
-document.getElementById('tLbl').onchange=e=>{show.lbl=e.target.checked;BUILDINGS.forEach(b=>leadVis(b.id));};
+const bLbl=document.getElementById('bLbl');
+bLbl.onclick=()=>{show.lbl=!show.lbl;bLbl.setAttribute('aria-pressed',show.lbl);bLbl.textContent='建築名稱：'+(show.lbl?'開啟':'關閉');BUILDINGS.forEach(b=>leadVis(b.id));};
 const panel=document.getElementById('panel');
 document.getElementById('bMin').onclick=e=>{panel.classList.toggle('min');e.target.textContent=panel.classList.contains('min')?'展開':'收合';};
 if(innerWidth<=700)panel.classList.add('min'),document.getElementById('bMin').textContent='展開';
