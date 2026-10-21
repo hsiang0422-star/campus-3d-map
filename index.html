@@ -834,6 +834,7 @@ function showFloorInfo(f){
     <div class="facs">${Object.entries(cnt).map(([k,n])=>`<span>${k} × ${n}</span>`).join('')}</div>`;
 }
 function showRoom(f,i){
+  setPanel(true);
   const r=FLOORS[f].rooms[i];
   if(selRoom){selRoom.material=felt(selRoom.userData.base);}
   const m=floorObjs[f].meshes[i];
@@ -862,6 +863,7 @@ function tint(id,on){bMeta[id].group.children.filter(m=>m.isMesh).forEach(m=>{m.
 function select(id){
   if(selected){tint(selected,false);bMeta[selected].label.el.classList.remove('sel');focusB(selected,false);}
   selected=id; const b=bMeta[id]; tint(id,true); b.label.el.classList.add('sel');
+  if(id==='teach')setPanel(true);   // floor controls live in the info panel
   const counts={};FAC.filter(f=>f[3]===id).forEach(f=>counts[f[0]]=(counts[f[0]]||0)+1);
   const facs=Object.entries(counts).map(([t,n])=>`<span>${FACNAME[t]} × ${n}</span>`).join('');
   const near=POINTS.filter(([n,x,z])=>{const[a,bz]=P(x,z);return Math.hypot(a-b.center.x,bz-b.center.z)<2.6;}).map(p=>p[0]);
