@@ -172,7 +172,7 @@ const BUILDINGS=[
   desc:'北側緊鄰安南醫院，東西兩側皆有樓梯。'},
  {id:'kui',name:'蕙質樓',floors:2,color:0xf4a35e,label:[10.5,3.7],parts:[[9.6,2.9,11.4,4.6,0.88]],
   desc:'位於學生餐廳東側，編號 13 位於樓前。'},
- {id:'teach',name:'教學大樓',floors:4,color:0xebe4d4,label:[17.9,7.6],parts:[],
+ {id:'teach',name:'教學大樓',floors:4,color:0xebe4d4,label:[18.05,8.27],parts:[],topH:1.68,
   desc:'L 型四層教學大樓（南北棟），依 1–4 樓平面圖建模。用「教學大樓樓層」切換各層。'},
  {id:'admin',name:'行政大樓',floors:4,color:0xc9a3e0,label:[21.0,4.9],
   parts:[[19.3,2.9,22.7,7.4,0.9,0xe9e5e1],[19.8,3.6,22.3,6.2,1.75]],
@@ -344,6 +344,7 @@ BUILDINGS.forEach(b=>{
   });
   scene.add(grp);
   const [lx,lz]=P(...b.label);
+  top=b.topH||top;
   bMeta[b.id]={...b,group:grp,top,center:new THREE.Vector3(lx,top,lz)};
 });
 // skybridge
@@ -426,7 +427,15 @@ ring.rotation.x=-Math.PI/2;ring.position.set(hx+0.35,0.08,hz);scene.add(ring);
 const labelsEl=document.getElementById('labels');const labels=[];
 function addLabel(text,cls,pos,group){const el=document.createElement('div');el.className='lb '+cls;el.textContent=text;labelsEl.appendChild(el);
   const L={el,pos,group};labels.push(L);return L;}
-BUILDINGS.forEach(b=>{const m=bMeta[b.id];m.label=addLabel(b.name.replace('（',' ').replace('）',''),'bld',m.center.clone().add(new THREE.Vector3(0,0.35,0)),'lbl');});
+const LIFT={dorm:1.1,canteen:1.0,kui:1.35,teach:1.1,admin:1.0,corridor:1.15,wash1:1.7,wash2:1.35,tower:2.3,guard:1.05,trash:1.0,garden:1.4};
+const leaders=new THREE.Group();scene.add(leaders);
+const leadMat=new THREE.LineBasicMaterial({color:0x5b4a3c});
+const dotGeo=new THREE.SphereGeometry(0.05,12,10),dotMat=new THREE.MeshBasicMaterial({color:0x5b4a3c});
+BUILDINGS.forEach(b=>{const m=bMeta[b.id];const lift=LIFT[b.id]||1.1;
+  const a=m.center.clone().setY(m.top+0.02), top=a.clone().setY(m.top+lift);
+  const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,top]),leadMat);leaders.add(ln);
+  const d=new THREE.Mesh(dotGeo,dotMat);d.position.copy(a);leaders.add(d);m.lead=[ln,d];
+  m.label=addLabel(b.name,'bld',top,'lbl');m.label.bottom=true;});
 const ptLabels=POINTS.map(([n,x,z])=>{const[a,b]=P(x,z);return addLabel(n,'pt',new THREE.Vector3(a,0.5,b),'pts');});
 NEIGH.forEach(([t,x,z])=>{const[a,b]=P(x,z);addLabel(t,'nb',new THREE.Vector3(a,0.05,b),'nb');});
 addLabel('現在位置','here',new THREE.Vector3(hx+0.35,0.75,hz),'here');
@@ -452,7 +461,7 @@ function placeLabels(){
     if(v.z>1){L.el.hidden=true;return;}
     L.el.hidden=false;
     const x=(v.x*0.5+0.5)*w,y=(-v.y*0.5+0.5)*h;
-    L.el.style.transform=`translate(${x}px,${y}px) translate(-50%,-50%)`;
+    L.el.style.transform=`translate(${x}px,${y}px) translate(-50%,${L.bottom?'-100%':'-50%'})`;
   });
 }
 
@@ -466,8 +475,6 @@ const RT={cls:[0xf6d27a,'一般教室'],tch:[0xf3b37e,'教師室'],spc:[0x9fd0a8
   util:[0xc9c3bb,'設備・儲藏'],bal:[0xd9e6c8,'陽台・露台'],slide:[0xff9f5a,'逃生滑梯']};
 const ICO={wcm:'m',wcf:'f',acc:'a',st:'s',el:'e'};
 const teach=bMeta.teach; teach.top=FHB*4;
-teach.center.set(...(()=>{const[a,b]=pw(700,250);return[a,FHB*4,b]})());
-teach.label.pos.set(teach.center.x,FHB*4+0.35,teach.center.z);
 const floorObjs={};
 // colours taken from the real building: cream walls, taupe stair towers, concrete bands, dark glazing
 const winMat=new THREE.MeshStandardMaterial({color:0x3e4a52,roughness:.7});
@@ -528,6 +535,7 @@ function setMode(m){
     show['room'+f]=(m===String(f));
   });
   show.fl=(m==='exp');
+  teach.lead.forEach(o=>o.visible=(m==='ext'));teach.label.el.style.visibility=(m==='ext')?'':'hidden';
   document.querySelectorAll('#seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===m));
   const c=teach.center.clone();c.y=0;
   if(m==='ext')return;
@@ -611,7 +619,7 @@ bSpin.onclick=()=>{controls.autoRotate=!controls.autoRotate;bSpin.setAttribute('
 const bPts=document.getElementById('bPts');
 bPts.onclick=()=>{show.pts=!show.pts;pinGroup.visible=show.pts;bPts.setAttribute('aria-pressed',show.pts);};
 document.getElementById('tFac').onchange=e=>{facGroup.visible=e.target.checked;};
-document.getElementById('tLbl').onchange=e=>{show.lbl=e.target.checked;};
+document.getElementById('tLbl').onchange=e=>{show.lbl=e.target.checked;leaders.visible=e.target.checked;};
 const panel=document.getElementById('panel');
 document.getElementById('bMin').onclick=e=>{panel.classList.toggle('min');e.target.textContent=panel.classList.contains('min')?'展開':'收合';};
 if(innerWidth<=700)panel.classList.add('min'),document.getElementById('bMin').textContent='展開';
