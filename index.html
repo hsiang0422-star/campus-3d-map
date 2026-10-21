@@ -104,7 +104,6 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
     <div class="tools">
       <button id="bReset">重設視角</button>
       <button id="bTop">俯視</button>
-      <button id="bHere">現在位置</button>
       <button id="bPts" aria-pressed="false">危險角落</button>
       <button id="bSpin" aria-pressed="false">自動旋轉</button>
     </div>
@@ -185,12 +184,12 @@ const BUILDINGS=[
   desc:'位於學生餐廳東側，編號 13 位於樓前。'},
  {id:'teach',name:'教學大樓',floors:4,color:0xebe4d4,label:[18.05,8.27],parts:[],topH:1.68,
   desc:'L 型四層教學大樓（南北棟），依 1–4 樓平面圖建模。用「教學大樓樓層」切換各層。'},
- {id:'admin',name:'行政大樓',floors:4,color:0xc9a3e0,label:[21.0,4.9],
-  parts:[[19.3,2.9,22.7,7.4,0.9,0xe9e5e1],[19.8,3.6,22.3,6.2,1.75]],
-  desc:'靠近校門與傳達室，北側為南智洗車場。'},
+ {id:'admin',name:'行政大樓',floors:3,color:0xf3f2ee,label:[21.0,5.0],
+  parts:[[19.3,3.0,20.25,7.35,1.45],[21.75,3.0,22.7,7.35,1.45],[20.25,3.0,21.75,6.88,1.3,0xece6d6]],
+  desc:'白色磁磚外牆，兩側塔樓有橫向遮陽板，中央內退有米色陽台。正面朝南，門前為磚面臨停車位；北側為南智洗車場。'},
  {id:'plaza',name:'中庭廣場',floors:0,color:0x8b5d55,label:[15.6,6.4],parts:[],topH:0.1,
-  desc:'教學大樓南北棟之間的磚面廣場：有兩座活動式籃球架、白色彎曲步道線、地面圓形馬賽克和彩色裝置藝術，外側接草坪。'},
- {id:'corridor',name:'風雨走廊',floors:1,color:0x9fd3ea,label:[20.9,9.7],parts:[[19.0,9.1,22.8,10.3,0.5]],
+  desc:'教學大樓南北棟之間的磚面廣場：有白色彎曲步道線、地面圓形馬賽克和彩色裝置藝術，外側接草坪。'},
+ {id:'corridor',name:'風雨走廊（校車候車棚）',floors:1,color:0xf2f3f1,label:[21.3,9.7],parts:[],topH:0.95,
   desc:'連接南棟教學大樓與校門方向的有頂走廊。'},
  {id:'wash1',name:'南智洗車場',floors:1,color:0xd7e7ef,label:[21.1,2.8],parts:[[19.9,2.55,22.3,2.95,0.38]],desc:'行政大樓北側。'},
  {id:'wash2',name:'儀安洗車場',floors:1,color:0x86b08f,label:[23.35,5.3],parts:[[22.8,4.2,23.9,6.4,0.4]],desc:'沿長和路二段，編號 7 在旁。'},
@@ -437,7 +436,7 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
   {const g=new THREE.Group();g.position.copy(at(24.72,8.65));g.rotation.y=-1.33;
    const base=new THREE.Mesh(new THREE.BoxGeometry(0.75,0.2,0.18),felt(0xb9b4ab));base.position.y=0.1;g.add(base);
    const plate=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.08,0.01),felt(0x8a8f96));plate.position.set(0,0.12,0.095);g.add(plate);
-   const W=felt(0xd8d6d2),bear=new THREE.Group();bear.position.set(-0.22,0.2,0);
+   const W=new THREE.MeshStandardMaterial({color:0xcfd3d6,metalness:.75,roughness:.35,bumpMap:FTB,bumpScale:.04}),bear=new THREE.Group();bear.position.set(-0.22,0.2,0);
    const sph=(r,x,y,z,sy=1)=>{const s=new THREE.Mesh(new THREE.SphereGeometry(r,16,12),W);s.position.set(x,y,z);s.scale.y=sy;bear.add(s);};
    sph(0.1,0,0.11,0,1.1);sph(0.075,0,0.27,0);sph(0.03,-0.055,0.33,0);sph(0.03,0.055,0.33,0);
    sph(0.035,-0.1,0.14,0.02);sph(0.035,0.1,0.14,0.02);sph(0.04,-0.05,0.03,0.05);sph(0.04,0.05,0.03,0.05);sph(0.025,0,0.26,0.07);
@@ -455,18 +454,24 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
      const r2=rail.clone();r2.position.y=0.07;fence.add(r2);
      for(let i=0;i<=n;i++){const p=new THREE.Mesh(new THREE.BoxGeometry(0.025,0.2,0.025),fm);p.position.lerpVectors(a,b,i/n);p.position.y=0.1;fence.add(p);}};
    run(23.15,2.75,24.1,7.0);run(24.82,8.95,25.75,10.0);add(fence);}
-  // white curved bus canopy running into campus from the gate, with yellow school buses
-  {const g=new THREE.Group();const a=at(21.0,8.45),b=at(24.0,8.45);const L=a.distanceTo(b);
-   const roof=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,L,24,1,true,-0.75,1.5),new THREE.MeshStandardMaterial({color:0xf2f3f1,side:THREE.DoubleSide,roughness:.8}));
-   roof.rotation.z=Math.PI/2;roof.position.set((a.x+b.x)/2,0.28,a.z);g.add(roof);
-   for(let x=0;x<=L;x+=0.6){[-0.32,0.32].forEach(dz=>{const post=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.68,6),felt(0x8c8f93));post.position.set(a.x+x,0.34,a.z+dz);g.add(post);});}
+  // 風雨走廊 = white curved bus canopy from the teaching building toward the gate, with yellow school buses
+  {const g=new THREE.Group();const a=at(19.0,9.7),b=at(24.5,9.7);const L=a.distanceTo(b);
+   const roof=new THREE.Mesh(new THREE.CylinderGeometry(0.8,0.8,L,28,1,true,-0.8,1.6),new THREE.MeshStandardMaterial({color:0xf2f3f1,side:THREE.DoubleSide,roughness:.8}));
+   roof.rotation.z=Math.PI/2;roof.position.set((a.x+b.x)/2,0.15,a.z);roof.castShadow=true;roof.receiveShadow=true;g.add(roof);
+   const wood=felt(0x9a7b5c),stayMat=new THREE.LineBasicMaterial({color:0x7a6450});
+   for(let x=0;x<=L+0.01;x+=0.55){
+     [-0.56,0.56].forEach(dz=>{const post=new THREE.Mesh(new THREE.CylinderGeometry(0.016,0.016,0.71,6),felt(0x9a9da1));post.position.set(a.x+x,0.355,a.z+dz);g.add(post);});
+     const mast=new THREE.Mesh(new THREE.BoxGeometry(0.05,1.3,0.05),wood);mast.position.set(a.x+x,0.65,a.z-0.3);g.add(mast);
+     const top=new THREE.Vector3(a.x+x,1.28,a.z-0.3);
+     g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([top,new THREE.Vector3(a.x+x,0.72,a.z+0.56)]),stayMat));
+     g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([top,new THREE.Vector3(a.x+x+0.27,0.9,a.z-0.3)]),stayMat));}
    add(g);
-   const bus=(x)=>{const bg=new THREE.Group();const p=at(x,8.45);bg.position.copy(p);
+   const bus=(x)=>{const bg=new THREE.Group();const p=at(x,9.7);bg.position.copy(p);
      const body=new THREE.Mesh(new THREE.BoxGeometry(0.85,0.26,0.3),felt(0xf2c230));body.position.y=0.17;bg.add(body);
      const win=new THREE.Mesh(new THREE.BoxGeometry(0.86,0.08,0.31),new THREE.MeshStandardMaterial({color:0x2f3a40}));win.position.y=0.23;bg.add(win);
      [[-0.28,0.15],[0.28,0.15],[-0.28,-0.15],[0.28,-0.15]].forEach(([wx,wz])=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.04,12),felt(0x2b2b2b));w.rotation.x=Math.PI/2;w.position.set(wx,0.05,wz);bg.add(w);});
      add(bg);};
-   bus(22.0);bus(23.05);}
+   bus(21.2);bus(22.4);}
   // tall palms by the street
   [[24.35,6.4],[24.55,7.15],[23.75,3.6],[25.05,9.35]].forEach(([x,z],k)=>{const g=new THREE.Group();g.position.copy(at(x,z));const h=1.5+k%2*0.3;
     const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.045,h,8),felt(0x8d7f6c));tr.position.y=h/2;g.add(tr);
@@ -474,6 +479,43 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
       const holder=new THREE.Group();holder.rotation.y=i/8*Math.PI*2;holder.position.y=h;
       fr.scale.set(1,1,0.35);fr.position.set(0.22,-0.06,0);fr.rotation.z=-1.95;holder.add(fr);g.add(holder);}
     add(g);});
+})();
+
+/* ---------- administration building details (from photo): tiled side towers with ledges, recessed balconied centre, parking in front ---------- */
+(function(){
+  const at=(x,z,y=0)=>{const[a,b]=P(x,z);return new THREE.Vector3(a,y,b);};
+  const white=felt(0xf3f2ee), cream=felt(0xe8dcc0), grey=felt(0xc9c7c2), glass=new THREE.MeshStandardMaterial({color:0x6f7d86,roughness:.6});
+  const g=new THREE.Group();
+  const box=(w,h,d,m,p)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.copy(p);b.castShadow=true;b.receiveShadow=true;g.add(b);return b;};
+  // horizontal sunshade ledges and small windows on both towers (front and outer faces)
+  [[19.3,20.25],[21.75,22.7]].forEach(([x0,x1],k)=>{
+    const cx=(x0+x1)/2,w=x1-x0;
+    for(let f=0;f<3;f++){const y=0.42*f+0.32;
+      box(w+0.04,0.035,0.16,white,at(cx,7.37,y));                         // front ledge
+      box(0.18,0.1,0.02,glass,at(cx-0.22,7.36,y+0.08));box(0.18,0.1,0.02,glass,at(cx+0.22,7.36,y+0.08));
+      const ox=k?x1:x0, sgn=k?1:-1;                                          // outer side ledges
+      for(let z=3.5;z<7.2;z+=1.0){box(0.14,0.035,0.7,white,at(ox+sgn*0.07,z+0.35,y));box(0.02,0.1,0.22,glass,at(ox+sgn*0.01,z+0.35,y+0.08));}
+    }});
+  // centre: two cream balcony bands with railings, a deep roof canopy and the entrance
+  for(let f=1;f<=2;f++){const y=0.42*f;
+    box(1.5,0.05,0.32,cream,at(21.0,7.03,y));
+    box(1.5,0.1,0.02,white,at(21.0,7.18,y+0.08));
+    box(1.4,0.22,0.02,glass,at(21.0,6.89,y+0.16));}
+  box(1.62,0.05,0.55,grey,at(21.0,6.95,1.32));                               // roof canopy
+  box(1.4,0.26,0.02,glass,at(21.0,6.89,0.14));                               // ground-floor glazing
+  box(0.6,0.03,0.18,felt(0x3f6f5a),at(21.0,7.0,0.3));                        // green entrance awning
+  for(let s=0;s<3;s++)box(0.8-s*0.08,0.03,0.12,grey,at(21.0,7.42+0.12*(2-s),0.015+0.03*s)); // steps
+  [[20.45,7.45],[21.55,7.45]].forEach(([x,z])=>box(0.35,0.08,0.18,felt(0xd9d4c8),at(x,z,0.04)));   // planters
+  scene.add(g);
+  // brick parking court in front with white bay lines
+  const S=512,cv=document.createElement('canvas');cv.width=cv.height=S;const c=cv.getContext('2d');
+  const pal=['#9a6a62','#8a7a76','#a47d74','#7f7270','#b08a80'];c.fillStyle='#6a5e5c';c.fillRect(0,0,S,S);
+  for(let y=0;y<S;y+=16)for(let x=0;x<S;x+=16){c.fillStyle=pal[Math.random()*pal.length|0];c.fillRect(x+1,y+1,14,14);}
+  c.strokeStyle='#f4f2ee';c.lineWidth=6;c.beginPath();c.moveTo(0,40);c.lineTo(S,40);c.stroke();
+  for(let x=0;x<=S;x+=64){c.beginPath();c.moveTo(x,40);c.lineTo(x,S);c.stroke();}
+  const tex=new THREE.CanvasTexture(cv);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(0.62,0.62);tex.encoding=THREE.sRGBEncoding;tex.anisotropy=4;
+  const lot=new THREE.Mesh(extrude(rrShape(19.3,7.4,22.7,9.0,0.05),0.02,false),new THREE.MeshStandardMaterial({map:tex,roughness:.95}));
+  lot.position.y=0.02;lot.receiveShadow=true;scene.add(lot);
 })();
 
 // little car by the gate
@@ -531,12 +573,6 @@ FAC.forEach(([t,x,z,bid])=>{const[a,b]=P(x,z);const top=bMeta[bid].top;
 });
 document.querySelectorAll('img[data-ico]').forEach(im=>im.src=iconCanvas(im.dataset.ico).toDataURL());
 
-// "you are here" beacon
-const [hx,hz]=P(19.0,8.95);
-const beacon=new THREE.Mesh(new THREE.SphereGeometry(0.13,20,16),new THREE.MeshStandardMaterial({color:0xffd23f,emissive:0xffb000,emissiveIntensity:.6}));
-beacon.position.set(hx+0.35,0.25,hz);scene.add(beacon);
-const ring=new THREE.Mesh(new THREE.RingGeometry(0.2,0.28,32),new THREE.MeshBasicMaterial({color:0xd9452f,transparent:true,side:THREE.DoubleSide}));
-ring.rotation.x=-Math.PI/2;ring.position.set(hx+0.35,0.08,hz);scene.add(ring);
 
 /* ---------- HTML labels ---------- */
 const labelsEl=document.getElementById('labels');const labels=[];
@@ -553,7 +589,6 @@ BUILDINGS.forEach(b=>{const m=bMeta[b.id];const lift=LIFT[b.id]||1.1;
   m.label=addLabel(b.name,'bld',top,'lbl');m.label.bottom=true;});
 const ptLabels=POINTS.map(([n,x,z])=>{const[a,b]=P(x,z);return addLabel(n,'pt',new THREE.Vector3(a,0.5,b),'pts');});
 NEIGH.forEach(([t,x,z])=>{const[a,b]=P(x,z);addLabel(t,'nb',new THREE.Vector3(a,0.05,b),'nb');});
-addLabel('現在位置','here',new THREE.Vector3(hx+0.35,0.75,hz),'here');
 // orange point pins
 const pinGroup=new THREE.Group();scene.add(pinGroup);
 POINTS.forEach(([n,x,z])=>{const[a,b]=P(x,z);
@@ -732,7 +767,6 @@ canvas.addEventListener('pointerleave',()=>tip.hidden=true);
 /* ---------- controls UI ---------- */
 document.getElementById('bReset').onclick=()=>flyTo(HOME.pos.clone(),HOME.target.clone());
 document.getElementById('bTop').onclick=()=>flyTo(new THREE.Vector3(0.5,30,0.9),new THREE.Vector3(0.5,0,0.8));
-document.getElementById('bHere').onclick=()=>{setMode('1');const t=new THREE.Vector3(hx+0.35,0,hz);flyTo(t.clone().add(new THREE.Vector3(-2.5,6,5.5)),t);};
 const bSpin=document.getElementById('bSpin');
 bSpin.onclick=()=>{controls.autoRotate=!controls.autoRotate;bSpin.setAttribute('aria-pressed',controls.autoRotate);};
 const bPts=document.getElementById('bPts');
@@ -782,8 +816,6 @@ function loop(now){
   Object.values(floorObjs).forEach(o=>{o.grp.position.y+=(o.targetY-o.grp.position.y)*(reduce?1:0.14);});
   controls.target.x=Math.max(-15,Math.min(15,controls.target.x));controls.target.z=Math.max(-9,Math.min(9,controls.target.z));controls.target.y=Math.max(0,Math.min(6,controls.target.y));
   controls.update();
-  const k=(now/1000)%1.6/1.6;ring.scale.setScalar(1+k*2.2);ring.material.opacity=1-k;
-  beacon.position.y=0.25+Math.sin(now/300)*0.05;
   renderer.render(scene,camera);placeLabels();
   requestAnimationFrame(loop);
 }
