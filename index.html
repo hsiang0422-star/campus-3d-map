@@ -358,15 +358,15 @@ flat(polyShape(GRASS),0x83bf4f,0.015,0.05);
   const m=new THREE.Mesh(extrude(polyShape(plazaPts),0.025,false),new THREE.MeshStandardMaterial({map:tex,roughness:.95}));
   m.position.y=0.065;m.receiveShadow=true;scene.add(m);
 
-  // two portable basketball hoops against the south wing's west wall, facing the plaza
-  function hoop(x,z){const grp=new THREE.Group();const[a,b]=P(x,z);grp.position.set(a,0.09,b);
+  // two portable basketball hoops against the north wing's south wall, backboards facing the plaza
+  function hoop(x,z,rot){const grp=new THREE.Group();const[a,b]=P(x,z);grp.position.set(a,0.09,b);grp.rotation.y=rot;
     const base=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.14,0.26),felt(0x1f6fc0));base.position.y=0.07;grp.add(base);
     const post=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.42,0.05),felt(0xd9dde2));post.position.set(-0.04,0.35,0);post.rotation.z=0.18;grp.add(post);
     const arm=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.03,0.04),felt(0xd9dde2));arm.position.set(-0.13,0.55,0);grp.add(arm);
     const board=new THREE.Mesh(new THREE.BoxGeometry(0.015,0.16,0.26),new THREE.MeshStandardMaterial({color:0xf4f8fb,transparent:true,opacity:.75}));board.position.set(-0.23,0.56,0);grp.add(board);
     const rim=new THREE.Mesh(new THREE.TorusGeometry(0.045,0.008,8,20),new THREE.MeshStandardMaterial({color:0xe2551e}));rim.rotation.x=Math.PI/2;rim.position.set(-0.29,0.5,0);grp.add(rim);
     grp.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(grp);}
-  hoop(16.62,5.55);hoop(16.62,6.05);
+  hoop(16.0,5.05,Math.PI/2);hoop(16.45,5.05,Math.PI/2);
 
   // round floor mosaic
   const mc=document.createElement('canvas');mc.width=mc.height=128;const q=mc.getContext('2d');
