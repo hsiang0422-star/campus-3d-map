@@ -379,7 +379,7 @@ flat(polyShape(GRASS),0x83bf4f,0.015,0.05);
   const[dx,dz]=P(15.25,5.5);disc.rotation.x=-Math.PI/2;disc.position.set(dx,0.093,dz);disc.receiveShadow=true;scene.add(disc);
 
   // the colourful sculpture at the plaza edge
-  const sc=new THREE.Group();const[sx,sz]=P(14.35,6.75);sc.position.set(sx,0.09,sz);
+  const sc=new THREE.Group();const[sx,sz]=P(15.4,7.3);sc.position.set(sx,0.09,sz);
   const pool=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.3,0.03,28),felt(0x6b9fd4));pool.position.y=0.015;sc.add(pool);
   [-0.05,0.05].forEach(o=>{const s=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.035,0.75,8),felt(0xe8e8e8));s.position.set(o,0.4,0);s.rotation.z=o*1.5;sc.add(s);});
   const hub=new THREE.Vector3(0,0.8,0);const cols=[0xf2c230,0xe8572b,0x3f8fd8,0x55b06a,0xffffff];
