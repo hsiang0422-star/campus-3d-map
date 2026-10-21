@@ -172,7 +172,7 @@ const BUILDINGS=[
   desc:'北側緊鄰安南醫院，東西兩側皆有樓梯。'},
  {id:'kui',name:'蕙質樓',floors:2,color:0xf4a35e,label:[10.5,3.7],parts:[[9.6,2.9,11.4,4.6,0.88]],
   desc:'位於學生餐廳東側，編號 13 位於樓前。'},
- {id:'teach',name:'教學大樓',floors:4,color:0xeeb7a4,label:[17.9,7.6],parts:[],
+ {id:'teach',name:'教學大樓',floors:4,color:0xebe4d4,label:[17.9,7.6],parts:[],
   desc:'L 型四層教學大樓（南北棟），依 1–4 樓平面圖建模。用「教學大樓樓層」切換各層。'},
  {id:'admin',name:'行政大樓',floors:4,color:0xc9a3e0,label:[21.0,4.9],
   parts:[[19.3,2.9,22.7,7.4,0.9,0xe9e5e1],[19.8,3.6,22.3,6.2,1.75]],
@@ -469,8 +469,9 @@ const teach=bMeta.teach; teach.top=FHB*4;
 teach.center.set(...(()=>{const[a,b]=pw(700,250);return[a,FHB*4,b]})());
 teach.label.pos.set(teach.center.x,FHB*4+0.35,teach.center.z);
 const floorObjs={};
-const winMat=new THREE.MeshStandardMaterial({color:0x5a88b8,roughness:.9});
-const shellMat=felt(0xeeb7a4), bandMat=felt(0xd99a88), slabMat=felt(0xf7efe4);
+// colours taken from the real building: cream walls, taupe stair towers, concrete bands, dark glazing
+const winMat=new THREE.MeshStandardMaterial({color:0x3e4a52,roughness:.7});
+const shellMat=felt(0xebe4d4), bandMat=felt(0xc4b8a4), slabMat=felt(0xf7efe4), towerMat=felt(0xa8977d);
 Object.keys(FLOORS).forEach(fk=>{
   const f=+fk, D=FLOORS[fk], grp=new THREE.Group(), shell=new THREE.Group(), inner=new THREE.Group();
   grp.position.y=(f-1)*FHB; grp.add(shell); grp.add(inner); teach.group.add(grp);
@@ -503,6 +504,7 @@ Object.keys(FLOORS).forEach(fk=>{
     const h=t==='bal'?0.07:0.17+rank*0.0025, cx=(w.x0+w.x1)/2, cz=(w.z0+w.z1)/2;
     const m=new THREE.Mesh(new THREE.BoxGeometry(W,h,Dd),felt(RT[t][0]));m.position.set(cx,0.05+h/2,cz);
     m.castShadow=true;m.receiveShadow=true;m.userData={kind:'r',f,i,base:RT[t][0]};inner.add(m);pickables.push(m);meshes[i]=m;
+    if(t==='st'||t==='el'){const tw=new THREE.Mesh(new THREE.BoxGeometry(W+0.07,FHB-0.02,Dd+0.07),towerMat);tw.position.set(cx,(FHB-0.02)/2,cz);tw.castShadow=true;tw.userData={kind:'b',id:'teach'};shell.add(tw);pickables.push(tw);}
     if(ICO[t]){const sz=Math.min(W,Dd,0.3)*0.85;const ic=new THREE.Mesh(new THREE.PlaneGeometry(sz,sz),iconMat(ICO[t]));
       ic.rotation.x=-Math.PI/2;ic.position.set(cx,0.051+h,cz);ic.userData=m.userData;inner.add(ic);pickables.push(ic);}
     m.userData.topY=0.05+h;
