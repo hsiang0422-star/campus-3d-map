@@ -354,11 +354,11 @@ flat(polyShape(GRASS),0x83bf4f,0.015,0.05);
     g.beginPath();g.moveTo(...pts[0]);for(let i=1;i<pts.length-1;i++){const xc=(pts[i][0]+pts[i+1][0])/2,yc=(pts[i][1]+pts[i+1][1])/2;g.quadraticCurveTo(pts[i][0],pts[i][1],xc,yc);}
     g.lineTo(...pts[pts.length-1]);g.stroke();});
   const tex=new THREE.CanvasTexture(cv);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(0.36,0.36);tex.encoding=THREE.sRGBEncoding;tex.anisotropy=4;
-  const plazaPts=[[13.85,4.95],[16.84,4.95],[16.84,8.4],[16.1,8.4],[15.3,7.7],[14.5,7.0],[13.85,6.2]];
+  const plazaPts=[[13.85,4.95],[16.84,4.95],[16.84,5.35],[17.62,5.35],[17.62,7.05],[16.84,7.05],[16.84,8.4],[16.1,8.4],[15.3,7.7],[14.5,7.0],[13.85,6.2]];
   const m=new THREE.Mesh(extrude(polyShape(plazaPts),0.025,false),new THREE.MeshStandardMaterial({map:tex,roughness:.95}));
   m.position.y=0.065;m.receiveShadow=true;scene.add(m);
 
-  // two portable basketball hoops against the north wing's south wall, backboards facing the plaza
+  // two portable basketball hoops against the south wing's recessed west wall, backboards facing the plaza
   function hoop(x,z,rot){const grp=new THREE.Group();const[a,b]=P(x,z);grp.position.set(a,0.09,b);grp.rotation.y=rot;
     const base=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.14,0.26),felt(0x1f6fc0));base.position.y=0.07;grp.add(base);
     const post=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.42,0.05),felt(0xd9dde2));post.position.set(-0.04,0.35,0);post.rotation.z=0.18;grp.add(post);
@@ -366,7 +366,7 @@ flat(polyShape(GRASS),0x83bf4f,0.015,0.05);
     const board=new THREE.Mesh(new THREE.BoxGeometry(0.015,0.16,0.26),new THREE.MeshStandardMaterial({color:0xf4f8fb,transparent:true,opacity:.75}));board.position.set(-0.23,0.56,0);grp.add(board);
     const rim=new THREE.Mesh(new THREE.TorusGeometry(0.045,0.008,8,20),new THREE.MeshStandardMaterial({color:0xe2551e}));rim.rotation.x=Math.PI/2;rim.position.set(-0.29,0.5,0);grp.add(rim);
     grp.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(grp);}
-  hoop(16.0,5.05,Math.PI/2);hoop(16.45,5.05,Math.PI/2);
+  hoop(17.4,5.75,0);hoop(17.4,6.6,0);
 
   // round floor mosaic
   const mc=document.createElement('canvas');mc.width=mc.height=128;const q=mc.getContext('2d');
