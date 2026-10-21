@@ -78,8 +78,9 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .bwrap{position:absolute;top:10px;left:max(12px,env(safe-area-inset-left,0px));z-index:5;display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:calc(100% - 24px)}
 #bBld{background:var(--panel);box-shadow:0 2px 8px rgba(40,30,20,.12);font-weight:500;padding:6px 14px}
 #bBld[aria-expanded="true"]{background:var(--ink);color:var(--panel)}
-#bBld .car{display:inline-block;transition:transform .2s}
-#bBld[aria-expanded="true"] .car{transform:rotate(180deg)}
+.car{display:inline-block;transition:transform .2s}
+[aria-expanded="true"] .car{transform:rotate(180deg)}
+#bPanel[aria-expanded="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
 .blist{display:flex;flex-wrap:wrap;gap:6px;width:340px;max-width:100%;max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--line);
   border-radius:12px;padding:10px;box-shadow:0 8px 28px rgba(40,30,20,.16)}
 .blist button{font-size:.8rem;padding:5px 12px}
@@ -127,11 +128,11 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
     <div class="tools">
       <button id="bReset">重設視角</button>
       <button id="bTop">俯視</button>
-      <button id="bPanel" aria-pressed="true">資訊面板</button>
       <button id="bCtrl" aria-pressed="true">地圖操作</button>
       <button id="bLbl" aria-pressed="false">建築名稱</button>
       <button id="bPts" aria-pressed="false">危險角落</button>
       <button id="bSpin" aria-pressed="false">自動旋轉</button>
+      <button id="bPanel" aria-expanded="true" aria-controls="panel">資訊面板 <span class="car" aria-hidden="true">▾</span></button>
     </div>
   </header>
   <div class="stage">
@@ -862,11 +863,12 @@ const bLbl=document.getElementById('bLbl');
 bLbl.onclick=()=>{show.lbl=!show.lbl;if(!show.lbl)BUILDINGS.forEach(b=>{bMeta[b.id].label.force=false;});bLbl.setAttribute('aria-pressed',show.lbl);BUILDINGS.forEach(b=>leadVis(b.id));};
 const panel=document.getElementById('panel');
 const bMin=document.getElementById('bMin');
-function setMin(on){panel.classList.toggle('min',on);bMin.textContent=on?'展開':'收合';bMin.setAttribute('aria-expanded',!on);}
-bMin.onclick=()=>setMin(!panel.classList.contains('min'));
+// the info panel opens and closes from the 資訊面板 button in the top toolbar; 收合 inside the panel closes it too
 const bPanel=document.getElementById('bPanel');
-bPanel.onclick=()=>{panel.hidden=!panel.hidden;bPanel.setAttribute('aria-pressed',!panel.hidden);if(!panel.hidden)setMin(false);};
-if(innerWidth<=700)setMin(true);
+function setPanel(open){panel.hidden=!open;panel.classList.remove('min');bPanel.setAttribute('aria-expanded',open);}
+bPanel.onclick=()=>setPanel(panel.hidden);
+bMin.onclick=()=>setPanel(false);
+if(innerWidth<=700)setPanel(false);
 
 /* ---------- draggable, resizable info panel ---------- */
 (function(){
