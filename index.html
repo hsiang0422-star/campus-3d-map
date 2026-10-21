@@ -304,7 +304,7 @@ function extrude(shape,h,bevel){
 function flat(shape,color,y,h=0.04){const m=new THREE.Mesh(extrude(shape,h,false),felt(color));m.position.y=y;m.receiveShadow=true;scene.add(m);return m;}
 
 /* ---------- base board ---------- */
-const board=new THREE.Mesh(extrude(rrShape(-1.2,0.6,28,16.2,0.8),0.35,true),felt(0xf3ece0));
+const board=new THREE.Mesh(extrude(rrShape(-1.2,0.6,28,16.2,0.8),0.35,true),felt(0x2f5a45)); // off-campus land in dark green; campus stays cream
 board.position.y=-0.35; board.receiveShadow=true; scene.add(board);
 flat(polyShape(BOUND),0xf6f0e6,0,0.015);
 
@@ -312,7 +312,7 @@ flat(polyShape(BOUND),0xf6f0e6,0,0.015);
 function road(pts,w){
   for(let i=0;i<pts.length-1;i++){
     const[a,b]=P(...pts[i]),[c,d]=P(...pts[i+1]);const len=Math.hypot(c-a,d-b),ang=Math.atan2(d-b,c-a);
-    const m=new THREE.Mesh(new THREE.BoxGeometry(len+w,0.05,w),felt(0x2f5a45));
+    const m=new THREE.Mesh(new THREE.BoxGeometry(len+w,0.05,w),felt(0x9aa0a8));
     m.position.set((a+c)/2,0.025,(b+d)/2);m.rotation.y=-ang;m.receiveShadow=true;scene.add(m);
     const n=Math.floor(len/0.7);
     for(let k=0;k<n;k++){const t=(k+0.5)/n;const dm=new THREE.Mesh(new THREE.BoxGeometry(0.32,0.02,0.05),felt(0xf6f2ea));
@@ -646,7 +646,7 @@ const ptLabels=POINTS.map(([n,x,z])=>{const[a,b]=P(x,z);return addLabel(n,'pt',n
   const SIGNS=[['安南醫院',10.5,2.5,0,'place'],['仁愛之家',2.6,2.3,0,'place'],['和順國中',2.0,7.6,0,'place'],
     ['文中21',24.2,12.0,0,'place'],['長和路二段',25.15,4.5,74,'road'],['長和路二段 140 巷',8.3,10.25,27.4,'road']];
   SIGNS.forEach(([t,x,z,deg,kind])=>{
-    const road=kind==='road', bg=road?'#3f6f5a':'#fbf6ec', fg=road?'#ffffff':'#4a3f36';
+    const road=kind==='road', bg=road?'#4a5763':'#fbf6ec', fg=road?'#ffffff':'#4a3f36';
     const fs=88,cv=document.createElement('canvas'),c=cv.getContext('2d');
     const draw=()=>{c.font=`700 ${fs}px "LXGW WenKai TC","Noto Sans TC",serif`;const w=Math.ceil(c.measureText(t).width)+60;
       if(cv.width!==w){cv.width=w;cv.height=fs*1.45;}
@@ -654,7 +654,7 @@ const ptLabels=POINTS.map(([n,x,z])=>{const[a,b]=P(x,z);return addLabel(n,'pt',n
       c.font=`700 ${fs}px "LXGW WenKai TC","Noto Sans TC",serif`;c.fillStyle=fg;c.textBaseline='middle';c.textAlign='center';c.fillText(t,cv.width/2,cv.height/2+4);};
     draw();
     const tex=new THREE.CanvasTexture(cv);tex.encoding=THREE.sRGBEncoding;tex.anisotropy=8;
-    const H=0.55,W=H*cv.width/cv.height,face=new THREE.MeshStandardMaterial({map:tex,roughness:.9}),edge=felt(road?0x3f6f5a:0xd9cdb8);
+    const H=0.55,W=H*cv.width/cv.height,face=new THREE.MeshStandardMaterial({map:tex,roughness:.9}),edge=felt(road?0x4a5763:0xd9cdb8);
     const g=new THREE.Group();const[a,b]=P(x,z);g.position.set(a,0,b);g.rotation.y=-deg*Math.PI/180;
     const board=new THREE.Mesh(new THREE.BoxGeometry(W,H,0.06),[edge,edge,edge,edge,face,face]);board.position.y=0.16+H/2;board.castShadow=true;g.add(board);
     [-W*0.32,W*0.32].forEach(px=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.18,0.05),felt(0x8a6b4f));post.position.set(px,0.09,0);post.castShadow=true;g.add(post);});
