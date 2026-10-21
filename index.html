@@ -312,7 +312,7 @@ flat(polyShape(BOUND),0xf6f0e6,0,0.015);
 function road(pts,w){
   for(let i=0;i<pts.length-1;i++){
     const[a,b]=P(...pts[i]),[c,d]=P(...pts[i+1]);const len=Math.hypot(c-a,d-b),ang=Math.atan2(d-b,c-a);
-    const m=new THREE.Mesh(new THREE.BoxGeometry(len+w,0.05,w),felt(0x9aa0a8));
+    const m=new THREE.Mesh(new THREE.BoxGeometry(len+w,0.05,w),felt(0x2f5a45));
     m.position.set((a+c)/2,0.025,(b+d)/2);m.rotation.y=-ang;m.receiveShadow=true;scene.add(m);
     const n=Math.floor(len/0.7);
     for(let k=0;k<n;k++){const t=(k+0.5)/n;const dm=new THREE.Mesh(new THREE.BoxGeometry(0.32,0.02,0.05),felt(0xf6f2ea));
