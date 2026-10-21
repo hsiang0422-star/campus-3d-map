@@ -76,7 +76,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
   background:linear-gradient(135deg,transparent 50%,var(--muted) 50%,var(--muted) 56%,transparent 56%,transparent 68%,var(--muted) 68%,var(--muted) 74%,transparent 74%);opacity:.6;border-bottom-right-radius:14px}
 .panel h2{font-family:var(--f-display);font-size:1rem;margin:0 0 6px;letter-spacing:.05em}
 .bwrap{position:relative;z-index:20}
-.bwrap .blist{position:absolute;top:calc(100% + 6px);right:0;width:340px;max-width:calc(100vw - 32px)}
+.bwrap .blist{position:fixed;z-index:50;width:340px;max-width:calc(100vw - 16px)}
 #bBld{font-weight:500}
 #bBld[aria-expanded="true"]{background:var(--ink);color:var(--panel)}
 .car{display:inline-block;transition:transform .2s}
@@ -928,7 +928,12 @@ BUILDINGS.forEach(b=>{const btn=document.createElement('button');btn.textContent
   btn.onclick=()=>{if(selected===b.id)deselect();else select(b.id);};chips.appendChild(btn);});
 const INFO0=infoEl.innerHTML;
 const bBld=document.getElementById('bBld');
-bBld.onclick=()=>{const open=chips.hidden;chips.hidden=!open;bBld.setAttribute('aria-expanded',open);};
+// the list floats in the viewport under the button and is kept fully on screen
+function placeList(){if(chips.hidden)return;const r=bBld.getBoundingClientRect(),w=Math.min(340,innerWidth-16);
+  chips.style.width=w+'px';chips.style.left=Math.max(8,Math.min(r.right-w,innerWidth-w-8))+'px';
+  chips.style.top=(r.bottom+6)+'px';chips.style.maxHeight=Math.max(160,innerHeight-r.bottom-18)+'px';}
+bBld.onclick=()=>{const open=chips.hidden;chips.hidden=!open;bBld.setAttribute('aria-expanded',open);placeList();};
+addEventListener('resize',placeList);
 function deselect(){if(!selected)return;tint(selected,false);bMeta[selected].label.el.classList.remove('sel');focusB(selected,false);selected=null;
   document.querySelectorAll('#chips button').forEach(x=>x.setAttribute('aria-pressed','false'));infoEl.innerHTML=INFO0;}
 
