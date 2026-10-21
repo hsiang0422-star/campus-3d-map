@@ -86,6 +86,9 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 #bPanel[aria-expanded="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
 .blist{display:flex;flex-direction:column;width:340px;max-width:100%;max-height:60vh;background:var(--panel);border:1px solid var(--line);
   border-radius:12px;padding:0 12px 12px;box-shadow:0 8px 28px rgba(40,30,20,.16)}
+.blist{position:fixed}
+.blist .bitems{flex:1;align-content:flex-start;padding-bottom:10px}
+.blist .presize{border-bottom-right-radius:12px}
 .blist.dragging{box-shadow:0 14px 40px rgba(40,30,20,.28)}
 .bitems{display:flex;flex-wrap:wrap;gap:6px;overflow:auto;min-height:0}
 .blist button{font-size:.8rem;padding:5px 12px}
@@ -144,6 +147,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
         <div class="blist" id="blist" hidden>
           <div class="phead" id="bhead" title="拖曳移動，雙擊回到按鈕下方"><span class="grip" aria-hidden="true"></span>各建築場域・拖曳移動<button class="collapse" id="bClose">收合</button></div>
           <nav class="bitems" id="chips" aria-label="各建築場域"></nav>
+          <div class="presize" id="bsize" title="拖曳調整大小"></div>
         </div>
       </div>
     </div>
@@ -938,11 +942,13 @@ const bBld=document.getElementById('bBld');
 // the list floats in the viewport under the button and is kept fully on screen
 // the list is a floating panel: it opens under the button, can be dragged anywhere (position remembered) and closed with 收合
 const blist=document.getElementById('blist'),bhead=document.getElementById('bhead'),LKEY='campus3d-blist';
-let listPos=null;try{listPos=JSON.parse(localStorage.getItem(LKEY)||'null');}catch(e){}
+let listPos=null,listSize=null;try{listSize=JSON.parse(localStorage.getItem(LKEY+'-size')||'null');}catch(e){}
+try{listPos=JSON.parse(localStorage.getItem(LKEY)||'null');}catch(e){}
 function clampList(x,y){const w=blist.offsetWidth,h=blist.offsetHeight;return{x:Math.max(8,Math.min(x,innerWidth-w-8)),y:Math.max(8,Math.min(y,innerHeight-Math.min(h,120)-8))};}
-function placeList(){if(blist.hidden)return;const w=Math.min(340,innerWidth-16);blist.style.width=w+'px';
+function placeList(){if(blist.hidden)return;const w=Math.min(listSize?listSize.w:340,innerWidth-16);blist.style.width=w+'px';
+  if(listSize){blist.style.height=Math.min(listSize.h,innerHeight-16)+'px';}
   let x,y;if(listPos){({x,y}=clampList(listPos.x,listPos.y));}else{const r=bBld.getBoundingClientRect();x=Math.max(8,Math.min(r.right-w,innerWidth-w-8));y=r.bottom+6;}
-  blist.style.left=x+'px';blist.style.top=y+'px';blist.style.maxHeight=Math.max(160,innerHeight-y-12)+'px';}
+  blist.style.left=x+'px';blist.style.top=y+'px';blist.style.maxHeight=listSize?'none':Math.max(160,innerHeight-y-12)+'px';}
 function setList(open){blist.hidden=!open;bBld.setAttribute('aria-expanded',open);placeList();}
 bBld.onclick=()=>setList(blist.hidden);
 document.getElementById('bClose').onclick=()=>setList(false);
@@ -952,7 +958,13 @@ addEventListener('resize',placeList);
  bhead.addEventListener('pointermove',e=>{if(!st)return;listPos=clampList(st.x+e.clientX-st.sx,st.y+e.clientY-st.sy);placeList();});
  const end=()=>{if(!st)return;st=null;blist.classList.remove('dragging');try{localStorage.setItem(LKEY,JSON.stringify(listPos));}catch(e){}};
  bhead.addEventListener('pointerup',end);bhead.addEventListener('pointercancel',end);
- bhead.addEventListener('dblclick',e=>{if(e.target.closest('button'))return;listPos=null;try{localStorage.removeItem(LKEY);}catch(_){}placeList();});}
+ bhead.addEventListener('dblclick',e=>{if(e.target.closest('button'))return;listPos=null;listSize=null;blist.style.height='';try{localStorage.removeItem(LKEY);localStorage.removeItem(LKEY+'-size');}catch(_){}placeList();});
+ // drag the bottom-right corner to resize
+ const bsize=document.getElementById('bsize');let rs=null;
+ bsize.addEventListener('pointerdown',e=>{const r=blist.getBoundingClientRect();rs={sx:e.clientX,sy:e.clientY,w:r.width,h:r.height,x:r.left,y:r.top};listPos={x:r.left,y:r.top};bsize.setPointerCapture(e.pointerId);blist.classList.add('dragging');e.preventDefault();});
+ bsize.addEventListener('pointermove',e=>{if(!rs)return;listSize={w:Math.max(200,Math.min(rs.w+e.clientX-rs.sx,innerWidth-rs.x-8)),h:Math.max(110,Math.min(rs.h+e.clientY-rs.sy,innerHeight-rs.y-8))};placeList();});
+ const rend=()=>{if(!rs)return;rs=null;blist.classList.remove('dragging');try{localStorage.setItem(LKEY+'-size',JSON.stringify(listSize));localStorage.setItem(LKEY,JSON.stringify(listPos));}catch(e){}};
+ bsize.addEventListener('pointerup',rend);bsize.addEventListener('pointercancel',rend);}
 function deselect(){if(!selected)return;tint(selected,false);bMeta[selected].label.el.classList.remove('sel');focusB(selected,false);selected=null;
   document.querySelectorAll('#chips button').forEach(x=>x.setAttribute('aria-pressed','false'));infoEl.innerHTML=INFO0;}
 
