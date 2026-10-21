@@ -75,6 +75,15 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .presize{position:absolute;right:0;bottom:0;width:22px;height:22px;cursor:nwse-resize;touch-action:none;
   background:linear-gradient(135deg,transparent 50%,var(--muted) 50%,var(--muted) 56%,transparent 56%,transparent 68%,var(--muted) 68%,var(--muted) 74%,transparent 74%);opacity:.6;border-bottom-right-radius:14px}
 .panel h2{font-family:var(--f-display);font-size:1rem;margin:0 0 6px;letter-spacing:.05em}
+.bwrap{position:absolute;top:10px;left:max(12px,env(safe-area-inset-left,0px));z-index:5;display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:calc(100% - 24px)}
+#bBld{background:var(--panel);box-shadow:0 2px 8px rgba(40,30,20,.12);font-weight:500;padding:6px 14px}
+#bBld[aria-expanded="true"]{background:var(--ink);color:var(--panel)}
+#bBld .car{display:inline-block;transition:transform .2s}
+#bBld[aria-expanded="true"] .car{transform:rotate(180deg)}
+.blist{display:flex;flex-wrap:wrap;gap:6px;width:340px;max-width:100%;max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:10px;box-shadow:0 8px 28px rgba(40,30,20,.16)}
+.blist button{font-size:.8rem;padding:5px 12px}
+.blist button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
 .topbar{position:absolute;top:10px;left:max(12px,env(safe-area-inset-left,0px));right:308px;display:flex;gap:6px;
   overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;z-index:2}
 .topbar button{flex:none;font-size:.8rem;padding:5px 12px;background:var(--panel);box-shadow:0 2px 8px rgba(40,30,20,.12)}
@@ -92,7 +101,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .toggles{display:flex;flex-direction:column;gap:6px;font-size:.84rem}
 .toggles label{display:flex;align-items:center;gap:8px;cursor:pointer}
 .hint{font-size:.74rem;color:var(--muted);line-height:1.5}
-.ctrl{position:absolute;left:max(12px,env(safe-area-inset-left,0px));top:58px;width:196px;background:var(--panel);border:1px solid var(--line);
+.ctrl{position:absolute;left:max(12px,env(safe-area-inset-left,0px));top:56px;width:196px;background:var(--panel);border:1px solid var(--line);
   border-radius:14px;padding:0 12px 12px;box-shadow:0 6px 24px rgba(40,30,20,.12);z-index:3}
 .ctrl.dragging{box-shadow:0 14px 40px rgba(40,30,20,.28)}
 .ctrl.min .cbody{display:none}
@@ -128,7 +137,10 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
   <div class="stage">
     <canvas id="c"></canvas>
     <div id="labels"></div>
-    <nav class="topbar" id="chips" aria-label="建築"></nav>
+    <div class="bwrap" id="bwrap">
+      <button id="bBld" aria-expanded="false" aria-controls="chips">各建築場域 <span class="car" aria-hidden="true">▾</span></button>
+      <nav class="blist" id="chips" aria-label="各建築場域" hidden></nav>
+    </div>
     <div class="ctrl" id="ctrl">
       <div class="phead" id="chead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>地圖操作<button class="collapse" id="cMin">收合</button></div>
       <div class="cbody">
@@ -816,6 +828,8 @@ BUILDINGS.forEach(b=>{const btn=document.createElement('button');btn.textContent
   // first tap shows the name and flies there; a second tap on the same chip hides it again
   btn.onclick=()=>{if(selected===b.id)deselect();else select(b.id);};chips.appendChild(btn);});
 const INFO0=infoEl.innerHTML;
+const bBld=document.getElementById('bBld');
+bBld.onclick=()=>{const open=chips.hidden;chips.hidden=!open;bBld.setAttribute('aria-expanded',open);};
 function deselect(){if(!selected)return;tint(selected,false);bMeta[selected].label.el.classList.remove('sel');focusB(selected,false);selected=null;
   document.querySelectorAll('#chips button').forEach(x=>x.setAttribute('aria-pressed','false'));infoEl.innerHTML=INFO0;}
 
