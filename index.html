@@ -654,10 +654,10 @@ const ptLabels=POINTS.map(([n,x,z])=>{const[a,b]=P(x,z);return addLabel(n,'pt',n
       c.font=`700 ${fs}px "LXGW WenKai TC","Noto Sans TC",serif`;c.fillStyle=fg;c.textBaseline='middle';c.textAlign='center';c.fillText(t,cv.width/2,cv.height/2+4);};
     draw();
     const tex=new THREE.CanvasTexture(cv);tex.encoding=THREE.sRGBEncoding;tex.anisotropy=8;
-    const H=0.3,W=H*cv.width/cv.height,face=new THREE.MeshStandardMaterial({map:tex,roughness:.9}),edge=felt(road?0x3f6f5a:0xd9cdb8);
+    const H=0.55,W=H*cv.width/cv.height,face=new THREE.MeshStandardMaterial({map:tex,roughness:.9}),edge=felt(road?0x3f6f5a:0xd9cdb8);
     const g=new THREE.Group();const[a,b]=P(x,z);g.position.set(a,0,b);g.rotation.y=-deg*Math.PI/180;
     const board=new THREE.Mesh(new THREE.BoxGeometry(W,H,0.06),[edge,edge,edge,edge,face,face]);board.position.y=0.16+H/2;board.castShadow=true;g.add(board);
-    [-W*0.32,W*0.32].forEach(px=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.18,0.04),felt(0x8a6b4f));post.position.set(px,0.09,0);post.castShadow=true;g.add(post);});
+    [-W*0.32,W*0.32].forEach(px=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.18,0.05),felt(0x8a6b4f));post.position.set(px,0.09,0);post.castShadow=true;g.add(post);});
     scene.add(g);
     if(document.fonts&&document.fonts.load)document.fonts.load(`700 ${fs}px "LXGW WenKai TC"`).then(()=>{draw();tex.needsUpdate=true;}).catch(()=>{});
   });
