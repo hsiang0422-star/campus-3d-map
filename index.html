@@ -229,7 +229,7 @@ const BUILDINGS=[
  {id:'corridor',name:'風雨走廊（校車候車棚）',floors:1,color:0xf2f3f1,label:[21.3,9.7],parts:[],topH:0.95,
   desc:'連接南棟教學大樓與校門方向的有頂走廊。'},
  {id:'wash1',name:'南智洗車場',floors:1,color:0xd7e7ef,label:[21.1,2.8],parts:[[19.9,2.55,22.3,2.95,0.38]],desc:'行政大樓北側。'},
- {id:'wash2',name:'儀安洗車場',floors:1,color:0x86b08f,label:[23.35,5.3],parts:[[22.8,4.2,23.9,6.4,0.4]],desc:'沿長和路二段，編號 7 在旁。'},
+ {id:'wash2',name:'儀安洗車場',floors:1,color:0xa9cdb1,label:[23.35,5.3],parts:[],topH:0.4,desc:'沿長和路二段的長條形低矮棚屋，淡綠色浪板屋頂；外側是一整排大王椰子、木質圍籬與大榕樹，編號 7 在旁。'},
  {id:'tower',name:'高壓電設施',floors:1,color:0xcfd8de,label:[23.15,3.85],parts:[[22.7,3.6,23.6,4.1,0.3]],desc:'行政大樓東北角的高壓電設施，請勿靠近。'},
  {id:'guard',name:'傳達室',floors:2,color:0x8f8679,label:[23.5,6.83],parts:[[23.05,6.6,23.95,7.06,0.84]],desc:'校門旁的兩層樓傳達室，深色斜屋頂，訪客由此登記。'},
  {id:'gate',name:'校門口',floors:0,color:0xc8ccd0,label:[24.4,7.85],parts:[],topH:0.2,desc:'面向長和路二段：伸縮式校門、刻有校名的石座與白色小熊雕塑，校門內有白色弧形候車棚與校車停車處，沿街為木質圍籬與大王椰子。'},
@@ -246,7 +246,7 @@ const FAC=[
 ];
 const FACNAME={e:'電梯',s:'樓梯（往上）',d:'樓梯（往下）',m:'男廁',f:'女廁'};
 const FACCOL={e:0x3f8fd8,s:0xf2d64b,d:0xe8a58e,m:0x5fb3e6,f:0xe98f78,a:0x2f6fb5};
-const NEIGH=[['安南醫院',10.5,1.9],['仁愛之家',2.6,2.4],['和順國中',1.7,6.8],['文中21',24.4,11.7],['長和路二段',25.6,5.0],['長和路二段 140 巷',9.5,11.4]];
+const NEIGH=[['安南醫院',10.5,1.5,2.75],['仁愛之家',2.6,2.4],['和順國中',1.7,6.8],['文中21',24.4,11.7],['長和路二段',25.6,5.0],['長和路二段 140 巷',9.5,11.4]];
 const BOUND=[[0.9,3.5],[23.1,2.6],[24.1,7.1],[24.8,8.8],[25.8,10.0],[17.0,13.6],[1.6,4.9]];
 const GRASS=[[5.9,4.95],[13.7,4.95],[13.7,5.0],[16.8,5.0],[16.8,12.0],[15.3,12.0],[5.0,6.2]];
 const TREES=[[1.7,3.8,.9],[2.1,4.3,.6],[6.0,5.6,.8],[8.8,4.9,.7],[13.0,5.6,.8],[13.5,6.1,.55],[16.9,2.7,.8],[16.2,3.0,.5],
@@ -509,13 +509,36 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
      [[-0.28,0.15],[0.28,0.15],[-0.28,-0.15],[0.28,-0.15]].forEach(([wx,wz])=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.04,12),felt(0x2b2b2b));w.rotation.x=Math.PI/2;w.position.set(wx,0.05,wz);bg.add(w);});
      add(bg);};
    bus(21.2);bus(22.4);}
-  // tall palms by the street
-  [[24.35,6.4],[24.55,7.15],[23.75,3.6],[25.05,9.35]].forEach(([x,z],k)=>{const g=new THREE.Group();g.position.copy(at(x,z));const h=1.5+k%2*0.3;
-    const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.045,h,8),felt(0x8d7f6c));tr.position.y=h/2;g.add(tr);
-    for(let i=0;i<8;i++){const fr=new THREE.Mesh(new THREE.ConeGeometry(0.06,0.5,4),felt(i%2?0x3f8f3c:0x5aa24a));
-      const holder=new THREE.Group();holder.rotation.y=i/8*Math.PI*2;holder.position.y=h;
-      fr.scale.set(1,1,0.35);fr.position.set(0.22,-0.06,0);fr.rotation.z=-1.95;holder.add(fr);g.add(holder);}
+  // royal palms in a row just inside the street fence, plus two by the gate (tall grey trunks, green crownshaft, sparse fronds)
+  const palmSpots=[];for(let i=0;i<7;i++){const t=i/6;palmSpots.push([23.32+t*(23.98-23.32),3.25+t*(6.45-3.25)]);}
+  palmSpots.push([24.55,7.15],[25.05,9.35]);
+  palmSpots.forEach(([x,z],k)=>{const g=new THREE.Group();g.position.copy(at(x,z));const h=2.0+((k*37)%5)*0.09;
+    const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.05,h*0.82,10),felt(0xb9b6ae));tr.position.y=h*0.41;g.add(tr);
+    const crown=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.035,h*0.18,8),felt(0x6f9a4c));crown.position.y=h*0.91;g.add(crown);
+    for(let i=0;i<7;i++){const fr=new THREE.Mesh(new THREE.ConeGeometry(0.07,0.6,4),felt(i%2?0x4f8f43:0x6aa856));
+      const holder=new THREE.Group();holder.rotation.y=i/7*Math.PI*2+k;holder.position.y=h;
+      fr.scale.set(1,1,0.3);fr.position.set(0.26,-0.05-(i%3)*0.05,0);fr.rotation.z=-1.85-(i%3)*0.18;holder.add(fr);g.add(holder);}
     add(g);});
+  // big banyan trees behind the fence: wide dense canopies over hanging roots
+  [[23.45,4.55,1.0],[23.5,5.75,0.9],[22.5,6.2,0.75]].forEach(([x,z,s])=>{const g=new THREE.Group();g.position.copy(at(x,z));
+    for(let i=0;i<5;i++){const r=new THREE.Mesh(new THREE.CylinderGeometry(0.02*s,0.03*s,0.6*s,6),felt(0x6e5a48));r.position.set(Math.cos(i*1.3)*0.18*s,0.3*s,Math.sin(i*1.3)*0.18*s);g.add(r);}
+    [[0,0.85,0,0.45],[0.32,0.8,0.1,0.34],[-0.3,0.8,-0.08,0.36],[0.08,0.95,0.3,0.32],[-0.05,0.92,-0.3,0.33]].forEach(([cx,cy,cz,cr],i)=>{
+      const c=new THREE.Mesh(new THREE.SphereGeometry(cr*s,16,12),felt(i%2?0x3e7d3a:0x4f8f45));c.position.set(cx*s,cy*s,cz*s);c.scale.y=0.75;g.add(c);});
+    add(g);});
+  // cream utility pedestals along the fence
+  [[23.45,3.75],[23.7,4.85],[23.95,5.95]].forEach(([x,z])=>{const b=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.18,0.12),felt(0xefe9dc));
+    const p=at(x+0.12,z);b.position.set(p.x,0.09,p.z);b.rotation.y=-1.35;add(b);});
+  // 儀安洗車場: long low shed with a pale green corrugated gable roof
+  {const g=new THREE.Group();const c=at(23.35,5.3);g.position.copy(c);g.rotation.y=0.22;
+   const L=2.3,W=0.9;
+   const S=128,cv=document.createElement('canvas');cv.width=S;cv.height=S;const q=cv.getContext('2d');
+   for(let x=0;x<S;x+=8){q.fillStyle='#a9cdb1';q.fillRect(x,0,4,S);q.fillStyle='#8fb79a';q.fillRect(x+4,0,4,S);}
+   const rt=new THREE.CanvasTexture(cv);rt.wrapS=rt.wrapT=THREE.RepeatWrapping;rt.repeat.set(1,6);rt.encoding=THREE.sRGBEncoding;
+   const roofMat=new THREE.MeshStandardMaterial({map:rt,roughness:.7,metalness:.1});
+   const wall=new THREE.Mesh(new THREE.BoxGeometry(W*0.92,0.26,L*0.98),felt(0xf1efe8));wall.position.y=0.13;g.add(wall);
+   for(let i=0;i<8;i++){const w=new THREE.Mesh(new THREE.BoxGeometry(0.01,0.1,0.18),new THREE.MeshStandardMaterial({color:0xb7c3c6}));w.position.set(W*0.46+0.005,0.15,-L/2+0.2+i*0.27);g.add(w);}
+   [-1,1].forEach(sd=>{const r=new THREE.Mesh(new THREE.BoxGeometry(W*0.58,0.02,L),roofMat);r.position.set(sd*W*0.25,0.33,0);r.rotation.z=-sd*0.28;g.add(r);});
+   add(g);}
 })();
 
 /* ---------- administration building details (from photo): tiled side towers with ledges, recessed balconied centre, parking in front ---------- */
@@ -555,6 +578,14 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
   lot.position.y=0.02;lot.receiveShadow=true;scene.add(lot);
 })();
 
+
+// 安南醫院: the tall white hospital block seen behind the campus from the street
+(function(){const[a,b]=P(10.5,1.5);const W=4.6,D=1.1,H=2.5;const g=new THREE.Group();g.position.set(a,0,b);
+  const body=new THREE.Mesh(new THREE.BoxGeometry(W,H,D),felt(0xe9e8e3));body.position.y=H/2;body.castShadow=true;body.receiveShadow=true;g.add(body);
+  const top=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.3,0.7),felt(0xdcdad3));top.position.set(-1.2,H+0.15,0);g.add(top);
+  const wins=[];for(let f=0;f<9;f++)for(let x=-W/2+0.2;x<W/2-0.1;x+=0.28){wins.push([x,0.2+f*0.26,D/2+0.005]);wins.push([x,0.2+f*0.26,-D/2-0.005]);}
+  const im=new THREE.InstancedMesh(new THREE.BoxGeometry(0.15,0.12,0.02),new THREE.MeshStandardMaterial({color:0x7d97a0,roughness:.5}),wins.length);
+  const o=new THREE.Object3D();wins.forEach(([x,y,z],i)=>{o.position.set(x,y,z);o.updateMatrix();im.setMatrixAt(i,o.matrix);});g.add(im);scene.add(g);})();
 // little car by the gate
 (function(){const[a,b]=P(25.1,8.3);const g=new THREE.Group();
   const body=new THREE.Mesh(extrude(rrShape(-0.45+CX,-0.25+CZ,0.45+CX,0.25+CZ,0.15),0.3,true),felt(0x7fa7d8));g.add(body);
@@ -625,7 +656,7 @@ BUILDINGS.forEach(b=>{const m=bMeta[b.id];const lift=LIFT[b.id]||1.1;
   const d=new THREE.Mesh(dotGeo,dotMat);d.position.copy(a);leaders.add(d);m.lead=[ln,d];
   m.label=addLabel(b.name,'bld',top,'lbl');m.label.bottom=true;});
 const ptLabels=POINTS.map(([n,x,z])=>{const[a,b]=P(x,z);return addLabel(n,'pt',new THREE.Vector3(a,0.5,b),'pts');});
-NEIGH.forEach(([t,x,z])=>{const[a,b]=P(x,z);addLabel(t,'nb',new THREE.Vector3(a,0.05,b),'nb');});
+NEIGH.forEach(([t,x,z,y])=>{const[a,b]=P(x,z);addLabel(t,'nb',new THREE.Vector3(a,y||0.05,b),'nb');});
 // orange point pins
 const pinGroup=new THREE.Group();scene.add(pinGroup);
 POINTS.forEach(([n,x,z])=>{const[a,b]=P(x,z);
