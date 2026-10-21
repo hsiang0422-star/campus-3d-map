@@ -209,6 +209,8 @@ const BUILDINGS=[
  {id:'admin',name:'行政大樓／活動中心',floors:3,color:0xf3f2ee,label:[21.0,5.0],
   parts:[[19.3,3.0,20.25,7.35,1.45],[21.75,3.0,22.7,7.35,1.45],[20.25,3.0,21.75,6.88,1.3,0xece6d6]],
   desc:'三樓為活動中心。白色磁磚外牆，兩側塔樓有橫向遮陽板，中央內退有米色陽台。正面朝南，門前為磚面臨停車位；北側為南智洗車場。'},
+ {id:'xgate',name:'交流門',floors:0,color:0x26292c,label:[19.125,1.85],parts:[],topH:0.5,
+  desc:'學校與安南醫院之間網狀圍牆上的黑色鐵門，醫院側有石階。'},
  {id:'plaza',name:'中庭廣場',floors:0,color:0x8b5d55,label:[15.6,6.4],parts:[],topH:0.1,
   desc:'教學大樓南北棟之間的磚面廣場：有白色彎曲步道線、地面圓形馬賽克和彩色裝置藝術，外側接草坪。'},
  {id:'corridor',name:'風雨走廊（校車候車棚）',floors:1,color:0xf2f3f1,label:[21.3,9.7],parts:[],topH:0.95,
@@ -609,7 +611,17 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
     const net=new THREE.Mesh(new THREE.PlaneGeometry(len,0.4),m);net.position.set(mx,0.3,mz);net.rotation.y=ang;scene.add(net);
     const n=Math.max(1,Math.round(len/0.6));for(let i=0;i<=n;i++){const p=new THREE.Mesh(new THREE.CylinderGeometry(0.014,0.014,0.52,6),felt(0x6f8f7a));
       p.position.set(a+(c-a)*i/n,0.26,b+(d-b)*i/n);scene.add(p);}};
-  run(6.8,2.5,11.0,2.5);run(11.0,2.5,11.0,1.85);run(11.0,1.85,23.3,1.85);
+  run(6.8,2.5,11.0,2.5);run(11.0,2.5,11.0,1.85);run(11.0,1.85,18.9,1.85);run(19.35,1.85,23.3,1.85);
+  // 交流門: black iron gate in the netting between the campus and the hospital, white frame posts, stone steps on the hospital side
+  const[gx,gz]=P(19.125,1.85);const g=new THREE.Group();g.position.set(gx,0,gz);
+  const iron=new THREE.MeshStandardMaterial({color:0x26292c,metalness:.5,roughness:.5});
+  [-0.22,0.22].forEach(x=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.035,0.5,0.035),felt(0xf2f2ee));post.position.set(x,0.25,0);g.add(post);});
+  const top=new THREE.Mesh(new THREE.BoxGeometry(0.47,0.03,0.035),felt(0xf2f2ee));top.position.y=0.5;g.add(top);
+  for(let i=0;i<7;i++){const bar=new THREE.Mesh(new THREE.BoxGeometry(0.012,0.34,0.012),iron);bar.position.set(-0.17+i*0.057,0.22,0);g.add(bar);}
+  [0.06,0.38].forEach(y=>{const r=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.02,0.02),iron);r.position.y=y;g.add(r);});
+  const scroll=new THREE.Mesh(new THREE.TorusGeometry(0.05,0.008,6,16),iron);scroll.position.y=0.22;g.add(scroll);
+  for(let k=0;k<3;k++){const st=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.035,0.12),felt(0xb4b0a9));st.position.set(0,0.018+k*0.035,-0.12-k*0.12);g.add(st);}
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(g);
 })();
 // little car by the gate
 (function(){const[a,b]=P(25.1,8.3);const g=new THREE.Group();
@@ -678,7 +690,7 @@ document.querySelectorAll('img[data-ico]').forEach(im=>im.src=iconCanvas(im.data
 const labelsEl=document.getElementById('labels');const labels=[];
 function addLabel(text,cls,pos,group){const el=document.createElement('div');el.className='lb '+cls;el.textContent=text;labelsEl.appendChild(el);
   const L={el,pos,group};labels.push(L);return L;}
-const LIFT={gate:1.5,plaza:1.0,dorm:1.1,canteen:1.0,kui:1.35,teach:1.1,admin:1.0,corridor:1.15,wash1:1.7,wash2:1.35,tower:2.3,guard:1.05,trash:1.0,garden:1.4};
+const LIFT={xgate:0.9,gate:1.5,plaza:1.0,dorm:1.1,canteen:1.0,kui:1.35,teach:1.1,admin:1.0,corridor:1.15,wash1:1.7,wash2:1.35,tower:2.3,guard:1.05,trash:1.0,garden:1.4};
 const leaders=new THREE.Group();scene.add(leaders);
 const leadMat=new THREE.LineBasicMaterial({color:0x5b4a3c});
 const dotGeo=new THREE.SphereGeometry(0.05,12,10),dotMat=new THREE.MeshBasicMaterial({color:0x5b4a3c});
@@ -691,7 +703,7 @@ const ptLabels=POINTS.map(([n,x,z])=>{const[a,b]=P(x,z);return addLabel(n,'pt',n
 // surroundings and road names as small standing felt signboards (real 3D objects, hidden behind buildings like anything else)
 (function(){
   const SIGNS=[['安南醫院',8.4,2.55,0,'place'],['仁愛之家',2.2,1.75,0,'place'],['和順國中',2.0,7.6,0,'place'],
-    ['文中21',24.2,12.0,0,'place'],['長和路二段',25.15,4.5,74,'road'],['長和路二段 140 巷',8.3,10.25,27.4,'road']];
+    ['文中21',24.2,12.0,0,'place'],['交流門',19.12,1.35,0,'place'],['長和路二段',25.15,4.5,74,'road'],['長和路二段 140 巷',8.3,10.25,27.4,'road']];
   SIGNS.forEach(([t,x,z,deg,kind])=>{
     const road=kind==='road', bg=road?'#4a5763':'#fbf6ec', fg=road?'#ffffff':'#4a3f36';
     const fs=88,cv=document.createElement('canvas'),c=cv.getContext('2d');
