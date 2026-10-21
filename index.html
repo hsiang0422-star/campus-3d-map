@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0;font:14px system-ui}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>臺南特教校園 3D 地圖</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: full-screen 3D felt board, slim header, floating control panel (right on desktop, bottom sheet on phone) */
+:root{
+  --bg:#e9dfcf; --scene:#e6dccb; --panel:#fffaf2; --ink:#3a3027; --muted:#7c6e60;
+  --line:#e2d4c0; --accent:#d9452f; --chip:#f3eadc; --orange:#f08a3c;
+  --f-display:"LXGW WenKai TC","Kaiti TC","STKaiti",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1f2226; --scene:#262a2f; --panel:#2c3036; --ink:#efe7db; --muted:#a99d8f;
+  --line:#3b4048; --accent:#ff6b52; --chip:#363b42; --orange:#f59a52; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1f2226; --scene:#262a2f; --panel:#2c3036; --ink:#efe7db; --muted:#a99d8f;
+  --line:#3b4048; --accent:#ff6b52; --chip:#363b42; --orange:#f59a52; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);overflow:hidden}
+.app{position:relative;height:100%;display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  border-bottom:1px dashed var(--line);flex-wrap:wrap}
+h1{font-family:var(--f-display);font-size:1.35rem;margin:0;letter-spacing:.04em;text-wrap:balance}
+h1 small{font-family:var(--f-body);font-size:.75rem;color:var(--muted);font-weight:400;margin-left:8px;letter-spacing:0}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+button{font:inherit;font-size:.82rem;color:var(--ink);background:var(--chip);border:1px solid var(--line);
+  border-radius:999px;padding:6px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.stage{position:relative;flex:1;min-height:0}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lb{position:absolute;left:0;top:0;white-space:nowrap;transform-origin:0 0;will-change:transform}
+.lb.bld{font-family:var(--f-display);font-weight:700;font-size:15px;color:#3a3027;
+  background:rgba(255,250,242,.86);padding:2px 8px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.lb.bld.sel{background:#3a3027;color:#fffaf2}
+.lb.pt{width:24px;height:24px;border-radius:50%;background:#f08a3c;color:#fff;font-weight:700;font-size:12px;
+  display:grid;place-items:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);font-variant-numeric:tabular-nums}
+.lb.nb{font-family:var(--f-display);font-size:14px;color:#5b5047;opacity:.85}
+.lb.here{font-size:12px;font-weight:700;color:#d9452f;background:#fff;padding:2px 7px;border-radius:5px;border:1px solid #d9452f}
+.lb.room{font-size:11px;font-weight:500;color:#3a3027;background:rgba(255,253,248,.9);padding:1px 6px;border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.lb.fl{font-family:var(--f-display);font-weight:700;font-size:14px;color:#fff;background:#8a5a44;padding:2px 8px;border-radius:6px}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{padding:5px 10px;font-size:.8rem}
+.lg2{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;font-size:.76rem;color:var(--muted)}
+.lg2 i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.lb.gate{font-family:var(--f-display);font-size:15px;font-weight:700;color:#d9452f}
+#tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--panel);font-size:.78rem;padding:4px 8px;border-radius:6px;
+  transform:translate(-50%,-130%);white-space:nowrap}
+.panel{position:absolute;top:12px;right:max(12px,env(safe-area-inset-right,0px));width:280px;max-height:calc(100% - 24px);overflow:auto;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:14px;
+  box-shadow:0 6px 24px rgba(40,30,20,.12)}
+.panel h2{font-family:var(--f-display);font-size:1rem;margin:0 0 6px;letter-spacing:.05em}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font-size:.78rem;padding:4px 10px}
+.info{border-top:1px dashed var(--line);padding-top:12px;min-height:64px}
+.info .name{font-family:var(--f-display);font-size:1.25rem;font-weight:700}
+.info p{margin:4px 0;font-size:.84rem;color:var(--muted);line-height:1.6}
+.info .facs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.info .facs span{font-size:.75rem;background:var(--chip);border-radius:6px;padding:2px 7px}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:.78rem;color:var(--muted)}
+.legend .ico{width:20px;height:20px;margin-right:6px;vertical-align:-5px;border-radius:4px}
+.legend span{display:flex;align-items:center}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.toggles{display:flex;flex-direction:column;gap:6px;font-size:.84rem}
+.toggles label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.hint{font-size:.74rem;color:var(--muted);line-height:1.5}
+.collapse{display:none}
+@media (max-width:700px){
+  .panel{top:auto;bottom:max(10px,env(safe-area-inset-bottom,0px));left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));
+    width:auto;max-height:46%;gap:10px;padding:12px}
+  .panel.min .hide-min{display:none}
+  .collapse{display:block;position:absolute;top:8px;right:10px;font-size:.72rem;padding:3px 9px}
+  h1 small{display:none}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <header>
+    <h1>臺南特教校園 3D 地圖<small>拖曳旋轉・滾輪縮放・點選建築看說明</small></h1>
+    <div class="tools">
+      <button id="bReset">重設視角</button>
+      <button id="bTop">俯視</button>
+      <button id="bHere">現在位置</button>
+      <button id="bPts" aria-pressed="false">危險角落</button>
+      <button id="bSpin" aria-pressed="false">自動旋轉</button>
+    </div>
+  </header>
+  <div class="stage">
+    <canvas id="c"></canvas>
+    <div id="labels"></div>
+    <div id="tip" hidden></div>
+    <aside class="panel" id="panel">
+      <button class="collapse" id="bMin">收合</button>
+      <div class="info" id="info" style="border-top:0;padding-top:0">
+        <div class="name">選一棟建築</div>
+        <p>點模型上的建築或名稱查看說明。教學大樓可切換 1F–4F，看每一層的教室配置。</p>
+      </div>
+      <div>
+        <h2>教學大樓樓層</h2>
+        <div class="seg" id="seg">
+          <button data-m="ext" aria-pressed="true">外觀</button>
+          <button data-m="1" aria-pressed="false">1F</button>
+          <button data-m="2" aria-pressed="false">2F</button>
+          <button data-m="3" aria-pressed="false">3F</button>
+          <button data-m="4" aria-pressed="false">4F</button>
+          <button data-m="exp" aria-pressed="false">分層展開</button>
+        </div>
+      </div>
+      <div class="hide-min">
+        <h2>建築</h2>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div class="hide-min">
+        <h2>圖層</h2>
+        <div class="toggles">
+          <label><input type="checkbox" id="tFac" checked> 電梯・樓梯・廁所</label>
+          <label><input type="checkbox" id="tLbl" checked> 建築名稱</label>
+        </div>
+      </div>
+      <div class="hide-min">
+        <h2>圖例</h2>
+        <div class="legend">
+          <span><img class="ico" data-ico="e" alt="">電梯</span>
+          <span><img class="ico" data-ico="m" alt="">男廁</span>
+          <span><img class="ico" data-ico="s" alt="">樓梯（往上）</span>
+          <span><img class="ico" data-ico="f" alt="">女廁</span>
+          <span><img class="ico" data-ico="d" alt="">樓梯（往下）</span>
+          <span><i style="background:#f08a3c;border-radius:50%"></i>校園危險角落</span>
+        </div>
+        <h2 style="margin-top:12px">教室類型</h2>
+        <div class="lg2">
+          <span><i style="background:#f6d27a"></i>一般教室</span>
+          <span><i style="background:#f3b37e"></i>教師室</span>
+          <span><i style="background:#9fd0a8"></i>專科・治療</span>
+          <span><i style="background:#b9a7e0"></i>行政・辦公</span>
+          <span><i style="background:#c9c3bb"></i>設備・儲藏</span>
+          <span><i style="background:#d9e6c8"></i>陽台・露台</span>
+        </div>
+        <p class="hint">位置依平面圖比例估算，供導覽與簡報使用，非實測尺寸。</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const CX=13, CZ=8;               // image-coordinate origin (units ≈ 100px of the felt map)
+const FH=0.42;                    // height per floor
+const P=(x,z)=>[x-CX,z-CZ];
+
+/* ---------- data ---------- */
+const BUILDINGS=[
+ {id:'dorm',name:'學生宿舍',floors:3,color:0x9cc9e6,label:[4.9,4.3],
+  parts:[[2.7,3.0,5.2,4.3,1.2],[4.0,3.0,5.8,5.6,1.26],[2.7,2.75,5.2,3.15,1.34,0x3d9ad6]],
+  desc:'L 型宿舍，北側為洗衣場，西側為烤肉區。'},
+ {id:'canteen',name:'學生餐廳',floors:2,color:0xf08a4b,label:[7.85,3.7],parts:[[6.4,2.9,9.3,4.5,0.88]],
+  desc:'北側緊鄰安南醫院，東西兩側皆有樓梯。'},
+ {id:'kui',name:'蕙質樓',floors:2,color:0xf4a35e,label:[10.5,3.7],parts:[[9.6,2.9,11.4,4.6,0.88]],
+  desc:'位於學生餐廳東側，編號 13 位於樓前。'},
+ {id:'teach',name:'教學大樓',floors:4,color:0xeeb7a4,label:[17.9,7.6],parts:[],
+  desc:'L 型四層教學大樓（南北棟），依 1–4 樓平面圖建模。用「教學大樓樓層」切換各層。'},
+ {id:'admin',name:'行政大樓',floors:4,color:0xc9a3e0,label:[21.0,4.9],
+  parts:[[19.3,2.9,22.7,7.4,0.9,0xe9e5e1],[19.8,3.6,22.3,6.2,1.75]],
+  desc:'靠近校門與傳達室，北側為南智洗車場。'},
+ {id:'corridor',name:'風雨走廊',floors:1,color:0x9fd3ea,label:[20.9,9.7],parts:[[19.0,9.1,22.8,10.3,0.5]],
+  desc:'連接南棟教學大樓與校門方向的有頂走廊。'},
+ {id:'wash1',name:'南智洗車場',floors:1,color:0xd7e7ef,label:[21.1,2.8],parts:[[19.9,2.55,22.3,2.95,0.38]],desc:'行政大樓北側。'},
+ {id:'wash2',name:'儀安洗車場',floors:1,color:0xa9d3ec,label:[23.35,5.3],parts:[[22.8,4.2,23.9,6.4,0.4]],desc:'沿長和路二段，編號 7 在旁。'},
+ {id:'tower',name:'高壓電設施',floors:1,color:0xcfd8de,label:[23.15,3.85],parts:[[22.7,3.6,23.6,4.1,0.3]],desc:'行政大樓東北角的高壓電設施，請勿靠近。'},
+ {id:'guard',name:'傳達室',floors:1,color:0x5b6068,label:[23.6,6.85],parts:[[23.0,6.6,24.2,7.1,0.42]],desc:'校門旁，訪客由此登記。'},
+ {id:'trash',name:'垃圾場',floors:0,color:0xb8cfe6,label:[16.5,12.85],parts:[[16.0,12.45,17.0,13.2,0.07]],desc:'校園南端，編號 9、10 附近。'},
+ {id:'garden',name:'園藝區',floors:0,color:0x8cc46a,label:[18.25,12.55],parts:[[17.5,12.25,19.0,12.8,0.07]],desc:'垃圾場東側的園藝區。'},
+];
+const BRIDGE=[19.0,4.35,19.3,4.85,0.55,0.8];
+const POINTS=[[1,2.7,4.7],[2,5.6,3.0],[3,8.6,2.7],[4,9.5,3.1],[7,23.8,4.9],[7,25.2,9.9],[8,20.5,11.6],[9,17.5,12.9],[10,16.5,12.3],[11,15.4,8.8],[13,10.5,4.0],[14,22.4,4.4],[15,21.1,6.3]];
+// t: e=elevator s=stairs up d=stairs down m=male f=female
+const FAC=[
+ ['e',6.85,3.6,'canteen'],['m',6.6,3.05,'canteen'],['f',6.6,3.4,'canteen'],['s',6.6,4.3,'canteen'],['s',8.4,4.3,'canteen'],
+ ['s',9.8,3.9,'kui'],['s',11.1,3.9,'kui'],['s',4.25,4.8,'dorm'],
+ ['e',19.5,4.2,'admin'],['m',20.0,3.35,'admin'],['d',20.4,3.35,'admin'],['m',21.3,3.35,'admin'],['s',21.8,3.35,'admin'],['s',20.0,7.05,'admin'],['f',22.2,7.05,'admin'],
+];
+const FACNAME={e:'電梯',s:'樓梯（往上）',d:'樓梯（往下）',m:'男廁',f:'女廁'};
+const FACCOL={e:0x3f8fd8,s:0xf2d64b,d:0xe8a58e,m:0x5fb3e6,f:0xe98f78,a:0x2f6fb5};
+const NEIGH=[['安南醫院',10.5,1.9],['仁愛之家',2.6,2.4],['和順國中',1.7,6.8],['文中21',24.4,11.7],['長和路二段',25.6,5.0],['長和路二段 140 巷',9.5,11.4]];
+const BOUND=[[0.9,3.5],[23.1,2.6],[24.1,7.1],[24.8,8.8],[25.8,10.0],[17.0,13.6],[1.6,4.9]];
+const GRASS=[[5.9,4.95],[13.7,4.95],[13.7,5.0],[16.8,5.0],[16.8,12.0],[15.3,12.0],[5.0,6.2]];
+const TREES=[[1.7,3.8,.9],[2.1,4.3,.6],[6.0,5.6,.8],[8.8,4.9,.7],[13.0,5.6,.8],[13.5,6.1,.55],[16.9,2.7,.8],[16.2,3.0,.5],
+ [10.8,9.6,.8],[11.3,10.2,.55],[11.9,10.3,.7],[12.4,10.6,.5],[22.8,3.1,.55],[23.1,3.4,.45],[24.5,9.6,.7],[24.8,10.3,.45],[20.9,11.1,.75],[21.2,11.6,.5]];
+
+/* ---------- renderer / scene ---------- */
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(38,1,0.1,200);
+const controls=new THREE.OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.maxPolarAngle=Math.PI*0.47; controls.minDistance=6; controls.maxDistance=55;
+controls.autoRotateSpeed=0.8;
+
+function setSceneBg(){
+  const v=getComputedStyle(document.documentElement).getPropertyValue('--scene').trim()||'#e6dccb';
+  scene.background=new THREE.Color(v);
+}
+setSceneBg();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',setSceneBg);
+new MutationObserver(setSceneBg).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+scene.add(new THREE.HemisphereLight(0xfff6e8,0x8a7a66,0.75));
+const sun=new THREE.DirectionalLight(0xffffff,0.8);
+sun.position.set(-10,22,14); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-18,right:18,top:12,bottom:-12,near:1,far:60});
+sun.shadow.bias=-0.0008; sun.shadow.radius=4;
+scene.add(sun);
+
+/* ---------- felt texture ---------- */
+function feltTex(rep){
+  const s=256,cv=document.createElement('canvas');cv.width=cv.height=s;const g=cv.getContext('2d');
+  g.fillStyle='#f2f2f2';g.fillRect(0,0,s,s);
+  for(let i=0;i<5000;i++){const v=200+Math.random()*55|0;g.fillStyle=`rgb(${v},${v},${v})`;g.fillRect(Math.random()*s,Math.random()*s,1.5,1.5);}
+  g.lineWidth=0.6;
+  for(let i=0;i<900;i++){const v=215+Math.random()*40|0;g.strokeStyle=`rgba(${v},${v},${v},.7)`;
+    const x=Math.random()*s,y=Math.random()*s,a=Math.random()*6.28,l=3+Math.random()*7;
+    g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+Math.cos(a+1)*l*.5,y+Math.sin(a+1)*l*.5,x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke();}
+  const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rep,rep);t.encoding=THREE.sRGBEncoding;return t;
+}
+const FT=feltTex(1.2), FTB=feltTex(1.2); FTB.encoding=THREE.LinearEncoding;
+const matCache={};
+function felt(color){
+  if(!matCache[color]) matCache[color]=new THREE.MeshStandardMaterial({color,map:FT,bumpMap:FTB,bumpScale:0.025,roughness:1,metalness:0});
+  return matCache[color];
+}
+
+/* ---------- geometry helpers ---------- */
+function rrShape(x0,z0,x1,z1,r){
+  const [a,b]=P(x0,z0),[c,d]=P(x1,z1); r=Math.min(r,(c-a)/2,(d-b)/2);
+  const s=new THREE.Shape(); // shape coords: (x, -z)
+  s.moveTo(a+r,-b); s.lineTo(c-r,-b); s.quadraticCurveTo(c,-b,c,-b-r);
+  s.lineTo(c,-d+r); s.quadraticCurveTo(c,-d,c-r,-d); s.lineTo(a+r,-d);
+  s.quadraticCurveTo(a,-d,a,-d+r); s.lineTo(a,-b-r); s.quadraticCurveTo(a,-b,a+r,-b); return s;
+}
+function polyShape(pts){const s=new THREE.Shape();pts.forEach(([x,z],i)=>{const[a,b]=P(x,z);i?s.lineTo(a,-b):s.moveTo(a,-b)});return s;}
+function extrude(shape,h,bevel){
+  const g=new THREE.ExtrudeGeometry(shape,{depth:Math.max(h-(bevel?0.12:0),0.01),bevelEnabled:!!bevel,bevelThickness:0.06,bevelSize:0.06,bevelSegments:3,curveSegments:8});
+  g.rotateX(-Math.PI/2); if(bevel)g.translate(0,0.06,0); return g;
+}
+function flat(shape,color,y,h=0.04){const m=new THREE.Mesh(extrude(shape,h,false),felt(color));m.position.y=y;m.receiveShadow=true;scene.add(m);return m;}
+
+/* ---------- base board ---------- */
+const board=new THREE.Mesh(extrude(rrShape(-1.2,0.6,28,16.2,0.8),0.35,true),felt(0xf3ece0));
+board.position.y=-0.35; board.receiveShadow=true; scene.add(board);
+flat(polyShape(BOUND),0xf6f0e6,0,0.015);
+
+// roads
+function road(pts,w){
+  for(let i=0;i<pts.length-1;i++){
+    const[a,b]=P(...pts[i]),[c,d]=P(...pts[i+1]);const len=Math.hypot(c-a,d-b),ang=Math.atan2(d-b,c-a);
+    const m=new THREE.Mesh(new THREE.BoxGeometry(len+w,0.05,w),felt(0x9aa0a8));
+    m.position.set((a+c)/2,0.025,(b+d)/2);m.rotation.y=-ang;m.receiveShadow=true;scene.add(m);
+    const n=Math.floor(len/0.7);
+    for(let k=0;k<n;k++){const t=(k+0.5)/n;const dm=new THREE.Mesh(new THREE.BoxGeometry(0.32,0.02,0.05),felt(0xf6f2ea));
+      dm.position.set(a+(c-a)*t,0.06,b+(d-b)*t);dm.rotation.y=-ang;scene.add(dm);}
+  }
+}
+road([[0.2,4.0],[1.0,5.6],[19.5,15.2]],0.75);
+road([[23.6,0.9],[25.6,8.0],[27.4,15.6]],0.8);
+
+// red boundary
+(function(){const pts=BOUND.concat([BOUND[0]]);
+  for(let i=0;i<pts.length-1;i++){const[a,b]=P(...pts[i]),[c,d]=P(...pts[i+1]);const len=Math.hypot(c-a,d-b);
+    const m=new THREE.Mesh(new THREE.BoxGeometry(len,0.07,0.07),new THREE.MeshStandardMaterial({color:0xd8342a,roughness:.9}));
+    m.position.set((a+c)/2,0.05,(b+d)/2);m.rotation.y=-Math.atan2(d-b,c-a);scene.add(m);}})();
+
+// grass + paths
+flat(polyShape(GRASS),0x83bf4f,0.015,0.05);
+[[[5.8,4.75],[12.3,4.75]],[[12.4,4.9],[12.4,5.6]],[[5.7,4.7],[5.0,6.1]],[[9.6,5.3],[7.0,5.3],[6.0,7.0]]].forEach(seg=>{
+  for(let i=0;i<seg.length-1;i++){const[a,b]=P(...seg[i]),[c,d]=P(...seg[i+1]);const len=Math.hypot(c-a,d-b);
+    const m=new THREE.Mesh(new THREE.BoxGeometry(len+0.2,0.03,0.2),felt(0xd9d6d0));
+    m.position.set((a+c)/2,0.07,(b+d)/2);m.rotation.y=-Math.atan2(d-b,c-a);m.receiveShadow=true;scene.add(m);}});
+
+// running track
+(function(){
+  const g=new THREE.Group(); const [cx,cz]=P(11.1,7.9); g.position.set(cx,0.07,cz); g.rotation.y=-THREE.MathUtils.degToRad(23);
+  function stadium(L,W){const r=W/2,s=new THREE.Shape();s.moveTo(-L/2+r,-r);s.lineTo(L/2-r,-r);s.absarc(L/2-r,0,r,-Math.PI/2,Math.PI/2);
+    s.lineTo(-L/2+r,r);s.absarc(-L/2+r,0,r,Math.PI/2,Math.PI*1.5);return s;}
+  const add=(geo,col,y)=>{const m=new THREE.Mesh(geo,felt(col));m.position.y=y;m.receiveShadow=true;g.add(m);};
+  add(extrude(stadium(7.6,3.8),0.04),0xc7322b,0);
+  [3.6,3.4,3.2].forEach((w,i)=>{const pts=stadium(7.6-(3.8-w),w).getPoints(80).map(p=>new THREE.Vector3(p.x,0.05,-p.y));
+    g.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xffffff})));});
+  add(extrude(stadium(6.6,2.8),0.05),0x2f8f4e,0);
+  add(new THREE.BoxGeometry(4.0,0.03,2.1).translate(0,0.06,0),0x8fa65a,0);
+  const lm=new THREE.LineBasicMaterial({color:0xffffff});
+  const rect=[[-2,-1.05],[2,-1.05],[2,1.05],[-2,1.05],[-2,-1.05]].map(([x,z])=>new THREE.Vector3(x,0.09,z));
+  g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(rect),lm));
+  g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0.09,-1.05),new THREE.Vector3(0,0.09,1.05)]),lm));
+  [-1.55,1.55].forEach(x=>add(new THREE.BoxGeometry(0.75,0.03,0.6).translate(x,0.075,0),0xd8342a,0));
+  add(new THREE.CylinderGeometry(0.2,0.2,0.03,24).translate(0,0.075,0),0xd8342a,0);
+  scene.add(g);
+  // straight sprint lanes along the lower side
+  const s=new THREE.Group();const[sx,sz]=P(10.9,9.05);s.position.set(sx,0.07,sz);s.rotation.y=-THREE.MathUtils.degToRad(28.5);
+  const strip=new THREE.Mesh(new THREE.BoxGeometry(10.6,0.04,0.7),felt(0xc7322b));strip.receiveShadow=true;s.add(strip);
+  [-0.18,0.05,0.28].forEach(z=>s.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-5.3,0.03,z),new THREE.Vector3(5.3,0.03,z)]),lm)));
+  scene.add(s);
+})();
+
+/* ---------- buildings ---------- */
+const pickables=[]; const bMeta={};
+const winGeo=new THREE.BoxGeometry(0.26,0.15,0.04);
+const winPos=[];
+BUILDINGS.forEach(b=>{
+  const grp=new THREE.Group(); grp.userData={kind:'b',id:b.id}; let top=0;
+  b.parts.forEach(([x0,z0,x1,z1,h,col])=>{
+    const isFlat=h<0.1;
+    const m=new THREE.Mesh(isFlat?extrude(rrShape(x0,z0,x1,z1,0.1),h,false):extrude(rrShape(x0,z0,x1,z1,0.18),h,true),felt(col||b.color));
+    m.castShadow=!isFlat;m.receiveShadow=true;m.userData={kind:'b',id:b.id,base:col||b.color};grp.add(m);pickables.push(m);
+    top=Math.max(top,h);
+    const fl=Math.round(h/FH);
+    if(fl>=1 && h>0.45 && b.id!=='corridor'){
+      const[a,bz]=P(x0,z0),[c,d]=P(x1,z1);
+      for(let f=0;f<fl;f++){const y=(f+0.55)*(h/fl);
+        for(let x=a+0.35;x<c-0.2;x+=0.5){winPos.push([x,y,d+0.005,0]);winPos.push([x,y,bz-0.005,0]);}
+        for(let z=bz+0.35;z<d-0.2;z+=0.5){winPos.push([c+0.005,y,z,1]);winPos.push([a-0.005,y,z,1]);}
+      }
+    }
+    if(b.id==='corridor'){const[a,bz]=P(x0,z0),[c,d]=P(x1,z1);
+      for(let x=a+0.3;x<c-0.2;x+=0.42)winPos.push([x,0.25,d+0.005,0]);}
+  });
+  scene.add(grp);
+  const [lx,lz]=P(...b.label);
+  bMeta[b.id]={...b,group:grp,top,center:new THREE.Vector3(lx,top,lz)};
+});
+// skybridge
+(function(){const[x0,z0,x1,z1,y0,y1]=BRIDGE;const[a,b]=P(x0,z0),[c,d]=P(x1,z1);
+  const m=new THREE.Mesh(new THREE.BoxGeometry(c-a+0.2,y1-y0,d-b),felt(0xdedad5));m.position.set((a+c)/2,(y0+y1)/2,(b+d)/2);m.castShadow=true;scene.add(m);})();
+// windows instanced
+(function(){const im=new THREE.InstancedMesh(winGeo,new THREE.MeshStandardMaterial({color:0x5a88b8,roughness:.9}),winPos.length);
+  const o=new THREE.Object3D();winPos.forEach(([x,y,z,r],i)=>{o.position.set(x,y,z);o.rotation.set(0,r?Math.PI/2:0,0);o.updateMatrix();im.setMatrixAt(i,o.matrix);});
+  scene.add(im);})();
+
+/* ---------- trees ---------- */
+TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
+  const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.05*s,0.07*s,0.7*s,8),felt(0x7a5236));tr.position.set(a,0.35*s,b);tr.castShadow=true;scene.add(tr);
+  const cr=new THREE.Mesh(new THREE.SphereGeometry(0.42*s,18,14),felt(Math.random()<.15?0xe9d44a:(Math.random()<.5?0x3f8f3c:0x6fb043)));
+  cr.position.set(a,0.85*s,b);cr.scale.y=1.15;cr.castShadow=true;scene.add(cr);});
+
+// little car by the gate
+(function(){const[a,b]=P(25.1,8.3);const g=new THREE.Group();
+  const body=new THREE.Mesh(extrude(rrShape(-0.45+CX,-0.25+CZ,0.45+CX,0.25+CZ,0.15),0.3,true),felt(0x7fa7d8));g.add(body);
+  const cab=new THREE.Mesh(extrude(rrShape(-0.25+CX,-0.22+CZ,0.25+CX,0.22+CZ,0.12),0.22,true),felt(0xbcd6ef));cab.position.y=0.26;g.add(cab);
+  [[-0.28,0.26],[0.28,0.26],[-0.28,-0.26],[0.28,-0.26]].forEach(([x,z])=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.08,14),felt(0x333333));w.rotation.x=Math.PI/2;w.position.set(x,0.06,z);g.add(w);});
+  g.position.set(a,0.05,b);g.rotation.y=-1.3;g.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(g);})();
+
+/* ---------- facilities ---------- */
+const facGroup=new THREE.Group();scene.add(facGroup);
+const icoCache={};
+function iconCanvas(t){
+  if(icoCache[t])return icoCache[t];
+  const cv=document.createElement('canvas');cv.width=cv.height=128;const g=cv.getContext('2d');
+  g.fillStyle='#'+FACCOL[t].toString(16).padStart(6,'0');
+  g.beginPath();g.roundRect?g.roundRect(4,4,120,120,18):g.rect(4,4,120,120);g.fill();
+  const ink=(t==='s'||t==='d')?'#2b2520':'#ffffff';g.fillStyle=ink;g.strokeStyle=ink;g.lineCap='round';g.lineJoin='round';
+  if(t==='s'||t==='d'){
+    // staircase silhouette
+    g.beginPath();g.moveTo(18,110);g.lineTo(18,90);g.lineTo(42,90);g.lineTo(42,70);g.lineTo(66,70);g.lineTo(66,50);g.lineTo(90,50);g.lineTo(90,30);g.lineTo(110,30);g.lineTo(110,110);g.closePath();g.fill();
+    // arrow
+    g.lineWidth=8;const up=t==='s';
+    const [x0,y0,x1,y1]=up?[20,72,56,36]:[56,36,20,72];
+    g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke();
+    const ang=Math.atan2(y1-y0,x1-x0);g.beginPath();g.moveTo(x1,y1);
+    g.lineTo(x1-20*Math.cos(ang-0.5),y1-20*Math.sin(ang-0.5));g.lineTo(x1-20*Math.cos(ang+0.5),y1-20*Math.sin(ang+0.5));g.closePath();g.fill();
+  }else if(t==='m'){
+    g.beginPath();g.arc(64,24,13,0,Math.PI*2);g.fill();
+    g.beginPath();g.roundRect?g.roundRect(42,42,44,42,10):g.rect(42,42,44,42);g.fill();
+    g.fillRect(48,74,13,44);g.fillRect(67,74,13,44);
+  }else if(t==='f'){
+    g.beginPath();g.arc(64,24,13,0,Math.PI*2);g.fill();
+    g.beginPath();g.moveTo(52,42);g.lineTo(76,42);g.lineTo(94,94);g.lineTo(34,94);g.closePath();g.fill();
+    g.fillRect(51,90,11,28);g.fillRect(66,90,11,28);
+  }else if(t==='a'){
+    g.lineWidth=9;g.beginPath();g.arc(58,86,24,0,Math.PI*2);g.stroke();
+    g.beginPath();g.arc(60,20,10,0,Math.PI*2);g.fill();
+    g.beginPath();g.moveTo(58,34);g.lineTo(58,70);g.lineTo(88,70);g.lineTo(100,98);g.stroke();
+    g.beginPath();g.moveTo(58,50);g.lineTo(84,50);g.stroke();
+  }else if(t==='e'){
+    g.beginPath();g.moveTo(64,18);g.lineTo(94,56);g.lineTo(34,56);g.closePath();g.fill();
+    g.beginPath();g.moveTo(64,110);g.lineTo(94,72);g.lineTo(34,72);g.closePath();g.fill();
+  }
+  return icoCache[t]=cv;
+}
+const icoMats={};
+function iconMat(t){if(!icoMats[t]){const tx=new THREE.CanvasTexture(iconCanvas(t));tx.encoding=THREE.sRGBEncoding;tx.anisotropy=4;
+  icoMats[t]=new THREE.MeshStandardMaterial({map:tx,transparent:true,roughness:.95});}return icoMats[t];}
+FAC.forEach(([t,x,z,bid])=>{const[a,b]=P(x,z);const top=bMeta[bid].top;
+  const m=new THREE.Mesh(extrude(rrShape(x-0.19,z-0.19,x+0.19,z+0.19,0.06),0.09,false),felt(FACCOL[t]));
+  m.position.y=top+0.005;m.castShadow=true;m.userData={kind:'f',t,bid};facGroup.add(m);pickables.push(m);
+  const ic=new THREE.Mesh(new THREE.PlaneGeometry(0.38,0.38),iconMat(t));
+  ic.rotation.x=-Math.PI/2;ic.position.set(a,top+0.1,b);ic.userData={kind:'f',t,bid};facGroup.add(ic);pickables.push(ic);
+});
+document.querySelectorAll('img[data-ico]').forEach(im=>im.src=iconCanvas(im.dataset.ico).toDataURL());
+
+// "you are here" beacon
+const [hx,hz]=P(19.0,8.95);
+const beacon=new THREE.Mesh(new THREE.SphereGeometry(0.13,20,16),new THREE.MeshStandardMaterial({color:0xffd23f,emissive:0xffb000,emissiveIntensity:.6}));
+beacon.position.set(hx+0.35,0.25,hz);scene.add(beacon);
+const ring=new THREE.Mesh(new THREE.RingGeometry(0.2,0.28,32),new THREE.MeshBasicMaterial({color:0xd9452f,transparent:true,side:THREE.DoubleSide}));
+ring.rotation.x=-Math.PI/2;ring.position.set(hx+0.35,0.08,hz);scene.add(ring);
+
+/* ---------- HTML labels ---------- */
+const labelsEl=document.getElementById('labels');const labels=[];
+function addLabel(text,cls,pos,group){const el=document.createElement('div');el.className='lb '+cls;el.textContent=text;labelsEl.appendChild(el);
+  const L={el,pos,group};labels.push(L);return L;}
+BUILDINGS.forEach(b=>{const m=bMeta[b.id];m.label=addLabel(b.name.replace('（',' ').replace('）',''),'bld',m.center.clone().add(new THREE.Vector3(0,0.35,0)),'lbl');});
+const ptLabels=POINTS.map(([n,x,z])=>{const[a,b]=P(x,z);return addLabel(n,'pt',new THREE.Vector3(a,0.5,b),'pts');});
+NEIGH.forEach(([t,x,z])=>{const[a,b]=P(x,z);addLabel(t,'nb',new THREE.Vector3(a,0.05,b),'nb');});
+addLabel('現在位置','here',new THREE.Vector3(hx+0.35,0.75,hz),'here');
+(function(){const[a,b]=P(24.6,7.7);addLabel('校門','gate',new THREE.Vector3(a,0.3,b),'nb');})();
+// orange point pins
+const pinGroup=new THREE.Group();scene.add(pinGroup);
+POINTS.forEach(([n,x,z])=>{const[a,b]=P(x,z);
+  const st=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.4,8),new THREE.MeshStandardMaterial({color:0xf08a3c}));st.position.set(a,0.2,b);pinGroup.add(st);
+  const dsk=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,0.02,20),felt(0xf08a3c));dsk.position.set(a,0.04,b);pinGroup.add(dsk);});
+
+const show={pts:false,lbl:true,nb:true,here:true,fl:false,room1:false,room2:false,room3:false,room4:false};
+const infoEl=document.getElementById('info');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+pinGroup.visible=false;
+const v=new THREE.Vector3();
+function visDeep(o){while(o){if(!o.visible)return false;o=o.parent;}return true;}
+function placeLabels(){
+  const w=canvas.clientWidth,h=canvas.clientHeight;
+  labels.forEach(L=>{
+    if(!show[L.group]){L.el.hidden=true;return;}
+    if(L.obj){if(!visDeep(L.obj)){L.el.hidden=true;return;}L.obj.getWorldPosition(v);if(L.off)v.add(L.off);else v.y=L.obj.parent.parent.position.y+L.dy;}else v.copy(L.pos);
+    v.project(camera);
+    if(v.z>1){L.el.hidden=true;return;}
+    L.el.hidden=false;
+    const x=(v.x*0.5+0.5)*w,y=(-v.y*0.5+0.5)*h;
+    L.el.style.transform=`translate(${x}px,${y}px) translate(-50%,-50%)`;
+  });
+}
+
+/* ---------- teaching building from floor plans ---------- */
+const FLOORS={"1":{"rooms":[[1343,-736,1418,-678,"slide","逃生滑梯","12.77"],[1483,-736,1594,-654,"util","發電機室 117","31.4"],[1600,-736,1882,-198,"spc","水療室 119","464.73"],[1483,-648,1594,-566,"util","機房 118","29.01"],[1483,-570,1594,-516,"wcm","男廁","20.35"],[1493,-510,1569,-456,"el","電梯(3)","14.97"],[1493,-450,1569,-390,"st","丁梯","16.33"],[1483,-384,1594,-330,"wcf","女廁","21.96"],[1483,-272,1751,-4,"spc","物理治療室 115","176.65"],[1642,-272,1736,-198,"wcf","女廁","24.03"],[1786,-272,1882,-198,"wcm","男廁","24.3"],[1757,-192,1882,-4,"spc","職能治療室 116","76.51"],[335,-44,379,-10,"acc","無障礙廁所","6.29"],[423,-44,473,-10,"acc","無障礙廁所","6.51"],[737,-44,787,-10,"acc","無障礙廁所","6.51"],[831,-44,879,-10,"acc","無障礙廁所","6.51"],[-29,-34,29,34,"slide","逃生滑梯","10.81"],[1483,-32,1882,125,"spc","健康中心 123","163.39"],[48,-24,124,66,"wcm","男廁","23.17"],[129,-24,197,140,"wcf","女廁","33.93"],[204,-24,367,140,"cls","國小部-4 105","83.66"],[437,-24,601,140,"cls","國小部-3 105","83.55"],[608,-24,773,140,"cls","國小部-2 105","83.55"],[843,-24,1007,140,"cls","國小部-1 105","83.55"],[373,-4,432,130,"tch","教師室 106","27.19"],[779,-4,837,130,"tch","教師室 106","27.19"],[48,72,143,140,"st","甲梯","22.51"],[1767,102,1882,178,"spc","心理諮商室 113","29.84"],[1508,130,1594,188,"st","丙梯","18.03"],[-197,184,-117,258,"tch","教師室 106","18.6"],[1757,184,1882,330,"off","輔導室 114","81.55"],[-111,222,-67,268,"acc","無障礙廁所","7.83"],[1602,234,1751,438,"util","自備配電室 124","93.24"],[-166,252,-17,462,"cls","幼稚部 104","93"],[48,264,212,438,"cls","國小部-5 105","88.53"],[280,264,446,438,"cls","國小部-6 105","88.53"],[1014,264,1209,438,"off","學務處／播音室 108","108.9"],[1218,264,1418,438,"spc","餐飲教室 109","111.87"],[1488,264,1528,338,"util","電氣室 110","10.78"],[1424,272,1482,338,"el","電梯(2)","13.99"],[218,274,275,418,"tch","教師室 106","29.06"],[1757,336,1882,438,"spc","語言治療室 112","42.77"],[1424,346,1527,438,"util","消防泵浦室 111","32.18"],[452,376,524,438,"st","乙梯","15.77"],[529,376,592,438,"el","電梯(1)","13.33"],[177,426,224,458,"acc","無障礙廁所","6.51"],[268,426,317,458,"acc","無障礙廁所","6.51"],[1659,130,1702,182,"util","儲藏室 107","10.29"],[1706,130,1751,182,"util","儲藏室 107","10.29"]],"foot":[[1350,-740,1897,-728],[1338,-728,1897,-692],[1350,-692,1897,-680],[1361,-680,1384,-656],[1418,-680,1897,-512],[1407,-512,1897,-500],[1395,-500,1897,-404],[1407,-404,1897,-380],[1418,-380,1897,-176],[1407,-176,1897,-164],[1395,-164,1897,-68],[1407,-68,1897,-56],[1418,-56,1897,64],[335,-44,471,-32],[734,-44,882,-32],[-30,-32,1008,40],[-167,40,1008,148],[1384,64,1897,76],[1361,76,1897,100],[1350,100,1897,148],[1156,112,1270,124],[1145,124,1281,136],[1133,136,1293,148],[-167,148,1897,184],[-202,184,1897,256],[-167,256,1897,436],[-167,436,-8,472],[175,436,323,460]]},"2":{"rooms":[[1346,-734,1418,-676,"slide","逃生滑梯","12.77"],[1484,-734,1634,-556,"spc","團體治療室 216","87.13"],[1640,-734,1882,-506,"spc","生活教育室 203","158.20"],[1794,-548,1882,-342,"bal","露台 217",""],[1494,-508,1570,-454,"el","電梯(3)","14.97"],[1640,-500,1762,-390,"tch","教師室 203","45.3"],[1494,-448,1570,-390,"st","丁梯","16.33"],[1484,-344,1678,-188,"spc","音樂教室 213","93.15"],[1686,-344,1882,-188,"spc","專科教室（輔助教室）214","97.71"],[1484,-192,1596,-136,"wcm","男廁","21.92"],[1602,-190,1882,-36,"bal","露台 217",""],[1484,-90,1596,-36,"wcf","女廁","21.92"],[424,-42,474,-10,"acc","無障礙廁所","6.29"],[738,-42,788,-10,"acc","無障礙廁所","6.51"],[832,-42,880,-10,"acc","無障礙廁所","6.51"],[1484,-40,1608,124,"off","會議室 211","62.52"],[1614,-40,1882,188,"spc","校史室 212","154.38"],[-30,-34,30,34,"slide","逃生滑梯","10.81"],[48,-22,124,66,"wcm","男廁","23.17"],[130,-22,198,140,"wcf","女廁","33.93"],[204,-22,370,140,"cls","國中部-4 202","83.65"],[440,-22,602,140,"cls","國中部-3 202","83.55"],[610,-22,774,140,"cls","國中部-2 202","83.55"],[844,-22,1010,140,"cls","國中部-1 202","83.55"],[376,-2,434,132,"tch","教師室 203","27.19"],[780,-2,838,132,"tch","教師室 203","27.19"],[-166,46,-16,220,"cls","國中部-5 202","81.66"],[48,74,142,140,"st","甲梯","22.51"],[1508,132,1596,188,"st","丙梯","18.03"],[1602,132,1652,188,"util","電信室","10.65"],[1794,132,1882,260,"bal","露台 217",""],[-198,184,-162,232,"acc","無障礙廁所","6.51"],[-156,226,-16,282,"tch","教師室 203","27.3"],[48,266,214,440,"cls","國中部-7 202","88.6"],[284,266,448,440,"cls","國中部-8 202","88.6"],[1016,266,1180,440,"cls","國中部-9 202","88.03"],[1250,266,1414,440,"spc","烘焙教室 204","95.04"],[1602,266,1780,440,"off","校長室 206","79.78"],[1674,266,1764,314,"off","秘書室 208","15.65"],[1420,272,1478,340,"el","電梯(2)","13.99"],[-198,276,-162,324,"acc","無障礙廁所","6.51"],[220,276,278,420,"tch","教師室 203","28.98"],[1186,276,1244,420,"tch","教師室 203","29.06"],[-166,288,-16,464,"cls","國中部-6 202","82.51"],[1786,320,1882,440,"off","休息室 207","59.26"],[1420,346,1490,440,"util","電氣室 205","22.1"],[454,378,524,440,"st","乙梯","15.77"],[532,378,594,440,"el","電梯(1)","13.33"],[178,426,224,460,"acc","無障礙廁所","6.51"],[270,426,318,460,"acc","無障礙廁所","6.51"],[1146,426,1192,460,"acc","無障礙廁所","6.51"],[1238,426,1286,460,"acc","無障礙廁所","6.51"]],"foot":[[1358,-738,1898,-726],[1346,-726,1898,-678],[1346,-678,1370,-666],[1418,-678,1898,-510],[1406,-510,1898,-486],[1394,-486,1898,-414],[1406,-414,1898,-390],[1418,-390,1898,-174],[1406,-174,1898,-150],[1394,-150,1898,-78],[1406,-78,1898,-54],[1418,-54,1898,66],[-10,-42,14,-30],[326,-42,482,-30],[734,-42,890,-30],[-22,-30,1010,-18],[-34,-18,1010,18],[-22,18,1010,42],[-166,42,1010,138],[1382,66,1898,78],[1370,78,1898,90],[1358,90,1898,102],[1346,102,1898,138],[1154,114,1274,126],[1154,126,1286,138],[-166,138,1898,186],[-202,186,1898,282],[-202,282,602,330],[746,282,878,294],[1010,282,1898,438],[758,294,866,306],[-166,330,602,438],[-166,438,-10,462],[170,438,326,462],[1142,438,1286,462]]},"3":{"rooms":[[1608,-756,1746,-730,"bal","陽台",""],[1340,-734,1414,-676,"slide","逃生滑梯","12.77"],[1478,-734,1672,-556,"cls","高中部-2 307","95.83"],[1680,-734,1876,-556,"cls","高中部-1 307","98.37"],[1652,-696,1700,-564,"tch","教師室 308","22.0"],[1488,-508,1564,-454,"el","電梯(3)","14.97"],[1570,-508,1666,-452,"wcf","女廁","18.59"],[1488,-448,1564,-390,"st","丁梯","16.33"],[1570,-446,1666,-390,"wcm","男廁","18.86"],[1478,-344,1672,-188,"cls","高中部-4 307","84.39"],[1680,-344,1876,-188,"cls","高中部-3 307","86.56"],[1652,-334,1700,-226,"tch","教師室 308","18.47"],[1608,-190,1746,-166,"bal","陽台",""],[1622,-60,1722,-36,"bal","陽台",""],[334,-42,474,-20,"bal","陽台",""],[736,-42,878,-20,"bal","陽台",""],[1478,-40,1672,124,"cls","高中部-6 307","91.63"],[1680,-40,1876,124,"cls","高中部-5 307","92.64"],[-30,-34,30,34,"slide","逃生滑梯","10.81"],[48,-22,124,66,"wcm","男廁","23.17"],[130,-22,196,140,"wcf","女廁","33.93"],[202,-22,378,140,"cls","高中部-10 302","89.41"],[424,-22,600,140,"cls","高中部-9 302","89.35"],[608,-22,782,140,"cls","高中部-8 307","89.06"],[829,-22,1006,140,"cls","高中部-7 307","89.06"],[1652,0,1700,124,"tch","教師室 308","21.05"],[782,16,830,132,"tch","教師室 308","19.42"],[378,18,424,132,"tch","教師室 303","19.42"],[-166,44,-16,250,"cls","高中部-11 302","88.00"],[48,74,142,140,"st","甲梯","22.51"],[1504,132,1590,188,"st","丙梯","18.03"],[-196,184,-172,324,"bal","陽台",""],[-136,230,-16,276,"tch","教師室 303","19.56"],[-166,256,-16,464,"cls","高中部-12 302","88.22"],[48,266,223,440,"cls","高中部-13 302","94.18"],[270,266,444,440,"cls","高中部-14 302","94.18"],[590,266,782,428,"cls","高中部-15 302","97.36"],[829,266,1006,428,"cls","高中部-16 302","90.62"],[1012,266,1187,440,"cls","高中部-17 302","94.5"],[1234,266,1410,440,"cls","高中部-18 302","94.5"],[1598,266,1672,340,"wcm","男廁","20.59"],[1680,266,1876,440,"spc","專科教室（美容教室）305","105.22"],[1420,272,1478,340,"el","電梯(2)","13.99"],[224,276,270,400,"tch","教師室 303","21.0"],[782,276,830,400,"tch","教師室 303","21.0"],[1188,276,1234,400,"tch","教師室 303","21.0"],[452,286,522,364,"st","乙梯","17.82"],[530,326,592,378,"el","電梯(1)","13.33"],[1420,346,1484,440,"util","電氣室 304","20.74"],[1598,348,1672,440,"wcf","女廁","24.21"],[176,434,318,460,"bal","陽台",""],[1142,434,1282,460,"bal","陽台",""]],"foot":[[1600,-760,1756,-736],[1348,-736,1888,-724],[1336,-724,1888,-688],[1348,-688,1888,-676],[1420,-676,1888,-556],[1420,-556,1792,-508],[1396,-508,1792,-388],[1420,-388,1792,-352],[1420,-352,1888,-184],[1420,-184,1756,-172],[1396,-172,1660,-160],[1696,-172,1756,-160],[1396,-160,1600,-64],[1396,-64,1756,-52],[328,-52,388,-40],[424,-52,472,-40],[736,-52,784,-40],[820,-52,880,-40],[1420,-52,1756,-40],[-20,-40,16,-28],[328,-40,472,-28],[736,-40,880,-28],[1420,-40,1888,56],[-32,-28,1012,44],[-164,44,1012,140],[1396,56,1888,68],[1372,68,1888,80],[1360,80,1888,92],[1348,92,1888,128],[1180,104,1240,116],[1144,116,1276,128],[1132,128,1288,140],[1348,128,1792,140],[-164,140,1792,176],[-200,176,1792,260],[-200,260,1888,332],[-164,332,1888,368],[-164,368,448,440],[520,368,1888,380],[580,380,1888,428],[1012,428,1888,440],[-164,440,-8,464],[172,440,316,464],[1132,440,1288,464]]},"4":{"rooms":[[1488,-508,1599,-389,"el","電梯機房 409","44.68"],[-29,-34,29,34,"slide","逃生滑梯",""],[200,-23,323,142,"spc","媒體製作室 404","67.03"],[46,-21,121,67,"wcm","男廁","23.17"],[127,-21,193,142,"wcf","女廁","33.76"],[483,-21,719,142,"off","辦公室 406","126.29"],[329,-12,475,142,"spc","電算中心 405","74.93"],[-163,57,-16,365,"off","勤務中心 401","163.9"],[998,148,1388,439,"off","教務中心 407","361.63"],[-10,202,40,269,"util","儲藏室 402","12.8"],[46,202,162,365,"off","辦公室（一）403","62.72"],[168,202,317,365,"off","辦公室（二）403","79.96"],[323,202,438,365,"off","辦公室（三）403","62.74"],[1487,234,1566,278,"wcf","女廁","12.58"],[-10,275,40,365,"util","儲藏室 402","16.47"],[1462,284,1566,340,"util","電氣室","20.87"],[1487,184,1566,230,"wcm","男廁","11.85"],[1400,180,1460,280,"el","電梯(2)",""],[47,73,142,142,"st","甲梯",""],[520,300,583,371,"el","電梯(1)",""],[454,300,515,371,"st","乙梯",""]],"foot":[[1486,-513,1606,-381],[-23,-33,25,-21],[-35,-21,721,15],[-23,15,721,27],[-11,27,721,51],[-167,51,721,147],[1453,123,1573,135],[1393,135,1573,147],[-167,147,1573,219],[-167,219,589,363],[997,219,1573,339],[997,339,1393,447],[445,363,589,375]]}};
+const PS=0.004358, PX0=13.74, PZ0=3.1, FHB=0.42;
+const pw=(px,py)=>P(PX0+(py+740)*PS, PZ0+(1886-px)*PS);
+function prect(r){const[ax,az]=pw(r[0],r[1]),[bx,bz]=pw(r[2],r[3]);return{x0:Math.min(ax,bx),x1:Math.max(ax,bx),z0:Math.min(az,bz),z1:Math.max(az,bz)};}
+const RT={cls:[0xf6d27a,'一般教室'],tch:[0xf3b37e,'教師室'],spc:[0x9fd0a8,'專科・治療'],off:[0xb9a7e0,'行政・辦公'],
+  wcm:[0x5fb3e6,'男廁'],wcf:[0xe98f78,'女廁'],acc:[0x2f6fb5,'無障礙廁所'],st:[0xf2d64b,'樓梯'],el:[0x3f8fd8,'電梯'],
+  util:[0xc9c3bb,'設備・儲藏'],bal:[0xd9e6c8,'陽台・露台'],slide:[0xff9f5a,'逃生滑梯']};
+const ICO={wcm:'m',wcf:'f',acc:'a',st:'s',el:'e'};
+const teach=bMeta.teach; teach.top=FHB*4;
+teach.center.set(...(()=>{const[a,b]=pw(700,250);return[a,FHB*4,b]})());
+teach.label.pos.set(teach.center.x,FHB*4+0.35,teach.center.z);
+const floorObjs={};
+const winMat=new THREE.MeshStandardMaterial({color:0x5a88b8,roughness:.9});
+const shellMat=felt(0xeeb7a4), bandMat=felt(0xd99a88), slabMat=felt(0xf7efe4);
+Object.keys(FLOORS).forEach(fk=>{
+  const f=+fk, D=FLOORS[fk], grp=new THREE.Group(), shell=new THREE.Group(), inner=new THREE.Group();
+  grp.position.y=(f-1)*FHB; grp.add(shell); grp.add(inner); teach.group.add(grp);
+  const inFoot=(x,y)=>D.foot.some(r=>x>=r[0]&&x<=r[2]&&y>=r[1]&&y<=r[3]);
+  const wins=[];
+  D.foot.forEach(r=>{
+    const w=prect(r), cx=(w.x0+w.x1)/2, cz=(w.z0+w.z1)/2, W=w.x1-w.x0, Dd=w.z1-w.z0;
+    const m=new THREE.Mesh(new THREE.BoxGeometry(W,FHB-0.04,Dd),shellMat);m.position.set(cx,(FHB-0.04)/2,cz);
+    m.castShadow=m.receiveShadow=true;m.userData={kind:'b',id:'teach'};shell.add(m);pickables.push(m);
+    const b=new THREE.Mesh(new THREE.BoxGeometry(W+0.02,0.04,Dd+0.02),bandMat);b.position.set(cx,FHB-0.02,cz);shell.add(b);
+    const s=new THREE.Mesh(new THREE.BoxGeometry(W,0.05,Dd),slabMat);s.position.set(cx,0.025,cz);s.receiveShadow=true;inner.add(s);
+    // windows on outside edges
+    for(let x=r[0]+22;x<r[2]-10;x+=46){
+      if(!inFoot(x,r[1]-8)){const[a,c]=pw(x,r[1]);wins.push([a-0.005,c,1]);}
+      if(!inFoot(x,r[3]+8)){const[a,c]=pw(x,r[3]);wins.push([a+0.005,c,1]);}
+    }
+    for(let y=r[1]+22;y<r[3]-10;y+=46){
+      if(!inFoot(r[0]-8,y)){const[a,c]=pw(r[0],y);wins.push([a,c+0.005,0]);}
+      if(!inFoot(r[2]+8,y)){const[a,c]=pw(r[2],y);wins.push([a,c-0.005,0]);}
+    }
+  });
+  if(wins.length){const im=new THREE.InstancedMesh(winGeo,winMat,wins.length),o=new THREE.Object3D();
+    wins.forEach(([x,z,r],i)=>{o.position.set(x,FHB*0.52,z);o.rotation.set(0,r?Math.PI/2:0,0);o.updateMatrix();im.setMatrixAt(i,o.matrix);});shell.add(im);}
+  // rooms, smaller ones slightly taller so overlaps read clearly
+  const order=D.rooms.map((r,i)=>{const w=prect(r);return[i,(w.x1-w.x0)*(w.z1-w.z0)]}).sort((a,b)=>b[1]-a[1]);
+  const meshes=[];
+  order.forEach(([i],rank)=>{
+    const r=D.rooms[i], w=prect(r), t=r[4], ins=0.035;
+    const W=Math.max(0.04,w.x1-w.x0-ins), Dd=Math.max(0.04,w.z1-w.z0-ins);
+    const h=t==='bal'?0.07:0.17+rank*0.0025, cx=(w.x0+w.x1)/2, cz=(w.z0+w.z1)/2;
+    const m=new THREE.Mesh(new THREE.BoxGeometry(W,h,Dd),felt(RT[t][0]));m.position.set(cx,0.05+h/2,cz);
+    m.castShadow=true;m.receiveShadow=true;m.userData={kind:'r',f,i,base:RT[t][0]};inner.add(m);pickables.push(m);meshes[i]=m;
+    if(ICO[t]){const sz=Math.min(W,Dd,0.3)*0.85;const ic=new THREE.Mesh(new THREE.PlaneGeometry(sz,sz),iconMat(ICO[t]));
+      ic.rotation.x=-Math.PI/2;ic.position.set(cx,0.051+h,cz);ic.userData=m.userData;inner.add(ic);pickables.push(ic);}
+    m.userData.topY=0.05+h;
+  });
+  // labels for rooms people look for
+  const rl=[];
+  D.rooms.forEach((r,i)=>{const t=r[4];const big=['cls','spc','off'].includes(t)||(t==='tch'&&+r[6]>40);
+    if(!big)return;const m=meshes[i];
+    const L=addLabel(r[5].replace(/\s*\d+$/,''),'room',new THREE.Vector3(),'room'+f);L.obj=m;L.dy=m.userData.topY+0.08;rl.push(L);});
+  const tagPos=pw(-120,-60);
+  const tag=addLabel(f+'F','fl',new THREE.Vector3(),'fl');tag.obj=grp;tag.off=new THREE.Vector3(tagPos[0]-0.6,0.3,tagPos[1]);
+  floorObjs[f]={grp,shell,inner,meshes,targetY:(f-1)*FHB};
+});
+let mode='ext', selRoom=null;
+function setMode(m){
+  mode=m;
+  [1,2,3,4].forEach(f=>{const o=floorObjs[f];
+    if(m==='ext'){o.grp.visible=true;o.shell.visible=true;o.inner.visible=false;o.targetY=(f-1)*FHB;}
+    else if(m==='exp'){o.grp.visible=true;o.shell.visible=false;o.inner.visible=true;o.targetY=(f-1)*1.15;}
+    else{const n=+m;o.grp.visible=f<=n;o.shell.visible=f<n;o.inner.visible=f===n;o.targetY=(f-1)*FHB;}
+    show['room'+f]=(m===String(f));
+  });
+  show.fl=(m==='exp');
+  document.querySelectorAll('#seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===m));
+  const c=teach.center.clone();c.y=0;
+  if(m==='ext')return;
+  const lift=m==='exp'?2.2:(+m-1)*FHB;
+  const dir=camera.position.clone().sub(controls.target);dir.y=0;dir.normalize();
+  const tgt=c.clone().setY(lift);
+  flyTo(tgt.clone().add(dir.multiplyScalar(m==='exp'?11:8.5)).setY(lift+(m==='exp'?7:7.5)),tgt,reduce?1:900);
+  if(m!=='exp'){showFloorInfo(+m);}
+}
+const FLOORTOTAL={1:'3,680.67',2:'3,261.92',4:'1,554.14'};
+function showFloorInfo(f){
+  const cnt={};FLOORS[f].rooms.forEach(r=>{const k=RT[r[4]][1];cnt[k]=(cnt[k]||0)+1;});
+  infoEl.innerHTML=`<div class="name">教學大樓 ${f}F</div>
+    <p>${FLOORTOTAL[f]?'樓層總面積 '+FLOORTOTAL[f]+' m²・':''}點任一間教室看名稱與面積。</p>
+    <div class="facs">${Object.entries(cnt).map(([k,n])=>`<span>${k} × ${n}</span>`).join('')}</div>`;
+}
+function showRoom(f,i){
+  const r=FLOORS[f].rooms[i];
+  if(selRoom){selRoom.material=felt(selRoom.userData.base);}
+  const m=floorObjs[f].meshes[i];
+  m.material=new THREE.MeshStandardMaterial({color:new THREE.Color(m.userData.base).offsetHSL(0,0.1,-0.12),map:FT,bumpMap:FTB,bumpScale:.025,roughness:1,emissive:0x331a00,emissiveIntensity:.35});
+  selRoom=m;
+  infoEl.innerHTML=`<div class="name">${r[5]}</div>
+    <p>教學大樓 ${f}F・${RT[r[4]][1]}${r[6]?'・'+r[6]+' m²':''}</p>
+    <p><button id="bBackFloor">回到 ${f}F 總覽</button></p>`;
+  document.getElementById('bBackFloor').onclick=()=>{if(selRoom){selRoom.material=felt(selRoom.userData.base);selRoom=null;}showFloorInfo(f);};
+}
+setMode('ext');
+document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{if(selRoom){selRoom.material=felt(selRoom.userData.base);selRoom=null;}setMode(b.dataset.m);});
+
+/* ---------- camera ---------- */
+const HOME={pos:new THREE.Vector3(2,17,19),target:new THREE.Vector3(0.5,0,0.8)};
+camera.position.copy(HOME.pos);controls.target.copy(HOME.target);
+let fly=null;
+function flyTo(pos,target,ms=900){fly={p0:camera.position.clone(),t0:controls.target.clone(),p1:pos,t1:target,s:performance.now(),ms};}
+
+/* ---------- selection ---------- */
+let selected=null;
+function tint(id,on){bMeta[id].group.children.filter(m=>m.isMesh).forEach(m=>{m.material=on?new THREE.MeshStandardMaterial({color:new THREE.Color(m.userData.base).offsetHSL(0,0.05,-0.08),map:FT,bumpMap:FTB,bumpScale:.025,roughness:1,emissive:0x221100,emissiveIntensity:.25}):felt(m.userData.base)});}
+function select(id){
+  if(selected){tint(selected,false);bMeta[selected].label.el.classList.remove('sel');}
+  selected=id; const b=bMeta[id]; tint(id,true); b.label.el.classList.add('sel');
+  const counts={};FAC.filter(f=>f[3]===id).forEach(f=>counts[f[0]]=(counts[f[0]]||0)+1);
+  const facs=Object.entries(counts).map(([t,n])=>`<span>${FACNAME[t]} × ${n}</span>`).join('');
+  const near=POINTS.filter(([n,x,z])=>{const[a,bz]=P(x,z);return Math.hypot(a-b.center.x,bz-b.center.z)<2.6;}).map(p=>p[0]);
+  infoEl.innerHTML=`<div class="name">${b.name}</div>
+    <p>${b.floors?b.floors+' 層樓・':''}${b.desc}</p>
+    ${facs?`<div class="facs">${facs}</div>`:''}
+    ${near.length&&show.pts?`<p>鄰近危險角落：${[...new Set(near)].join('、')}</p>`:''}`;
+  document.querySelectorAll('#chips button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.id===id));
+  const c=b.center.clone();c.y=0;
+  const dir=camera.position.clone().sub(controls.target).normalize();
+  flyTo(c.clone().add(dir.multiplyScalar(9)).setY(Math.max(5,b.top+5)),c,reduce?1:900);
+}
+const chips=document.getElementById('chips');
+BUILDINGS.forEach(b=>{const btn=document.createElement('button');btn.textContent=b.name;btn.dataset.id=b.id;btn.setAttribute('aria-pressed','false');btn.onclick=()=>select(b.id);chips.appendChild(btn);});
+
+/* ---------- picking ---------- */
+const ray=new THREE.Raycaster(),mouse=new THREE.Vector2(),tip=document.getElementById('tip');
+let hoverId=null,downXY=null;
+function pick(e){const r=canvas.getBoundingClientRect();mouse.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(mouse,camera);const hits=ray.intersectObjects(pickables.filter(visDeep),false);return hits[0]&&hits[0].object.userData;}
+canvas.addEventListener('pointermove',e=>{
+  if(e.pointerType!=='mouse')return;
+  const u=pick(e);const r=canvas.getBoundingClientRect();
+  if(u){tip.hidden=false;tip.style.left=(e.clientX-r.left)+'px';tip.style.top=(e.clientY-r.top)+'px';
+    tip.textContent=u.kind==='b'?bMeta[u.id].name:u.kind==='r'?`${u.f}F・${FLOORS[u.f].rooms[u.i][5]}`:`${FACNAME[u.t]}・${bMeta[u.bid].name}`;canvas.style.cursor='pointer';}
+  else{tip.hidden=true;canvas.style.cursor='grab';}
+});
+canvas.addEventListener('pointerdown',e=>{downXY=[e.clientX,e.clientY];});
+canvas.addEventListener('pointerup',e=>{if(!downXY||Math.hypot(e.clientX-downXY[0],e.clientY-downXY[1])>6)return;
+  const u=pick(e);if(!u)return;if(u.kind==='r'){showRoom(u.f,u.i);return;}select(u.kind==='b'?u.id:u.bid);});
+canvas.addEventListener('pointerleave',()=>tip.hidden=true);
+
+/* ---------- controls UI ---------- */
+document.getElementById('bReset').onclick=()=>flyTo(HOME.pos.clone(),HOME.target.clone());
+document.getElementById('bTop').onclick=()=>flyTo(new THREE.Vector3(0.5,30,0.9),new THREE.Vector3(0.5,0,0.8));
+document.getElementById('bHere').onclick=()=>{setMode('1');const t=new THREE.Vector3(hx+0.35,0,hz);flyTo(t.clone().add(new THREE.Vector3(-2.5,6,5.5)),t);};
+const bSpin=document.getElementById('bSpin');
+bSpin.onclick=()=>{controls.autoRotate=!controls.autoRotate;bSpin.setAttribute('aria-pressed',controls.autoRotate);};
+const bPts=document.getElementById('bPts');
+bPts.onclick=()=>{show.pts=!show.pts;pinGroup.visible=show.pts;bPts.setAttribute('aria-pressed',show.pts);};
+document.getElementById('tFac').onchange=e=>{facGroup.visible=e.target.checked;};
+document.getElementById('tLbl').onchange=e=>{show.lbl=e.target.checked;};
+const panel=document.getElementById('panel');
+document.getElementById('bMin').onclick=e=>{panel.classList.toggle('min');e.target.textContent=panel.classList.contains('min')?'展開':'收合';};
+if(innerWidth<=700)panel.classList.add('min'),document.getElementById('bMin').textContent='展開';
+
+/* ---------- loop ---------- */
+function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;
+  camera.fov=w<600?50:38;camera.updateProjectionMatrix();}
+new ResizeObserver(resize).observe(canvas);resize();
+function loop(now){
+  if(fly){let t=Math.min(1,(now-fly.s)/fly.ms);const e=t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+    camera.position.lerpVectors(fly.p0,fly.p1,e);controls.target.lerpVectors(fly.t0,fly.t1,e);if(t>=1)fly=null;}
+  Object.values(floorObjs).forEach(o=>{o.grp.position.y+=(o.targetY-o.grp.position.y)*(reduce?1:0.14);});
+  controls.update();
+  const k=(now/1000)%1.6/1.6;ring.scale.setScalar(1+k*2.2);ring.material.opacity=1-k;
+  beacon.position.y=0.25+Math.sin(now/300)*0.05;
+  renderer.render(scene,camera);placeLabels();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
