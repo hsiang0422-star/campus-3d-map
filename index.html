@@ -92,6 +92,18 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .toggles{display:flex;flex-direction:column;gap:6px;font-size:.84rem}
 .toggles label{display:flex;align-items:center;gap:8px;cursor:pointer}
 .hint{font-size:.74rem;color:var(--muted);line-height:1.5}
+.ctrl{position:absolute;left:max(12px,env(safe-area-inset-left,0px));top:58px;width:196px;background:var(--panel);border:1px solid var(--line);
+  border-radius:14px;padding:0 12px 12px;box-shadow:0 6px 24px rgba(40,30,20,.12);z-index:3}
+.ctrl.dragging{box-shadow:0 14px 40px rgba(40,30,20,.28)}
+.ctrl.min .cbody{display:none}
+.ctrl.min{padding-bottom:0}.ctrl.min .phead{border-bottom:0;margin-bottom:0}
+.cbody{display:flex;flex-direction:column;gap:10px}
+.cbody h3{font-size:.72rem;font-weight:500;color:var(--muted);margin:0 0 4px;letter-spacing:.08em}
+.pad{display:grid;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(3,34px);gap:4px;justify-content:center}
+.pad button,.crow button{padding:0;border-radius:9px;font-size:1rem;line-height:1;display:grid;place-items:center;touch-action:none;user-select:none;-webkit-user-select:none}
+.crow{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.crow button{height:32px;font-size:.8rem}
+.cmode{display:flex;gap:4px}.cmode button{flex:1;padding:5px 0;font-size:.78rem}
 @media (max-width:700px){
   .panel{top:auto;bottom:max(10px,env(safe-area-inset-bottom,0px));left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));
     width:auto;max-height:46%;padding:0 12px 12px}
@@ -107,6 +119,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
       <button id="bReset">重設視角</button>
       <button id="bTop">俯視</button>
       <button id="bPanel" aria-pressed="true">資訊面板</button>
+      <button id="bCtrl" aria-pressed="true">地圖操作</button>
       <button id="bLbl" aria-pressed="false">建築名稱</button>
       <button id="bPts" aria-pressed="false">危險角落</button>
       <button id="bSpin" aria-pressed="false">自動旋轉</button>
@@ -116,6 +129,26 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
     <canvas id="c"></canvas>
     <div id="labels"></div>
     <nav class="topbar" id="chips" aria-label="建築"></nav>
+    <div class="ctrl" id="ctrl">
+      <div class="phead" id="chead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>地圖操作<button class="collapse" id="cMin">收合</button></div>
+      <div class="cbody">
+        <div><h3>平移（按住連續移動）</h3>
+          <div class="pad">
+            <span></span><button data-act="pan" data-x="0" data-z="1" aria-label="往前平移">▲</button><span></span>
+            <button data-act="pan" data-x="-1" data-z="0" aria-label="往左平移">◀</button><button id="cHome" aria-label="重設視角" title="重設視角">⌂</button><button data-act="pan" data-x="1" data-z="0" aria-label="往右平移">▶</button>
+            <span></span><button data-act="pan" data-x="0" data-z="-1" aria-label="往後平移">▼</button><span></span>
+          </div></div>
+        <div><h3>旋轉・角度</h3>
+          <div class="crow">
+            <button data-act="rot" data-v="1">⟲ 左轉</button><button data-act="rot" data-v="-1">右轉 ⟳</button>
+            <button data-act="tilt" data-v="-1">抬高視角</button><button data-act="tilt" data-v="1">壓低視角</button>
+          </div></div>
+        <div><h3>縮放</h3>
+          <div class="crow"><button data-act="zoom" data-v="-1">＋ 放大</button><button data-act="zoom" data-v="1">－ 縮小</button></div></div>
+        <div><h3>滑鼠左鍵／單指拖曳</h3>
+          <div class="cmode" id="cmode"><button data-m="rotate" aria-pressed="true">旋轉</button><button data-m="pan" aria-pressed="false">平移</button></div></div>
+      </div>
+    </div>
     <div id="tip" hidden></div>
     <aside class="panel" id="panel">
       <div class="phead" id="phead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>資訊面板・拖曳移動<button class="collapse" id="bMin">收合</button></div>
@@ -817,6 +850,56 @@ if(innerWidth<=700)setMin(true);
   [head,grip].forEach(el=>{el.addEventListener('pointermove',move);el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);});
   head.addEventListener('dblclick',e=>{if(e.target.closest('button'))return;['left','top','right','bottom','width','height','maxHeight'].forEach(k=>panel.style[k]='');sized=false;try{localStorage.removeItem(KEY);}catch(_){}});
   new ResizeObserver(()=>{if(panel.style.left){const c=cur();clampApply({x:c.x,y:c.y});}}).observe(stage);
+})();
+
+/* ---------- movable map-control panel ---------- */
+(function(){
+  const box=document.getElementById('ctrl'),head=document.getElementById('chead'),stage=box.parentElement;
+  const off=new THREE.Vector3(),sph=new THREE.Spherical();
+  function act(a,x,z,v){
+    fly=null;off.copy(camera.position).sub(controls.target);
+    if(a==='pan'){const fwd=off.clone().setY(0).normalize().negate(),right=new THREE.Vector3().crossVectors(fwd,new THREE.Vector3(0,1,0));
+      const step=0.012*off.length();const d=fwd.multiplyScalar(z*step).add(right.multiplyScalar(x*step));
+      controls.target.add(d);camera.position.add(d);}
+    else if(a==='rot'){off.applyAxisAngle(new THREE.Vector3(0,1,0),v*0.03);camera.position.copy(controls.target).add(off);}
+    else if(a==='tilt'){sph.setFromVector3(off);sph.phi=Math.min(controls.maxPolarAngle,Math.max(0.12,sph.phi+v*0.025));off.setFromSpherical(sph);camera.position.copy(controls.target).add(off);}
+    else if(a==='zoom'){const L=off.length(),n=Math.min(controls.maxDistance,Math.max(controls.minDistance,L*(1+v*0.03)));off.setLength(n);camera.position.copy(controls.target).add(off);}
+  }
+  let hold=null;
+  function stop(){if(hold){cancelAnimationFrame(hold.raf);hold=null;}}
+  box.querySelectorAll('[data-act]').forEach(b=>{
+    b.addEventListener('pointerdown',e=>{e.preventDefault();stop();b.setPointerCapture(e.pointerId);
+      const run=()=>{act(b.dataset.act,+(b.dataset.x||0),+(b.dataset.z||0),+(b.dataset.v||0));hold.raf=requestAnimationFrame(run);};
+      hold={raf:0};run();});
+    ['pointerup','pointercancel','lostpointercapture'].forEach(t=>b.addEventListener(t,stop));
+  });
+  document.getElementById('cHome').onclick=()=>flyTo(HOME.pos.clone(),HOME.target.clone());
+  // left-drag / one-finger mode
+  box.querySelectorAll('#cmode button').forEach(b=>b.onclick=()=>{
+    const pan=b.dataset.m==='pan';
+    controls.mouseButtons.LEFT=pan?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;
+    controls.touches.ONE=pan?THREE.TOUCH.PAN:THREE.TOUCH.ROTATE;
+    box.querySelectorAll('#cmode button').forEach(x=>x.setAttribute('aria-pressed',x===b));});
+  // collapse / show
+  const cMin=document.getElementById('cMin');
+  const setMin=on=>{box.classList.toggle('min',on);cMin.textContent=on?'展開':'收合';};
+  cMin.onclick=()=>setMin(!box.classList.contains('min'));
+  if(innerWidth<=700)setMin(true);
+  const bCtrl=document.getElementById('bCtrl');
+  bCtrl.onclick=()=>{box.hidden=!box.hidden;bCtrl.setAttribute('aria-pressed',!box.hidden);if(!box.hidden)setMin(false);};
+  // drag to move, remembered per browser
+  const KEY='campus3d-ctrl';
+  function place(x,y){const W=stage.clientWidth,H=stage.clientHeight;x=Math.min(Math.max(4,x),Math.max(4,W-box.offsetWidth-4));y=Math.min(Math.max(4,y),Math.max(4,H-box.offsetHeight-4));
+    Object.assign(box.style,{left:x+'px',top:y+'px'});return{x,y};}
+  try{const r=JSON.parse(localStorage.getItem(KEY)||'null');if(r)place(r.x,r.y);}catch(e){}
+  let st=null;
+  head.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;const a=box.getBoundingClientRect(),s=stage.getBoundingClientRect();
+    st={sx:e.clientX,sy:e.clientY,x:a.left-s.left,y:a.top-s.top};head.setPointerCapture(e.pointerId);box.classList.add('dragging');e.preventDefault();});
+  head.addEventListener('pointermove',e=>{if(st)st.last=place(st.x+e.clientX-st.sx,st.y+e.clientY-st.sy);});
+  const end=()=>{if(!st)return;box.classList.remove('dragging');if(st.last)try{localStorage.setItem(KEY,JSON.stringify(st.last));}catch(e){}st=null;};
+  head.addEventListener('pointerup',end);head.addEventListener('pointercancel',end);
+  head.addEventListener('dblclick',e=>{if(e.target.closest('button'))return;box.style.left='';box.style.top='';try{localStorage.removeItem(KEY);}catch(_){}});
+  new ResizeObserver(()=>{if(box.style.left){const a=box.getBoundingClientRect(),s=stage.getBoundingClientRect();place(a.left-s.left,a.top-s.top);}}).observe(stage);
 })();
 
 /* ---------- loop ---------- */
