@@ -748,9 +748,12 @@ function select(id){
   flyTo(c.clone().add(dir.multiplyScalar(9)).setY(Math.max(5,b.top+5)),c,reduce?1:900);
 }
 const chips=document.getElementById('chips');
-BUILDINGS.forEach(b=>{const btn=document.createElement('button');btn.textContent=b.name;btn.dataset.id=b.id;btn.setAttribute('aria-pressed','false');btn.onclick=()=>select(b.id);
-  // hover preview only for a real mouse; taps on touch screens would otherwise leave names stuck on
-  btn.onpointerenter=e=>{if(e.pointerType==='mouse')focusB(b.id,true);};btn.onpointerleave=e=>{if(e.pointerType==='mouse'&&selected!==b.id)focusB(b.id,false);};chips.appendChild(btn);});
+BUILDINGS.forEach(b=>{const btn=document.createElement('button');btn.textContent=b.name;btn.dataset.id=b.id;btn.setAttribute('aria-pressed','false');
+  // first tap shows the name and flies there; a second tap on the same chip hides it again
+  btn.onclick=()=>{if(selected===b.id)deselect();else select(b.id);};chips.appendChild(btn);});
+const INFO0=infoEl.innerHTML;
+function deselect(){if(!selected)return;tint(selected,false);bMeta[selected].label.el.classList.remove('sel');focusB(selected,false);selected=null;
+  document.querySelectorAll('#chips button').forEach(x=>x.setAttribute('aria-pressed','false'));infoEl.innerHTML=INFO0;}
 
 /* ---------- picking ---------- */
 const ray=new THREE.Raycaster(),mouse=new THREE.Vector2(),tip=document.getElementById('tip');
