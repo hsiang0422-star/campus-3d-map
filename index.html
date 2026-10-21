@@ -213,7 +213,7 @@ const BUILDINGS=[
   desc:'教學大樓南北棟之間的磚面廣場：有白色彎曲步道線、地面圓形馬賽克和彩色裝置藝術，外側接草坪。'},
  {id:'corridor',name:'風雨走廊（校車候車棚）',floors:1,color:0xf2f3f1,label:[21.3,9.7],parts:[],topH:0.95,
   desc:'連接南棟教學大樓與校門方向的有頂走廊。'},
- {id:'wash1',name:'南智洗車場',floors:1,color:0xd7e7ef,label:[21.1,2.8],parts:[[19.9,2.55,22.3,2.95,0.38]],desc:'行政大樓北側。'},
+ {id:'wash1',name:'南智洗車場',floors:1,color:0x5f8f6a,label:[21.5,1.85],parts:[],topH:0.3,desc:'北側入口車道旁的綠色屋頂棚屋。北側入口有深色校名立柱與伸縮門，車道沿行政大樓北側進入校園。'},
  {id:'wash2',name:'儀安洗車場',floors:1,color:0xa9cdb1,label:[23.35,5.3],parts:[],topH:0.4,desc:'沿長和路二段的長條形低矮棚屋，淡綠色浪板屋頂；外側是一整排大王椰子、木質圍籬與大榕樹，編號 7 在旁。'},
  {id:'tower',name:'高壓電設施',floors:2,color:0xe3e1dc,label:[23.15,3.85],parts:[[22.7,3.55,23.6,4.1,0.84]],desc:'行政大樓東北角的兩層樓高壓電設施，請勿靠近。'},
  {id:'guard',name:'傳達室',floors:2,color:0x8f8679,label:[23.5,6.83],parts:[[23.05,6.6,23.95,7.06,0.84]],desc:'校門旁的兩層樓傳達室，深色斜屋頂，訪客由此登記。'},
@@ -227,12 +227,12 @@ const POINTS=[[1,2.7,4.7],[2,5.6,3.0],[3,8.6,2.7],[4,9.5,3.1],[7,23.8,4.9],[7,25
 const FAC=[
  ['e',6.85,3.6,'canteen'],['m',6.6,3.05,'canteen'],['f',6.6,3.4,'canteen'],['s',6.6,4.3,'canteen'],['s',8.4,4.3,'canteen'],
  ['s',9.8,3.9,'kui'],['s',11.1,3.9,'kui'],['s',4.25,4.8,'dorm'],
- ['e',19.5,4.2,'admin'],['m',20.0,3.35,'admin'],['d',20.4,3.35,'admin'],['m',21.3,3.35,'admin'],['s',21.8,3.35,'admin'],['s',20.0,7.05,'admin'],['f',22.2,7.05,'admin'],
+ ['e',19.5,4.2,'admin'],['g',20.0,3.35,'admin'],['d',20.4,3.35,'admin'],['g',21.3,3.35,'admin'],['s',21.8,3.35,'admin'],['s',20.0,7.05,'admin'],['g',22.2,7.05,'admin'],
 ];
-const FACNAME={e:'電梯',s:'樓梯（往上）',d:'樓梯（往下）',m:'男廁',f:'女廁'};
-const FACCOL={e:0x3f8fd8,s:0xf2d64b,d:0xe8a58e,m:0x5fb3e6,f:0xe98f78,a:0x2f6fb5};
+const FACNAME={e:'電梯',s:'樓梯（往上）',d:'樓梯（往下）',m:'男廁',f:'女廁',g:'性別友善廁所'};
+const FACCOL={e:0x3f8fd8,s:0xf2d64b,d:0xe8a58e,m:0x5fb3e6,f:0xe98f78,a:0x2f6fb5,g:0x8a6fc0};
 const NEIGH=[['安南醫院',10.5,1.5,2.75],['仁愛之家',2.6,2.4],['和順國中',1.7,6.8],['文中21',24.4,11.7],['長和路二段',25.6,5.0],['長和路二段 140 巷',9.5,11.4]];
-const BOUND=[[0.9,3.5],[23.1,2.6],[24.1,7.1],[24.8,8.8],[25.8,10.0],[17.0,13.6],[1.6,4.9]];
+const BOUND=[[0.9,3.5],[18.9,2.78],[18.9,1.65],[23.35,1.65],[23.5,3.1],[24.1,7.1],[24.8,8.8],[25.8,10.0],[17.0,13.6],[1.6,4.9]];
 const GRASS=[[5.9,4.95],[13.7,4.95],[13.7,5.0],[16.8,5.0],[16.8,12.0],[15.3,12.0],[5.0,6.2]];
 const TREES=[[1.7,3.8,.9],[2.1,4.3,.6],[6.0,5.6,.8],[8.8,4.9,.7],[13.0,5.6,.8],[13.5,6.1,.55],[16.9,2.7,.8],[16.2,3.0,.5],
  [10.8,9.6,.8],[11.3,10.2,.55],[11.9,10.3,.7],[12.4,10.6,.5],[22.8,3.1,.55],[23.1,3.4,.45],[24.5,9.6,.7],[24.8,10.3,.45],[20.9,11.1,.75],[21.2,11.6,.5]];
@@ -475,7 +475,31 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
      const rail=new THREE.Mesh(new THREE.BoxGeometry(len,0.025,0.02),fm);rail.position.lerpVectors(a,b,.5);rail.position.y=0.15;rail.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);fence.add(rail);
      const r2=rail.clone();r2.position.y=0.07;fence.add(r2);
      for(let i=0;i<=n;i++){const p=new THREE.Mesh(new THREE.BoxGeometry(0.025,0.2,0.025),fm);p.position.lerpVectors(a,b,i/n);p.position.y=0.1;fence.add(p);}};
-   run(23.15,2.75,24.1,7.0);run(24.82,8.95,25.75,10.0);add(fence);}
+   run(23.5,3.1,24.1,7.0);run(23.35,1.65,23.43,1.95);run(24.82,8.95,25.75,10.0);add(fence);}
+  // north entrance (street photo): driveway from 長和路二段 along the north side, a tall dark name pillar, retractable gate, green-roofed car-wash shed
+  {const drive=new THREE.Mesh(extrude(polyShape([[19.0,2.05],[23.45,2.05],[23.85,1.98],[23.85,2.62],[23.48,2.55],[19.0,2.55]]),0.03,false),felt(0xb9b5ad));
+   drive.position.y=0.02;drive.receiveShadow=true;scene.add(drive);
+   for(let x=19.3;x<23.2;x+=0.45){const d=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.01,0.03),felt(0xf4f2ee));const p=at(x,2.3);d.position.set(p.x,0.056,p.z);scene.add(d);}
+   // tall slate pillar with the school name in gold, red cap
+   const S=64,H=640,cv=document.createElement('canvas');cv.width=S;cv.height=H;const q=cv.getContext('2d');
+   q.fillStyle='#3e4651';q.fillRect(0,0,S,H);q.fillStyle='#d9b45a';q.font='700 50px "LXGW WenKai TC","Noto Serif TC",serif';q.textAlign='center';q.textBaseline='middle';
+   const name='國立臺南特殊教育學校';[...name].forEach((ch,i)=>q.fillText(ch,S/2,40+i*60));
+   const pt=new THREE.CanvasTexture(cv);pt.encoding=THREE.sRGBEncoding;
+   const side=new THREE.MeshStandardMaterial({color:0x3e4651,roughness:.6}),front=new THREE.MeshStandardMaterial({map:pt,roughness:.6});
+   const pg=new THREE.Group();pg.position.copy(at(23.55,2.82));pg.rotation.y=Math.PI/2-0.07;
+   const pillar=new THREE.Mesh(new THREE.BoxGeometry(0.18,1.6,0.16),[side,side,side,side,front,front]);pillar.position.y=0.8;pg.add(pillar);
+   const cap=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.08,0.18),felt(0xa8433a));cap.position.y=1.64;pg.add(cap);add(pg);
+   // stone gate posts and the half-closed accordion gate
+   [[23.45,2.0],[23.5,2.6]].forEach(([x,z])=>{const p=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.24,0.12),felt(0xb9b4ab));const v=at(x,z);p.position.set(v.x,0.12,v.z);add(p);});
+   const gm=new THREE.MeshStandardMaterial({color:0xc8ccd0,metalness:.4,roughness:.5}),a0=at(23.47,2.08),a1=at(23.49,2.52);
+   for(let i=0;i<14;i++){const bar=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.16,0.02),gm);bar.position.lerpVectors(a0,a1,i/13);bar.position.y=0.09;bar.rotation.x=(i%2?0.35:-0.35);scene.add(bar);}
+   // 南智洗車場: low shed with a green roof beside the driveway
+   const g=new THREE.Group();g.position.copy(at(21.5,1.85));
+   const wall=new THREE.Mesh(new THREE.BoxGeometry(2.6,0.22,0.3),felt(0xeeece6));wall.position.y=0.11;g.add(wall);
+   const roof=new THREE.Mesh(new THREE.BoxGeometry(2.7,0.03,0.42),felt(0x5f8f6a));roof.position.y=0.27;roof.rotation.x=0.12;g.add(roof);
+   for(let i=0;i<6;i++){const post=new THREE.Mesh(new THREE.BoxGeometry(0.025,0.26,0.025),felt(0x8c8f93));post.position.set(-1.25+i*0.5,0.13,0.19);g.add(post);}
+   add(g);}
+
   // 風雨走廊 = white curved bus canopy from the teaching building toward the gate, with yellow school buses
   {const g=new THREE.Group();const a=at(19.0,9.7),b=at(24.5,9.7);const L=a.distanceTo(b);
    const roof=new THREE.Mesh(new THREE.CylinderGeometry(0.8,0.8,L,28,1,true,Math.PI/2-0.8,1.6),new THREE.MeshStandardMaterial({color:0xf2f3f1,side:THREE.DoubleSide,roughness:.8}));
@@ -604,6 +628,13 @@ function iconCanvas(t){
     g.beginPath();g.arc(64,24,13,0,Math.PI*2);g.fill();
     g.beginPath();g.moveTo(52,42);g.lineTo(76,42);g.lineTo(94,94);g.lineTo(34,94);g.closePath();g.fill();
     g.fillRect(51,90,11,28);g.fillRect(66,90,11,28);
+  }else if(t==='g'){
+    // all-gender toilet: one figure, trousered on the left half and skirted on the right half
+    g.beginPath();g.arc(64,22,13,0,Math.PI*2);g.fill();
+    g.fillRect(44,40,20,40);g.fillRect(46,76,13,42);
+    g.beginPath();g.moveTo(64,40);g.lineTo(76,40);g.lineTo(90,92);g.lineTo(64,92);g.closePath();g.fill();
+    g.fillRect(68,90,10,28);
+    g.fillStyle='#8a6fc0';g.fillRect(62,36,4,84);
   }else if(t==='a'){
     g.lineWidth=9;g.beginPath();g.arc(58,86,24,0,Math.PI*2);g.stroke();
     g.beginPath();g.arc(60,20,10,0,Math.PI*2);g.fill();
