@@ -58,9 +58,20 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .lb.gate{font-family:var(--f-display);font-size:15px;font-weight:700;color:#d9452f}
 #tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--panel);font-size:.78rem;padding:4px 8px;border-radius:6px;
   transform:translate(-50%,-130%);white-space:nowrap}
-.panel{position:absolute;top:12px;right:max(12px,env(safe-area-inset-right,0px));width:280px;max-height:calc(100% - 24px);overflow:auto;
-  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:14px;
-  box-shadow:0 6px 24px rgba(40,30,20,.12)}
+.panel{position:absolute;top:12px;right:max(12px,env(safe-area-inset-right,0px));width:280px;max-height:calc(100% - 24px);overflow:hidden;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:0 14px 14px;display:flex;flex-direction:column;
+  box-shadow:0 6px 24px rgba(40,30,20,.12);z-index:3;min-width:220px;min-height:120px}
+.panel.dragging{box-shadow:0 14px 40px rgba(40,30,20,.28);opacity:.97}
+.phead{display:flex;align-items:center;gap:8px;padding:9px 0 8px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+  font-size:.75rem;color:var(--muted);border-bottom:1px dashed var(--line);margin-bottom:12px;flex:none}
+.phead:active{cursor:grabbing}
+.grip{width:22px;height:10px;flex:none;background:radial-gradient(circle,var(--muted) 1.2px,transparent 1.6px) 0 0/6px 5px;opacity:.7}
+.collapse{margin-left:auto;font-size:.72rem;padding:3px 9px}
+.pbody{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:14px;padding-right:2px}
+.pbody>*{flex-shrink:0}
+.panel.min .hide-min{display:none}
+.presize{position:absolute;right:0;bottom:0;width:22px;height:22px;cursor:nwse-resize;touch-action:none;
+  background:linear-gradient(135deg,transparent 50%,var(--muted) 50%,var(--muted) 56%,transparent 56%,transparent 68%,var(--muted) 68%,var(--muted) 74%,transparent 74%);opacity:.6;border-bottom-right-radius:14px}
 .panel h2{font-family:var(--f-display);font-size:1rem;margin:0 0 6px;letter-spacing:.05em}
 .topbar{position:absolute;top:10px;left:max(12px,env(safe-area-inset-left,0px));right:308px;display:flex;gap:6px;
   overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;z-index:2}
@@ -79,12 +90,9 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .toggles{display:flex;flex-direction:column;gap:6px;font-size:.84rem}
 .toggles label{display:flex;align-items:center;gap:8px;cursor:pointer}
 .hint{font-size:.74rem;color:var(--muted);line-height:1.5}
-.collapse{display:none}
 @media (max-width:700px){
   .panel{top:auto;bottom:max(10px,env(safe-area-inset-bottom,0px));left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));
-    width:auto;max-height:46%;gap:10px;padding:12px}
-  .panel.min .hide-min{display:none}
-  .collapse{display:block;position:absolute;top:8px;right:10px;font-size:.72rem;padding:3px 9px}
+    width:auto;max-height:46%;padding:0 12px 12px}
   h1 small{display:none}
 }
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
@@ -107,7 +115,8 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
     <nav class="topbar" id="chips" aria-label="建築"></nav>
     <div id="tip" hidden></div>
     <aside class="panel" id="panel">
-      <button class="collapse" id="bMin">收合</button>
+      <div class="phead" id="phead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>資訊面板・拖曳移動<button class="collapse" id="bMin">收合</button></div>
+      <div class="pbody">
       <div class="info" id="info" style="border-top:0;padding-top:0">
         <div class="name">選一棟建築</div>
         <p>點上方的建築名稱或模型上的建築查看說明，地圖會標出它的位置。教學大樓可切換 1F–4F。</p>
@@ -151,6 +160,8 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
         </div>
         <p class="hint">位置依平面圖比例估算，供導覽與簡報使用，非實測尺寸。</p>
       </div>
+      </div>
+      <div class="presize" id="presize" title="拖曳調整大小"></div>
     </aside>
   </div>
 </div>
@@ -628,6 +639,35 @@ document.getElementById('tLbl').onchange=e=>{show.lbl=e.target.checked;BUILDINGS
 const panel=document.getElementById('panel');
 document.getElementById('bMin').onclick=e=>{panel.classList.toggle('min');e.target.textContent=panel.classList.contains('min')?'展開':'收合';};
 if(innerWidth<=700)panel.classList.add('min'),document.getElementById('bMin').textContent='展開';
+
+/* ---------- draggable, resizable info panel ---------- */
+(function(){
+  const stage=panel.parentElement, head=document.getElementById('phead'), grip=document.getElementById('presize');
+  const KEY='campus3d-panel';
+  function clampApply(r){
+    const W=stage.clientWidth,H=stage.clientHeight;
+    if(r.w){r.w=Math.min(Math.max(220,r.w),W-8);panel.style.width=r.w+'px';}
+    if(r.h){r.h=Math.min(Math.max(120,r.h),H-8);panel.style.height=r.h+'px';panel.style.maxHeight='none';}
+    const pw=panel.offsetWidth,ph=panel.offsetHeight;
+    r.x=Math.min(Math.max(4,r.x),Math.max(4,W-pw-4));r.y=Math.min(Math.max(4,r.y),Math.max(4,H-ph-4));
+    Object.assign(panel.style,{left:r.x+'px',top:r.y+'px',right:'auto',bottom:'auto'});
+    return r;
+  }
+  function cur(){const a=panel.getBoundingClientRect(),b=stage.getBoundingClientRect();return{x:a.left-b.left,y:a.top-b.top,w:a.width,h:a.height};}
+  let sized=false;
+  function save(){try{const c=cur();if(!sized){delete c.w;delete c.h;}localStorage.setItem(KEY,JSON.stringify(c));}catch(e){}}
+  try{const r=JSON.parse(localStorage.getItem(KEY)||'null');if(r){sized=!!r.w;clampApply(r);}}catch(e){}
+  let st=null;
+  head.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;const c=cur();st={mode:'move',sx:e.clientX,sy:e.clientY,c};head.setPointerCapture(e.pointerId);panel.classList.add('dragging');e.preventDefault();});
+  grip.addEventListener('pointerdown',e=>{sized=true;const c=cur();st={mode:'size',sx:e.clientX,sy:e.clientY,c};grip.setPointerCapture(e.pointerId);panel.classList.add('dragging');e.preventDefault();});
+  function move(e){if(!st)return;const dx=e.clientX-st.sx,dy=e.clientY-st.sy;
+    if(st.mode==='move')clampApply({x:st.c.x+dx,y:st.c.y+dy});
+    else clampApply({x:st.c.x,y:st.c.y,w:st.c.w+dx,h:st.c.h+dy});}
+  function end(){if(!st)return;st=null;panel.classList.remove('dragging');save();}
+  [head,grip].forEach(el=>{el.addEventListener('pointermove',move);el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);});
+  head.addEventListener('dblclick',e=>{if(e.target.closest('button'))return;['left','top','right','bottom','width','height','maxHeight'].forEach(k=>panel.style[k]='');sized=false;try{localStorage.removeItem(KEY);}catch(_){}});
+  new ResizeObserver(()=>{if(panel.style.left){const c=cur();clampApply({x:c.x,y:c.y});}}).observe(stage);
+})();
 
 /* ---------- loop ---------- */
 function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;
