@@ -69,7 +69,9 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .collapse{margin-left:auto;font-size:.72rem;padding:3px 9px}
 .pbody{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:14px;padding-right:2px}
 .pbody>*{flex-shrink:0}
-.panel.min .hide-min{display:none}
+.panel.min .pbody,.panel.min .presize{display:none}
+.panel.min{height:auto!important;min-height:0;padding-bottom:0}
+.panel.min .phead{border-bottom:0;margin-bottom:0}
 .presize{position:absolute;right:0;bottom:0;width:22px;height:22px;cursor:nwse-resize;touch-action:none;
   background:linear-gradient(135deg,transparent 50%,var(--muted) 50%,var(--muted) 56%,transparent 56%,transparent 68%,var(--muted) 68%,var(--muted) 74%,transparent 74%);opacity:.6;border-bottom-right-radius:14px}
 .panel h2{font-family:var(--f-display);font-size:1rem;margin:0 0 6px;letter-spacing:.05em}
@@ -104,6 +106,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
     <div class="tools">
       <button id="bReset">重設視角</button>
       <button id="bTop">俯視</button>
+      <button id="bPanel" aria-pressed="true">資訊面板</button>
       <button id="bPts" aria-pressed="false">危險角落</button>
       <button id="bSpin" aria-pressed="false">自動旋轉</button>
     </div>
@@ -779,8 +782,12 @@ document.getElementById('tFac').onchange=e=>{facGroup.visible=e.target.checked;}
 const bLbl=document.getElementById('bLbl');
 bLbl.onclick=()=>{show.lbl=!show.lbl;if(!show.lbl)BUILDINGS.forEach(b=>{bMeta[b.id].label.force=false;});bLbl.setAttribute('aria-pressed',show.lbl);bLbl.textContent='建築名稱：'+(show.lbl?'開啟':'關閉');BUILDINGS.forEach(b=>leadVis(b.id));};
 const panel=document.getElementById('panel');
-document.getElementById('bMin').onclick=e=>{panel.classList.toggle('min');e.target.textContent=panel.classList.contains('min')?'展開':'收合';};
-if(innerWidth<=700)panel.classList.add('min'),document.getElementById('bMin').textContent='展開';
+const bMin=document.getElementById('bMin');
+function setMin(on){panel.classList.toggle('min',on);bMin.textContent=on?'展開':'收合';bMin.setAttribute('aria-expanded',!on);}
+bMin.onclick=()=>setMin(!panel.classList.contains('min'));
+const bPanel=document.getElementById('bPanel');
+bPanel.onclick=()=>{panel.hidden=!panel.hidden;bPanel.setAttribute('aria-pressed',!panel.hidden);if(!panel.hidden)setMin(false);};
+if(innerWidth<=700)setMin(true);
 
 /* ---------- draggable, resizable info panel ---------- */
 (function(){
