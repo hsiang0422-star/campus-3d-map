@@ -1133,6 +1133,30 @@ Object.entries(ADMIN_PLAN).forEach(([fk,D])=>{
   });
   admObjs[f]={grp,shell,inner};
 });
+
+// east side facade (from the side photo): brick floor bands, glazed upper floors, ground arcade columns, AC units, brick planter wall
+(function(){
+  const side=new THREE.Group(); side.userData.admExt=true; scene.add(side);
+  const brick=new THREE.MeshStandardMaterial({color:0xc9a27c,roughness:.9});
+  const glassS=new THREE.MeshStandardMaterial({color:0x7b8a92,roughness:.3,metalness:.1});
+  const cream=felt(0xe8dcc0), white=felt(0xf3f2ee), acM=felt(0xf1f1ee);
+  const bx=(w,h,d,m,x,y,z)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(x,y,z);b.castShadow=true;side.add(b);return b;};
+  [1,2,3].forEach(f=>{
+    const r=admRect(ADMIN_PLAN[f].foot[0]);
+    const xe=r.x1, z0=r.z0, z1=r.z1, zc=(z0+z1)/2, L=z1-z0, y0=(f-1)*FHA;
+    if(f>1){
+      bx(0.02,FHA*0.7,L-0.3,glassS,xe+0.01,y0+FHA*0.5,zc);
+      for(let z=z0+0.45;z<z1-0.2;z+=0.6)bx(0.03,FHA*0.7,0.03,white,xe+0.02,y0+FHA*0.5,z);
+      for(let z=z0+0.6;z<z1-0.3;z+=0.9)bx(0.22,0.18,0.3,acM,xe+0.12,y0+0.12,z);   // AC units on the face
+    }
+    if(f<=2)bx(0.05,0.05,L,brick,xe+0.02,f*FHA,zc);                          // brick band at each floor line
+    if(f===3)bx(0.05,0.05,L,brick,xe+0.02,3*FHA,zc);                         // roof-line band
+    if(f===1){
+      for(let z=z0+0.3;z<z1-0.2;z+=0.9)bx(0.12,FHA*0.95,0.12,cream,xe+0.04,FHA*0.475,z);   // ground arcade columns
+      bx(0.5,0.35,L+0.4,brick,xe+0.55,0.175,zc);                              // low brick planter wall
+    }
+  });
+})();
 show.admroom1=show.admroom2=show.admroom3=false;
 let admMode='ext', admNames=true;
 function admSetMode(m){
