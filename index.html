@@ -1124,7 +1124,7 @@ function admSetMode(m){
   Object.entries(admObjs).forEach(([fk,o])=>{const f=+fk;
     if(m==='ext'){o.grp.visible=false;o.grp.position.y=(f-1)*FHA;}
     else if(m==='exp'){o.grp.visible=true;o.shell.visible=false;o.inner.visible=true;o.grp.position.y=(f-1)*1.15;}
-    else{const n=+m;o.grp.visible=f<=n;o.shell.visible=f<n;o.inner.visible=f===n;o.grp.position.y=(f-1)*FHA;}
+    else{const n=+m;o.grp.visible=f<=n;o.shell.visible=false;o.inner.visible=f===n;o.grp.position.y=(f-1)*FHA;}
     show['admroom'+f]=admNames&&((m==='exp')||(m===String(f)));
   });
   scene.traverse(o=>{if(o.userData&&o.userData.kind==='b'&&o.userData.id==='admin'&&!o.userData.adm)o.visible=(m==='ext');});
