@@ -51,6 +51,8 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .plist{position:absolute;top:12px;right:12px;left:auto;width:340px;max-width:calc(100% - 24px);max-height:calc(100% - 24px);display:flex;flex-direction:column;background:var(--panel);border:2px solid #b8322a;border-radius:14px;padding:0 12px 8px;box-shadow:0 8px 28px rgba(80,20,10,.22);z-index:6}
 .plist.dragging{box-shadow:0 14px 40px rgba(80,20,10,.35)}
 .plist .plbody{overflow:auto;min-height:0;flex:1}
+.aseg{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0}.aseg button{font:inherit;font-size:.85rem;padding:5px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}.aseg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+#apanel{left:12px;right:auto;top:300px;width:230px}
 .fmin{height:auto!important}
 .fmin>*:not(.phead){display:none}
 .plitem{display:flex;gap:10px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #e6d9d6;padding:10px 2px;cursor:pointer;font:inherit;color:inherit}
@@ -219,6 +221,10 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
     <aside class="plist" id="plist" hidden aria-label="校園危險角落清單">
       <div class="phead dhead" id="plhead" title="拖曳移動"><span class="grip" aria-hidden="true"></span>校園危險角落清單・拖曳移動<button class="collapse" id="plMin">收合</button><button class="collapse" id="plClose">關閉</button></div>
       <div class="plbody" id="plbody"></div>
+    </aside>
+    <aside class="plist" id="apanel" hidden aria-label="行政大樓各樓層">
+      <div class="phead dhead" title="拖曳移動"><span class="grip" aria-hidden="true"></span>行政大樓各樓層・拖曳移動<button class="collapse" id="aMin">收合</button></div>
+      <div class="plbody"><div class="aseg" id="aseg"><button data-m="ext" aria-pressed="true">外觀</button><button data-m="1" aria-pressed="false">1F</button><button data-m="2" aria-pressed="false">2F</button><button data-m="3" aria-pressed="false">3F</button><button data-m="exp" aria-pressed="false">分層展開</button></div></div>
     </aside>
     <aside class="panel" id="panel">
       <div class="phead" id="phead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>教學大樓各樓層・拖曳移動<button class="collapse" id="bMin">收合</button></div>
@@ -1081,6 +1087,65 @@ function setMode(m){
   if(m!=='exp'){showFloorInfo(+m);}
 }
 const FLOORTOTAL={1:'3,680.67',2:'3,261.92',4:'1,554.14'};
+// ---------- 行政大樓分層（依平面圖 1F–3F）----------
+const ADMIN_PLAN={"1":{"foot":[[598,148,1003,742],[620,30,960,148]],"rooms":[[640,196,963,355,"cls","模擬工廠(一)"],[640,403,963,556,"cls","模擬工廠(二)"],[640,556,920,717,"off","總務處"],[920,556,963,603,"util","文具室"],[920,603,963,655,"util","檔案室"],[920,655,963,690,"util","小會談室"],[620,30,690,148,"wcm","男廁"],[745,90,800,148,"util","茶水間"],[800,90,870,148,"wcf","女廁"],[690,30,745,148,"st","樓梯"],[870,30,960,148,"st","樓梯"],[880,745,960,820,"wcf","女廁"],[570,350,598,405,"st","樓梯"],[1003,350,1035,405,"st","樓梯"],[575,740,640,810,"st","樓梯"],[570,230,598,268,"el","電梯"]]},"2":{"foot":[[610,137,1038,765],[650,0,725,137],[925,15,995,137],[650,765,715,860],[955,765,995,845]],"rooms":[[655,187,775,355,"off","職教教室(二)"],[820,187,995,355,"off","職教教室(一)"],[775,187,820,355,"util","（未標示）"],[655,405,742,565,"off","主計室"],[775,405,875,565,"util","實習材料室"],[875,405,995,570,"off","實習輔導處"],[655,565,775,700,"off","人事室"],[775,565,995,700,"cls","第一會議室"],[655,0,720,137,"wcf","女廁"],[690,85,720,130,"acc","殘廁"],[925,15,995,137,"st","樓梯"],[657,765,710,860,"st","樓梯"],[955,800,995,845,"wcm","性別友善廁所"],[565,280,610,315,"el","電梯"]]},"3":{"foot":[[597,30,1055,825],[555,157,597,230]],"rooms":[[650,118,993,755,"spc","活動中心"],[597,30,720,80,"wcm","男廁"],[720,30,912,118,"util","（未標示）"],[650,170,708,222,"util","（未標示）"],[680,222,706,250,"st","樓梯"],[965,225,993,255,"st","樓梯"],[912,30,1000,85,"st","樓梯"],[645,785,690,830,"st","樓梯"],[785,755,835,785,"st","樓梯"],[897,755,955,785,"st","樓梯"],[960,797,1003,825,"wcf","女廁"],[555,157,597,230,"el","電梯"]]}};
+const AD_S=0.00611, AD_X0=21.0, AD_Z0=5.2, AD_PX=800, AD_PY=386, FHA=0.42;
+const admPw=(px,py)=>P(AD_X0+(px-AD_PX)*AD_S, AD_Z0+(py-AD_PY)*AD_S);
+const admRect=r=>{const[a,b]=admPw(r[0],r[1]),[c,d]=admPw(r[2],r[3]);return{x0:Math.min(a,c),x1:Math.max(a,c),z0:Math.min(b,d),z1:Math.max(b,d)};};
+const AD_RT={cls:0xf6d27a,off:0xb9a7e0,util:0xd9d4c8,wcm:0x5fb3e6,wcf:0xe98f78,acc:0x7fc38a,st:0xd9d4c8,el:0xd9d4c8};
+const admGroup=new THREE.Group(); scene.add(admGroup);
+const admObjs={};
+Object.entries(ADMIN_PLAN).forEach(([fk,D])=>{
+  const f=+fk, grp=new THREE.Group(), shell=new THREE.Group(), inner=new THREE.Group();
+  grp.position.y=(f-1)*FHA; grp.add(shell); grp.add(inner); admGroup.add(grp);
+  D.foot.forEach(r=>{const w=admRect(r),cx=(w.x0+w.x1)/2,cz=(w.z0+w.z1)/2,W=w.x1-w.x0,Dd=w.z1-w.z0;
+    const m=new THREE.Mesh(new THREE.BoxGeometry(W,FHA-0.04,Dd),shellMat);m.position.set(cx,(FHA-0.04)/2,cz);
+    m.userData={kind:'b',id:'admin',adm:true};shell.add(m);pickables.push(m);
+    const sl=new THREE.Mesh(new THREE.BoxGeometry(W,0.05,Dd),slabMat);sl.position.set(cx,0.025,cz);inner.add(sl);});
+  D.rooms.forEach(r=>{const w=admRect(r),cx=(w.x0+w.x1)/2,cz=(w.z0+w.z1)/2,W=w.x1-w.x0,Dd=w.z1-w.z0,t=r[4];
+    const col=AD_RT[t]||0xd9d4c8;
+    const fl=new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.03,W-0.01),0.016,Math.max(0.03,Dd-0.01)),felt(col));
+    fl.position.set(cx,0.058,cz);fl.userData={kind:'r',f,i:0,base:col};inner.add(fl);
+    if(t==='st'||t==='el'){const tw=new THREE.Mesh(new THREE.BoxGeometry(W+0.02,FHA-0.02,Dd+0.02),towerMat);tw.position.set(cx,(FHA-0.02)/2,cz);tw.userData={kind:'b',id:'admin',adm:true};shell.add(tw);pickables.push(tw);}
+    const WH=0.2,WT=0.022;
+    [[w.x0,w.z0,w.x1,w.z0],[w.x0,w.z1,w.x1,w.z1],[w.x0,w.z0,w.x0,w.z1],[w.x1,w.z0,w.x1,w.z1]].forEach(([a,b,c,d])=>{
+      const horiz=(b===d),L=horiz?Math.abs(c-a):Math.abs(d-b);
+      const wm=new THREE.Mesh(new THREE.BoxGeometry(horiz?L:WT,WH,horiz?WT:L),shellMat);
+      wm.position.set((a+c)/2,0.05+WH/2,(b+d)/2);inner.add(wm);});
+    if(!r[5].startsWith('（未標示')&&t!=='st'&&t!=='el'){const L=addLabel(r[5],'room',new THREE.Vector3(),'admroom'+f);L.obj=fl;L.dy=0.32;}
+  });
+  admObjs[f]={grp,shell,inner};
+});
+show.admroom1=show.admroom2=show.admroom3=false;
+let admMode='ext';
+function admSetMode(m){
+  admMode=m;
+  Object.entries(admObjs).forEach(([fk,o])=>{const f=+fk;
+    if(m==='ext'){o.grp.visible=false;o.grp.position.y=(f-1)*FHA;}
+    else if(m==='exp'){o.grp.visible=true;o.shell.visible=false;o.inner.visible=true;o.grp.position.y=(f-1)*1.15;}
+    else{const n=+m;o.grp.visible=f<=n;o.shell.visible=f<n;o.inner.visible=f===n;o.grp.position.y=(f-1)*FHA;}
+    show['admroom'+f]=(m==='exp')||(m===String(f));
+  });
+  scene.traverse(o=>{if(o.userData&&o.userData.kind==='b'&&o.userData.id==='admin'&&!o.userData.adm)o.visible=(m==='ext');});
+  document.querySelectorAll('#aseg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===m));
+  if(m==='ext')return;
+  const c=bMeta.admin.center.clone();c.y=0;
+  const lift=m==='exp'?2.2:(+m-1)*FHA;
+  const dir=camera.position.clone().sub(controls.target);dir.y=0;dir.normalize();
+  const tgt=c.clone().setY(lift);
+  flyTo(tgt.clone().add(dir.multiplyScalar(m==='exp'?9:6.5)).setY(lift+(m==='exp'?6:5)),tgt,reduce?1:900);
+}
+const apanel=document.getElementById('apanel');
+function admSelect(id){
+  if(id==='admin'){apanel.hidden=false;if(admMode!=='ext')admSetMode('ext');}
+  else{apanel.hidden=true;if(admMode!=='ext')admSetMode('ext');}
+}
+document.querySelectorAll('#aseg button').forEach(b=>b.addEventListener('click',()=>admSetMode(b.dataset.m)));
+{const KEY='campus3d-apanel',stage=apanel.parentElement;
+ floatResizable(apanel,'campus3d-apanel-size',200,120);
+ floatCollapsible(apanel,document.getElementById('aMin'),'campus3d-apanel-min');
+}
+
 function showFloorInfo(f){
   const cnt={};FLOORS[f].rooms.forEach(r=>{const k=RT[r[4]][1];cnt[k]=(cnt[k]||0)+1;});
   infoEl.innerHTML=`<div class="name">教學大樓 ${f}F</div>
@@ -1127,6 +1192,7 @@ function select(id){
   selected=id; const b=bMeta[id]; tint(id,true); b.label.el.classList.add('sel');
   if(id==='teach')setPanel(true);   // floor controls live in the info panel
   else if(mode!=='ext'){if(selRoom){selRoom.material=felt(selRoom.userData.base);selRoom=null;}setMode('ext');}   // leaving the teaching building restores its exterior
+  admSelect(id);
   const counts={};FAC.filter(f=>f[3]===id).forEach(f=>counts[f[0]]=(counts[f[0]]||0)+1);
   const facs=Object.entries(counts).map(([t,n])=>`<span>${FACNAME[t]} × ${n}</span>`).join('');
   const near=POINTS.filter(([n,x,z])=>{const[a,bz]=P(x,z);return Math.hypot(a-b.center.x,bz-b.center.z)<2.6;}).map(p=>p[0]);
@@ -1172,7 +1238,7 @@ addEventListener('resize',placeList);
  bsize.addEventListener('pointermove',e=>{if(!rs)return;listSize={w:Math.max(200,Math.min(rs.w+e.clientX-rs.sx,innerWidth-rs.x-8)),h:Math.max(110,Math.min(rs.h+e.clientY-rs.sy,innerHeight-rs.y-8))};placeList();});
  const rend=()=>{if(!rs)return;rs=null;blist.classList.remove('dragging');try{localStorage.setItem(LKEY+'-size',JSON.stringify(listSize));localStorage.setItem(LKEY,JSON.stringify(listPos));}catch(e){}};
  bsize.addEventListener('pointerup',rend);bsize.addEventListener('pointercancel',rend);}
-function deselect(){if(!selected)return;tint(selected,false);bMeta[selected].label.el.classList.remove('sel');focusB(selected,false);selected=null;
+function deselect(){if(!selected)return;admSelect(null);tint(selected,false);bMeta[selected].label.el.classList.remove('sel');focusB(selected,false);selected=null;
   document.querySelectorAll('#chips button').forEach(x=>x.setAttribute('aria-pressed','false'));infoEl.innerHTML=INFO0;}
 
 /* ---------- picking ---------- */
