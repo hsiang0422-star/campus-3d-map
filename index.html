@@ -180,6 +180,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
       <button id="bPts" aria-pressed="false">危險角落</button>
       <button id="bSpin" aria-pressed="false">自動旋轉</button>
       <button id="bPanel" aria-expanded="true" aria-controls="panel">教學大樓各樓層 <span class="car" aria-hidden="true">▾</span></button>
+      <button id="bAdm" aria-pressed="false" aria-controls="apanel">行政大樓各樓層</button>
       <div class="bwrap" id="bwrap">
         <button id="bBld" aria-expanded="false" aria-controls="chips">各建築場域 <span class="car" aria-hidden="true">▾</span></button>
         <div class="blist" id="blist" hidden>
@@ -222,7 +223,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
       <div class="phead dhead" id="plhead" title="拖曳移動"><span class="grip" aria-hidden="true"></span>校園危險角落清單・拖曳移動<button class="collapse" id="plMin">收合</button><button class="collapse" id="plClose">關閉</button></div>
       <div class="plbody" id="plbody"></div>
     </aside>
-    <aside class="plist" id="apanel" aria-label="行政大樓各樓層">
+    <aside class="plist" id="apanel" hidden aria-label="行政大樓各樓層">
       <div class="phead dhead" title="拖曳移動"><span class="grip" aria-hidden="true"></span>行政大樓各樓層・拖曳移動<button class="collapse" id="aMin">收合</button></div>
       <div class="plbody"><div class="aseg" id="aseg"><button data-m="ext" aria-pressed="true">外觀</button><button data-m="1" aria-pressed="false">1F</button><button data-m="2" aria-pressed="false">2F</button><button data-m="3" aria-pressed="false">3F</button><button data-m="exp" aria-pressed="false">分層展開</button></div><div class="aseg"><button id="aNames" aria-pressed="true">空間名稱：顯示</button></div></div>
     </aside>
@@ -1137,9 +1138,12 @@ function admSetMode(m){
 }
 const apanel=document.getElementById('apanel');
 function admSelect(id){
-  if(id!=='admin'&&admMode!=='ext')admSetMode('ext');   // leaving the admin building restores its exterior; the panel stays visible
+  if(id==='admin'){apanel.hidden=false;bAdm.setAttribute('aria-pressed','true');}
+  else if(admMode!=='ext')admSetMode('ext');   // leaving the admin building restores its exterior
 }
 document.querySelectorAll('#aseg button').forEach(b=>b.addEventListener('click',()=>admSetMode(b.dataset.m)));
+const bAdm=document.getElementById('bAdm');
+bAdm.onclick=()=>{const open=apanel.hidden;apanel.hidden=!open;bAdm.setAttribute('aria-pressed',open);if(!open&&admMode!=='ext')admSetMode('ext');};
 document.getElementById('aNames').onclick=()=>{admNames=!admNames;const nb=document.getElementById('aNames');nb.setAttribute('aria-pressed',admNames);nb.textContent='空間名稱：'+(admNames?'顯示':'隱藏');admSetMode(admMode);};
 {const KEY='campus3d-apanel',stage=apanel.parentElement;
  floatResizable(apanel,'campus3d-apanel-size',200,120);
