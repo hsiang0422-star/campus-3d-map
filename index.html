@@ -241,7 +241,7 @@ const BUILDINGS=[
   desc:'L 型宿舍，北側為洗衣場，西側為烤肉區。'},
  {id:'canteen',name:'1F餐廳／2F桌球室',floors:2,color:0xf08a4b,label:[7.85,3.7],parts:[[6.4,2.9,9.3,4.5,0.88]],
   desc:'1 樓為餐廳，2 樓為桌球室。北側緊鄰安南醫院，東西兩側皆有樓梯。'},
- {id:'kui',name:'蕙質樓',floors:2,color:0xf4a35e,label:[10.5,3.7],parts:[[9.6,2.9,11.4,4.6,0.88]],
+ {id:'kui',name:'蕙質樓',floors:2,color:0xf4a35e,label:[10.6,3.7],parts:[[9.6,2.9,12.05,4.6,0.88]],
   desc:'位於學生餐廳東側，編號 13 位於樓前。'},
  {id:'teach',name:'教學大樓',floors:4,color:0xebe4d4,label:[18.05,8.27],parts:[],topH:1.68,
   desc:'L 型四層教學大樓（南北棟），依 1–4 樓平面圖建模。用「教學大樓樓層」切換各層。'},
@@ -695,6 +695,32 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
       const cab=new THREE.Mesh(extrude(rrShape(-0.2+CX,-0.15+CZ,0.17+CX,0.15+CZ,0.08),0.16,true),felt(0x3a4046));cab.position.y=0.2;g.add(cab);
       [[-0.2,0.18],[0.2,0.18],[-0.2,-0.18],[0.2,-0.18]].forEach(([wx,wz])=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.06,12),felt(0x2b2b2b));w.rotation.x=Math.PI/2;w.position.set(wx,0.05,wz);g.add(w);});
       g.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(g);}}
+})();
+
+
+// traffic light on a cantilever pole and a motorcycle waiting box by the gate on 長和路二段 (from street photo)
+(function(){
+  const at=(x,z,y=0)=>{const[a,b]=P(x,z);return new THREE.Vector3(a,y,b);};
+  // cantilever signal pole
+  const g=new THREE.Group();const base=at(24.15,6.5);g.position.copy(base);
+  const poleMat=felt(0xc7ccd0);
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.06,2.3,12),poleMat);pole.position.y=1.15;g.add(pole);
+  const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,1.7,10),poleMat);arm.rotation.z=Math.PI/2;arm.position.set(-0.85,2.15,0);g.add(arm);
+  const droop=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.25,8),poleMat);droop.position.set(-1.6,2.05,0);g.add(droop);
+  // signal head (3 lamps) hanging from arm end
+  const head=new THREE.Group();head.position.set(-1.6,1.78,0);
+  const hb=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.2,0.16),felt(0x2b2f33));hb.position.set(0,0.1,0);head.add(hb);
+  [[-0.16,0xe8352a],[0,0xf2c230],[0.16,0x33b05a]].forEach(([ox,c])=>{const lmp=new THREE.Mesh(new THREE.CircleGeometry(0.06,16),new THREE.MeshBasicMaterial({color:c}));lmp.position.set(ox,0.1,0.082);head.add(lmp);});
+  g.add(head);
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(g);
+  // motorcycle waiting box painted on the road just outside the gate
+  const S=128,cv=document.createElement('canvas');cv.width=cv.height=S;const q=cv.getContext('2d');
+  q.fillStyle='#2f7d46';q.fillRect(0,0,S,S);q.strokeStyle='#f4f2ea';q.lineWidth=8;q.strokeRect(6,6,S-12,S-12);
+  q.fillStyle='#f4f2ea';q.font='bold 30px sans-serif';q.textAlign='center';q.fillText('機車',S/2,46);q.fillText('待轉',S/2,84);
+  q.beginPath();q.arc(44,104,8,0,7);q.arc(84,104,8,0,7);q.fill();q.fillRect(40,96,48,6);
+  const tex=new THREE.CanvasTexture(cv);tex.encoding=THREE.sRGBEncoding;
+  const box=new THREE.Mesh(new THREE.PlaneGeometry(0.7,0.7),new THREE.MeshStandardMaterial({map:tex,roughness:.95}));
+  box.rotation.x=-Math.PI/2;const bp=at(24.9,7.7);box.position.set(bp.x,0.064,bp.z);box.rotation.z=0.18;scene.add(box);
 })();
 
 // little car by the gate
