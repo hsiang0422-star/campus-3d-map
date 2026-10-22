@@ -425,7 +425,8 @@ flat(polyShape(GRASS),0x83bf4f,0.015,0.05);
   const S=512,cv=document.createElement('canvas');cv.width=cv.height=S;const g=cv.getContext('2d');
   const pal=['#8b5d55','#7c6966','#946f68','#6e6365','#a07a70','#857471','#9a6258'];
   const C=16;g.fillStyle='#5d5250';g.fillRect(0,0,S,S);
-  for(let y=0;y<S;y+=C)for(let x=0;x<S;x+=C){g.fillStyle=pal[Math.random()*pal.length|0];g.fillRect(x+1,y+1,C-2,C-2);}
+  const red=['#8b5d55','#946f68','#a07a70','#9a6258'],grey=['#8e9296','#7f8489','#a2a6aa','#7c8186'];
+  for(let y=0;y<S;y+=C)for(let x=0;x<S;x+=C){const band=(Math.floor(x/(C*8))+Math.floor(y/(C*8)))%2===0;const set=band?red:grey;g.fillStyle=set[Math.random()*set.length|0];g.fillRect(x+1,y+1,C-2,C-2);}
   g.fillStyle='#e8dcc4';for(let x=8;x<S;x+=C*2){if(Math.random()<.75)g.fillRect(x,S*0.78,C-3,C-3);}
   for(let y=8;y<S;y+=C*2){if(Math.random()<.6)g.fillRect(S*0.66,y,C-3,C-3);}
   g.strokeStyle='rgba(235,240,240,.92)';g.lineWidth=5;g.lineCap='round';
