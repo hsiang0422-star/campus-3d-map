@@ -215,6 +215,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
           <button data-m="4" aria-pressed="false">4F</button>
           <button data-m="exp" aria-pressed="false">分層展開</button>
         </div>
+        <div class="seg" style="margin-top:6px"><button id="bRoomNames" aria-pressed="true">教室名稱：顯示</button></div>
       </div>
       <div class="info" id="info">
         <p>選樓層看教室配置，點任一間教室可看名稱與面積。</p>
@@ -829,6 +830,7 @@ function showPoint(n){
 ptLabels.forEach((L,k)=>{const n=POINTS[k][0];L.el.style.pointerEvents='auto';L.el.style.cursor='pointer';L.el.title=POINT_INFO[n]?POINT_INFO[n].title:'校園危險角落 '+n;
   L.el.addEventListener('click',()=>showPoint(n));if(POINT_INFO[n])L.el.classList.add('has-photo');});
 const show={pts:false,lbl:false,nb:true,here:true,fl:false,room1:false,room2:false,room3:false,room4:false};
+let roomNames=true;
 const infoEl=document.getElementById('info');
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 pinGroup.visible=false;
@@ -839,6 +841,7 @@ function placeLabels(){
   labels.forEach(L=>{
     if(!show[L.group]&&!L.force){L.el.hidden=true;return;}
     if(L.group==='pts'&&L.pvis===false){L.el.hidden=true;return;}
+    if(L.group&&L.group.indexOf('room')===0&&!roomNames){L.el.hidden=true;return;}
     if(L.obj){if(!visDeep(L.obj)){L.el.hidden=true;return;}L.obj.getWorldPosition(v);if(L.off)v.add(L.off);else v.y=L.obj.parent.parent.position.y+L.dy;}else v.copy(L.pos);
     v.project(camera);
     if(v.z>1){L.el.hidden=true;return;}
@@ -1101,6 +1104,8 @@ const bMin=document.getElementById('bMin');
 const bPanel=document.getElementById('bPanel');
 function setPanel(open){panel.hidden=!open;panel.classList.remove('min');bPanel.setAttribute('aria-expanded',open);}
 bPanel.onclick=()=>setPanel(panel.hidden);
+const bRoomNames=document.getElementById('bRoomNames');
+bRoomNames.onclick=()=>{roomNames=!roomNames;bRoomNames.setAttribute('aria-pressed',roomNames);bRoomNames.textContent='教室名稱：'+(roomNames?'顯示':'隱藏');};
 bMin.onclick=()=>setPanel(false);
 if(innerWidth<=700)setPanel(false);
 
