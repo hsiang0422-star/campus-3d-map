@@ -43,3 +43,8 @@
 - 拖曳移動仿照 `plist`／`dpanel` 的 pointer 事件寫法。
 
 目前符合標準的：各建築場域（`blist`）、教學大樓各樓層（`panel`）、地圖操作（`ctrl`）、危險角落資訊（`dpanel`）、校園危險角落清單（`plist`）。
+
+## 行政大樓模型
+- 平面圖資料：`admin-plan/`；參考照片：`admin-photo/`。
+- 程式關鍵字：`ADMIN_PLAN`、`admSetMode`、`admTileMat`、`admExt`。
+- 詳細說明見 `3D地圖重建說明.md` 第 8、9 節。
