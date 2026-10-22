@@ -1128,6 +1128,7 @@ function admSetMode(m){
     show['admroom'+f]=admNames&&((m==='exp')||(m===String(f)));
   });
   scene.traverse(o=>{if(o.userData&&o.userData.kind==='b'&&o.userData.id==='admin'&&!o.userData.adm)o.visible=(m==='ext');});
+  facGroup.children.forEach(o=>{if(o.userData&&o.userData.bid==='admin')o.visible=(m==='ext');});
   document.querySelectorAll('#aseg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===m));
   if(m==='ext')return;
   const c=bMeta.admin.center.clone();c.y=0;
