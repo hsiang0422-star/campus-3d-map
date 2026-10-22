@@ -271,7 +271,7 @@ const BUILDINGS=[
  {id:'teach',name:'教學大樓',floors:4,color:0xebe4d4,label:[18.05,8.27],parts:[],topH:1.68,
   desc:'L 型四層教學大樓（南北棟），依 1–4 樓平面圖建模。用「教學大樓樓層」切換各層。'},
  {id:'admin',name:'行政大樓／活動中心',floors:3,color:0xf3f2ee,label:[21.0,5.0],
-  parts:[[19.77,3.75,22.24,7.07,1.26,0xf3f2ee],[19.9,3.04,22.0,3.75,1.26,0xf3f2ee]],
+  parts:[[19.77,3.75,22.24,7.37,1.26,0xf3f2ee],[19.9,3.04,22.0,3.75,1.26,0xf3f2ee]],
   desc:'三樓為活動中心。白色磁磚外牆，兩側塔樓有橫向遮陽板，中央內退有米色陽台。正面朝南，門前為磚面臨停車位；北側為南智洗車場。'},
  {id:'xgate',name:'交流門',floors:0,color:0x26292c,label:[19.125,1.85],parts:[],topH:0.5,
   desc:'學校與安南醫院之間網狀圍牆上的黑色鐵門，醫院側有石階。'},
@@ -621,46 +621,29 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
 /* ---------- administration building details (from photo): tiled side towers with ledges, recessed balconied centre, parking in front ---------- */
 (function(){
   const at=(x,z,y=0)=>{const[a,b]=P(x,z);return new THREE.Vector3(a,y,b);};
-  const white=felt(0xf3f2ee), cream=felt(0xe8dcc0), grey=felt(0xc9c7c2), glass=new THREE.MeshStandardMaterial({color:0x3b444b,roughness:.35,metalness:.1});
-  const tileTex=(()=>{const S=128,cv=document.createElement('canvas');cv.width=cv.height=S;const c=cv.getContext('2d');
-    c.fillStyle='#efede8';c.fillRect(0,0,S,S);c.strokeStyle='#b9b4aa';c.lineWidth=3;
-    for(let i=0;i<=S;i+=32){c.beginPath();c.moveTo(i,0);c.lineTo(i,S);c.stroke();c.beginPath();c.moveTo(0,i);c.lineTo(S,i);c.stroke();}
-    const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;return t;})();
-  const tileMat=(w,h)=>{const t=tileTex.clone();t.repeat.set(Math.max(1,w/0.25),Math.max(1,h/0.25));t.needsUpdate=true;return new THREE.MeshStandardMaterial({map:t,roughness:.8});};
-  const g=new THREE.Group(); g.userData.admExt=true;   // exterior model: hidden while a floor mode is open
+  const white=felt(0xf3f2ee), cream=felt(0xe8dcc0), grey=felt(0xc9c7c2), glass=new THREE.MeshStandardMaterial({color:0x6f7d86,roughness:.6});
+  const g=new THREE.Group();
   const box=(w,h,d,m,p)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.copy(p);b.castShadow=true;b.receiveShadow=true;g.add(b);return b;};
-  const H3=FHA*3, TZ0=6.7, FRONT=7.37, CFRONT=7.07;   // total height, tower back edge, tower front, recessed centre front
-  const TOW=[[19.77,20.4],[21.62,22.24]];
-  // tiled side towers (full height) with vertical tile fins on the outer edges
-  TOW.forEach(([x0,x1])=>{const cx=(x0+x1)/2,w=x1-x0,d=FRONT-TZ0,zc=(TZ0+FRONT)/2;
-    box(w,H3,d,tileMat(w,H3),at(cx,zc,H3/2));
-    box(w,0.06,d+0.04,grey,at(cx,zc,H3+0.03));                             // parapet cap
-  });
-  [[19.74],[22.27]].forEach(([x])=>box(0.05,H3+0.04,0.7,tileMat(0.05,H3),at(x,7.03,H3/2)));
-  // ledges and dark windows on the tower faces
-  [[19.77,20.4,1],[21.62,22.24,-1]].forEach(([x0,x1])=>{const cx=(x0+x1)/2;
+  // horizontal sunshade ledges and small windows on both towers (front and outer faces)
+  [[19.3,20.25],[21.75,22.7]].forEach(([x0,x1],k)=>{
+    const cx=(x0+x1)/2,w=x1-x0;
     for(let f=0;f<3;f++){const y=0.42*f+0.32;
-      box(x1-x0+0.05,0.035,0.16,white,at(cx,FRONT+0.07,y));                 // front ledge
-      box(0.16,0.12,0.01,glass,at(cx-0.12,FRONT+0.01,y+0.1));box(0.16,0.12,0.01,glass,at(cx+0.12,FRONT+0.01,y+0.1));
+      box(w+0.04,0.035,0.16,white,at(cx,7.37,y));                         // front ledge
+      box(0.18,0.1,0.02,glass,at(cx-0.22,7.36,y+0.08));box(0.18,0.1,0.02,glass,at(cx+0.22,7.36,y+0.08));
+      const ox=k?x1:x0, sgn=k?1:-1;                                          // outer side ledges
+      for(let z=3.5;z<7.2;z+=1.0){box(0.14,0.035,0.7,white,at(ox+sgn*0.07,z+0.35,y));box(0.02,0.1,0.22,glass,at(ox+sgn*0.01,z+0.35,y+0.08));}
     }});
-  // side (outer) ledges and windows along the walls
-  [[19.77,-1],[22.24,1]].forEach(([x,sg])=>{
-    for(let f=0;f<3;f++){const y=0.42*f+0.32;
-      for(let z=4.0;z<6.9;z+=0.9){box(0.14,0.035,0.7,white,at(x+sg*0.07,z+0.35,y));box(0.01,0.12,0.2,glass,at(x+sg*0.01,z+0.35,y+0.1));}
-    }});
-  // recessed centre: balcony bands with railings on floors 2 and 3, glazed upper wall
+  // centre: two cream balcony bands with railings, a deep roof canopy and the entrance
   for(let f=1;f<=2;f++){const y=0.42*f;
-    box(1.3,0.05,0.3,cream,at(21.0,CFRONT-0.02,y));
-    box(1.3,0.1,0.02,white,at(21.0,CFRONT+0.12,y+0.08));
-    box(1.2,0.2,0.01,glass,at(21.0,CFRONT+0.01,y+0.15));}
-  box(1.62,0.05,0.55,grey,at(21.0,6.95,1.32));                             // roof canopy over the centre
-  box(1.3,0.06,0.5,grey,at(21.0,6.9,H3+0.03));                             // roof band above the centre
-  box(1.4,0.26,0.01,glass,at(21.0,CFRONT+0.005,0.14));                     // ground-floor glazing
-  box(0.6,0.03,0.18,felt(0x3f6f5a),at(21.0,CFRONT+0.12,0.3));              // green entrance awning
-  for(let s=0;s<3;s++)box(0.8-s*0.08,0.03,0.1,grey,at(21.0,FRONT-0.04-0.1*s,0.015+0.03*s)); // three steps up to the entrance
+    box(1.5,0.05,0.32,cream,at(21.0,7.03,y));
+    box(1.5,0.1,0.02,white,at(21.0,7.18,y+0.08));
+    box(1.4,0.22,0.02,glass,at(21.0,6.89,y+0.16));}
+  box(1.62,0.05,0.55,grey,at(21.0,6.95,1.32));                               // roof canopy
+  box(1.4,0.26,0.02,glass,at(21.0,6.89,0.14));                               // ground-floor glazing
+  box(0.6,0.03,0.18,felt(0x3f6f5a),at(21.0,7.0,0.3));                        // green entrance awning
+  for(let s=0;s<3;s++)box(0.8-s*0.08,0.03,0.12,grey,at(21.0,7.42+0.12*(2-s),0.015+0.03*s)); // steps
   [[20.45,7.45],[21.55,7.45]].forEach(([x,z])=>box(0.35,0.08,0.18,felt(0xd9d4c8),at(x,z,0.04)));   // planters
   scene.add(g);
-
   // brick parking court in front with white bay lines
   const S=512,cv=document.createElement('canvas');cv.width=cv.height=S;const c=cv.getContext('2d');
   const pal=['#9a6a62','#8a7a76','#a47d74','#7f7270','#b08a80'];c.fillStyle='#6a5e5c';c.fillRect(0,0,S,S);
@@ -1145,7 +1128,6 @@ function admSetMode(m){
     show['admroom'+f]=admNames&&((m==='exp')||(m===String(f)));
   });
   scene.traverse(o=>{if(o.userData&&o.userData.kind==='b'&&o.userData.id==='admin'&&!o.userData.adm)o.visible=(m==='ext');});
-  scene.traverse(o=>{if(o.userData&&o.userData.admExt)o.visible=(m==='ext');});
   facGroup.children.forEach(o=>{if(o.userData&&o.userData.bid==='admin')o.visible=(m==='ext');});
   document.querySelectorAll('#aseg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===m));
   if(m==='ext')return;
@@ -1446,3 +1428,6 @@ function loop(now){
 requestAnimationFrame(loop);
 })();
 </script>
+
+</body>
+</html>
