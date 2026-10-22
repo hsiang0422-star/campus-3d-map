@@ -629,7 +629,7 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
   const tileMat=(w,h)=>{const t=tileTex.clone();t.repeat.set(Math.max(1,w/0.25),Math.max(1,h/0.25));t.needsUpdate=true;return new THREE.MeshStandardMaterial({map:t,roughness:.8});};
   const g=new THREE.Group(); g.userData.admExt=true;   // exterior model: hidden while a floor mode is open
   const box=(w,h,d,m,p)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.copy(p);b.castShadow=true;b.receiveShadow=true;g.add(b);return b;};
-  const H3=FHA*3, TZ0=6.7, FRONT=7.37, CFRONT=7.37;   // total height, tower back edge, tower front, recessed centre front
+  const H3=1.26, TZ0=6.7, FRONT=7.37, CFRONT=7.37;   // total height, tower back edge, tower front, recessed centre front
   const TOW=[[19.77,20.4],[21.62,22.24]];
   // tiled side towers (full height) with vertical tile fins on the outer edges
   TOW.forEach(([x0,x1])=>{const cx=(x0+x1)/2,w=x1-x0,d=FRONT-TZ0,zc=(TZ0+FRONT)/2;
