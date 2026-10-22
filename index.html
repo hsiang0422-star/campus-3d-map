@@ -1090,7 +1090,7 @@ document.getElementById('bTop').onclick=()=>flyTo(new THREE.Vector3(0.5,30,0.9),
 const bSpin=document.getElementById('bSpin');
 bSpin.onclick=()=>{controls.autoRotate=!controls.autoRotate;bSpin.setAttribute('aria-pressed',controls.autoRotate);};
 const bPts=document.getElementById('bPts');
-bPts.onclick=()=>{show.pts=!show.pts;pinGroup.visible=show.pts;if(!show.pts)dpanel.hidden=true;floorZones.forEach(g=>g.visible=show.pts);updateDangerVis();bPts.setAttribute('aria-pressed',show.pts);};
+bPts.onclick=()=>{show.pts=!show.pts;pinGroup.visible=show.pts;if(!show.pts)dpanel.hidden=true;else setPanel(true);floorZones.forEach(g=>g.visible=show.pts);updateDangerVis();bPts.setAttribute('aria-pressed',show.pts);};
 const bFac=document.getElementById('bFac');
 bFac.onclick=()=>{const on=!facGroup.visible;facGroup.visible=on;roomIcons.forEach(o=>o.visible=on);bFac.setAttribute('aria-pressed',on);};
 const bLbl=document.getElementById('bLbl');
