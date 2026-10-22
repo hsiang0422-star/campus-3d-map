@@ -702,7 +702,7 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
 (function(){
   const at=(x,z,y=0)=>{const[a,b]=P(x,z);return new THREE.Vector3(a,y,b);};
   // cantilever signal pole
-  const g=new THREE.Group();const base=at(12.55,3.35);g.position.copy(base);g.rotation.y=-Math.PI/2;
+  const g=new THREE.Group();const base=at(12.55,3.35);g.position.copy(base);g.rotation.y=Math.PI; // arm & head face the teaching building (east)
   const poleMat=felt(0xc7ccd0);
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.06,2.3,12),poleMat);pole.position.y=1.15;g.add(pole);
   const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,1.7,10),poleMat);arm.rotation.z=Math.PI/2;arm.position.set(-0.85,2.15,0);g.add(arm);
@@ -721,6 +721,20 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
   const tex=new THREE.CanvasTexture(cv);tex.encoding=THREE.sRGBEncoding;
   const box=new THREE.Mesh(new THREE.PlaneGeometry(0.7,0.7),new THREE.MeshStandardMaterial({map:tex,roughness:.95}));
   box.rotation.x=-Math.PI/2;const bp=at(12.9,3.75);box.position.set(bp.x,0.09,bp.z);box.rotation.z=0.0;scene.add(box);
+  // bicycle-priority pictogram painted on the ground
+  const bc=document.createElement('canvas');bc.width=96;bc.height=160;const r=bc.getContext('2d');
+  r.strokeStyle='#f4f2ea';r.fillStyle='#f4f2ea';r.lineWidth=6;r.lineCap='round';
+  // two wheels
+  r.beginPath();r.arc(26,112,18,0,7);r.moveTo(88,112);r.arc(70,112,18,0,7);r.stroke();
+  // frame
+  r.lineWidth=5;r.beginPath();r.moveTo(26,112);r.lineTo(44,78);r.lineTo(70,112);r.moveTo(44,78);r.lineTo(58,78);r.moveTo(26,112);r.lineTo(52,96);r.lineTo(70,112);r.stroke();
+  // handlebar + seat
+  r.beginPath();r.moveTo(58,78);r.lineTo(66,70);r.moveTo(40,76);r.lineTo(50,72);r.stroke();
+  // upward arrows (priority)
+  r.lineWidth=6;[30,50].forEach(cx=>{r.beginPath();r.moveTo(cx,52);r.lineTo(cx,20);r.moveTo(cx,20);r.lineTo(cx-9,32);r.moveTo(cx,20);r.lineTo(cx+9,32);r.stroke();});
+  const bt=new THREE.CanvasTexture(bc);bt.encoding=THREE.sRGBEncoding;
+  const bike=new THREE.Mesh(new THREE.PlaneGeometry(0.42,0.7),new THREE.MeshStandardMaterial({map:bt,transparent:true,roughness:.95}));
+  bike.rotation.x=-Math.PI/2;const bkp=at(12.9,4.7);bike.position.set(bkp.x,0.066,bkp.z);scene.add(bike);
 })();
 
 // little car by the gate
