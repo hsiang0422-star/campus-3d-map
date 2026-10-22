@@ -662,6 +662,41 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
   for(let k=0;k<3;k++){const st=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.035,0.12),felt(0xb4b0a9));st.position.set(0,0.018+k*0.035,-0.12-k*0.12);g.add(st);}
   g.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(g);
 })();
+
+// west / 140-lane perimeter (from street photos): mesh fence on a concrete base, a row of street trees inside, kerbside parking bays with a few parked cars
+(function(){
+  const S=64,cv=document.createElement('canvas');cv.width=cv.height=S;const q=cv.getContext('2d');
+  q.strokeStyle='rgba(70,100,80,.85)';q.lineWidth=2;for(let i=-S;i<S*2;i+=10){q.beginPath();q.moveTo(i,0);q.lineTo(i+S,S);q.stroke();q.beginPath();q.moveTo(i,S);q.lineTo(i+S,0);q.stroke();}
+  const nt=new THREE.CanvasTexture(cv);nt.wrapS=nt.wrapT=THREE.RepeatWrapping;
+  const netMat=new THREE.MeshStandardMaterial({map:nt,transparent:true,side:THREE.DoubleSide,depthWrite:false,roughness:1});
+  function run(x0,z0,x1,z1){const[a,b]=P(x0,z0),[c,d]=P(x1,z1);const len=Math.hypot(c-a,d-b),ang=-Math.atan2(d-b,c-a),mx=(a+c)/2,mz=(b+d)/2;
+    const base=new THREE.Mesh(new THREE.BoxGeometry(len,0.16,0.08),felt(0xbfbbb2));base.position.set(mx,0.08,mz);base.rotation.y=ang;base.castShadow=true;scene.add(base);
+    const t=nt.clone();t.needsUpdate=true;t.repeat.set(len/0.25,1.6);const m=netMat.clone();m.map=t;
+    const net=new THREE.Mesh(new THREE.PlaneGeometry(len,0.42),m);net.position.set(mx,0.37,mz);net.rotation.y=ang;scene.add(net);
+    const n=Math.max(1,Math.round(len/0.6));for(let i=0;i<=n;i++){const pt=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.6,6),felt(0xe9e7e2));
+      pt.position.set(a+(c-a)*i/n,0.3,b+(d-b)*i/n);pt.castShadow=true;scene.add(pt);}}
+  // SW boundary beside 長和路二段 140 巷
+  const A=[1.75,5.05], B=[16.6,13.45];
+  run(A[0],A[1],B[0],B[1]);
+  const dx=B[0]-A[0],dz=B[1]-A[1],L=Math.hypot(dx,dz),ux=dx/L,uz=dz/L,nx=uz,nz=-ux; // inward normal
+  // street trees just inside the fence
+  for(let t=0.08;t<0.95;t+=0.11){const x=A[0]+dx*t+nx*0.55, z=A[1]+dz*t+nz*0.55;const[px,pz]=P(x,z);const g=new THREE.Group();g.position.set(px,0,pz);const h=1.1+((t*53)%3)*0.12;
+    const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.05,h*0.6,8),felt(0x7a5236));tr.position.y=h*0.3;g.add(tr);
+    const cr=new THREE.Mesh(new THREE.SphereGeometry(0.34,16,12),felt((t*7)%1<.2?0x6fa048:0x4f8f45));cr.position.y=h*0.72;cr.scale.y=1.1;g.add(cr);
+    g.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(g);}
+  // kerbside parking bays + a few cars on the lane side of the fence
+  const carCols=[0x8a8f94,0xb23b32,0xdedad5,0x55606a,0xf2f2ee];
+  for(let k=0;k<7;k++){const t=0.16+k*0.1;const bx=A[0]+dx*t-nx*0.5, bz=A[1]+dz*t-nz*0.5;const[px,pz]=P(bx,bz);
+    // bay line
+    const ln=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.01,0.55),felt(0xf4f2ea));ln.position.set(px,0.055,pz);ln.rotation.y=-Math.atan2(P(B[0],B[1])[1]-P(A[0],A[1])[1],P(B[0],B[1])[0]-P(A[0],A[1])[0]);scene.add(ln);
+    if(k%2===0){const g=new THREE.Group();g.position.set(px,0.05,pz);g.rotation.y=-Math.atan2(P(B[0],B[1])[1]-P(A[0],A[1])[1],P(B[0],B[1])[0]-P(A[0],A[1])[0]);
+      const col=carCols[k%carCols.length];
+      const body=new THREE.Mesh(extrude(rrShape(-0.33+CX,-0.17+CZ,0.33+CX,0.17+CZ,0.1),0.22,true),felt(col));g.add(body);
+      const cab=new THREE.Mesh(extrude(rrShape(-0.2+CX,-0.15+CZ,0.17+CX,0.15+CZ,0.08),0.16,true),felt(0x3a4046));cab.position.y=0.2;g.add(cab);
+      [[-0.2,0.18],[0.2,0.18],[-0.2,-0.18],[0.2,-0.18]].forEach(([wx,wz])=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.06,12),felt(0x2b2b2b));w.rotation.x=Math.PI/2;w.position.set(wx,0.05,wz);g.add(w);});
+      g.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(g);}}
+})();
+
 // little car by the gate
 (function(){const[a,b]=P(25.1,8.3);const g=new THREE.Group();
   const body=new THREE.Mesh(extrude(rrShape(-0.45+CX,-0.25+CZ,0.45+CX,0.25+CZ,0.15),0.3,true),felt(0x7fa7d8));g.add(body);
