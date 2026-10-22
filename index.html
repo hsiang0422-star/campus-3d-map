@@ -51,6 +51,8 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .plist{position:absolute;top:12px;right:12px;left:auto;width:340px;max-width:calc(100% - 24px);max-height:calc(100% - 24px);display:flex;flex-direction:column;background:var(--panel);border:2px solid #b8322a;border-radius:14px;padding:0 12px 8px;box-shadow:0 8px 28px rgba(80,20,10,.22);z-index:6}
 .plist.dragging{box-shadow:0 14px 40px rgba(80,20,10,.35)}
 .plist .plbody{overflow:auto;min-height:0;flex:1}
+.fmin{height:auto!important}
+.fmin>*:not(.phead){display:none}
 .plitem{display:flex;gap:10px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #e6d9d6;padding:10px 2px;cursor:pointer;font:inherit;color:inherit}
 .plitem:hover{background:rgba(184,50,42,.06)}
 .plitem .plthumbs{display:flex;flex-direction:column;gap:4px;flex:0 0 96px}
@@ -211,11 +213,11 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
     </div>
     <div id="tip" hidden></div>
     <aside class="dpanel" id="dpanel" hidden aria-label="危險角落資訊">
-      <div class="phead dhead" id="dhead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>危險角落資訊・拖曳移動<button class="collapse" id="dClose">關閉</button></div>
+      <div class="phead dhead" id="dhead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>危險角落資訊・拖曳移動<button class="collapse" id="dMin">收合</button><button class="collapse" id="dClose">關閉</button></div>
       <div class="dbody" id="dbody"></div>
     </aside>
     <aside class="plist" id="plist" hidden aria-label="校園危險角落清單">
-      <div class="phead dhead" id="plhead" title="拖曳移動"><span class="grip" aria-hidden="true"></span>校園危險角落清單・拖曳移動<button class="collapse" id="plClose">關閉</button></div>
+      <div class="phead dhead" id="plhead" title="拖曳移動"><span class="grip" aria-hidden="true"></span>校園危險角落清單・拖曳移動<button class="collapse" id="plMin">收合</button><button class="collapse" id="plClose">關閉</button></div>
       <div class="plbody" id="plbody"></div>
     </aside>
     <aside class="panel" id="panel">
@@ -1194,6 +1196,23 @@ document.getElementById('bReset').onclick=()=>flyTo(HOME.pos.clone(),HOME.target
 document.getElementById('bTop').onclick=()=>flyTo(new THREE.Vector3(0.5,30,0.9),new THREE.Vector3(0.5,0,0.8));
 const bSpin=document.getElementById('bSpin');
 bSpin.onclick=()=>{controls.autoRotate=!controls.autoRotate;bSpin.setAttribute('aria-pressed',controls.autoRotate);};
+// shared helpers for floating lists/panels: resizable corner grip, collapse toggle (all persist per key)
+function floatResizable(box,key,minW,minH){
+  const g=document.createElement('div');g.className='presize';g.title='拖曳調整大小';box.appendChild(g);
+  try{const z=JSON.parse(localStorage.getItem(key)||'null');if(z){box.style.width=z.w+'px';box.style.height=z.h+'px';}}catch(e){}
+  let st=null;
+  g.addEventListener('pointerdown',e=>{e.preventDefault();const r=box.getBoundingClientRect();st={x:e.clientX,y:e.clientY,w:r.width,h:r.height};g.setPointerCapture(e.pointerId);});
+  g.addEventListener('pointermove',e=>{if(!st)return;const stg=box.parentElement;
+    const w=Math.min(Math.max(minW,st.w+e.clientX-st.x),stg.clientWidth-8),h=Math.min(Math.max(minH,st.h+e.clientY-st.y),stg.clientHeight-8);
+    box.style.width=w+'px';box.style.height=h+'px';});
+  const end=()=>{if(!st)return;st=null;try{localStorage.setItem(key,JSON.stringify({w:box.offsetWidth,h:box.offsetHeight}));}catch(e){}};
+  g.addEventListener('pointerup',end);g.addEventListener('pointercancel',end);
+}
+function floatCollapsible(box,btn,key){
+  const set=on=>{box.classList.toggle('fmin',on);btn.textContent=on?'展開':'收合';try{localStorage.setItem(key,on?'1':'0');}catch(e){}};
+  set(false);try{set(localStorage.getItem(key)==='1');}catch(e){}
+  btn.addEventListener('click',()=>set(!box.classList.contains('fmin')));
+}
 const plist=document.getElementById('plist'),plbody=document.getElementById('plbody'),plhead=document.getElementById('plhead');
 {const ids=[...new Set([...POINTS.map(q=>q[0]),...Object.keys(POINT_INFO).map(Number)])].sort((a,b)=>a-b);
  plbody.innerHTML=ids.map(n=>{const i=POINT_INFO[n];
@@ -1205,6 +1224,9 @@ const plist=document.getElementById('plist'),plbody=document.getElementById('plb
  plbody.addEventListener('click',e=>{const b=e.target.closest('.plitem');if(b)showPoint(+b.dataset.n);});
  document.getElementById('plClose').onclick=()=>{plist.hidden=true;};
 }
+floatResizable(plist,'campus3d-plist-size',240,160);floatCollapsible(plist,document.getElementById('plMin'),'campus3d-plist-min');
+floatResizable(dpanel,'campus3d-dpanel-size',240,160);floatCollapsible(dpanel,document.getElementById('dMin'),'campus3d-dpanel-min');
+floatResizable(document.getElementById('ctrl'),'campus3d-ctrl-size',180,160);
 {const KEY='campus3d-plist',stage=plist.parentElement;let st=null;
  plhead.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;const a=plist.getBoundingClientRect(),b=stage.getBoundingClientRect();st={sx:e.clientX,sy:e.clientY,x:a.left-b.left,y:a.top-b.top};plhead.setPointerCapture(e.pointerId);plist.classList.add('dragging');});
  plhead.addEventListener('pointermove',e=>{if(!st)return;const W=stage.clientWidth,H=stage.clientHeight;
