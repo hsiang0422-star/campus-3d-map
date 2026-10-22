@@ -484,7 +484,7 @@ BUILDINGS.forEach(b=>{
     m.castShadow=!isFlat;m.receiveShadow=true;m.userData={kind:'b',id:b.id,base:col||b.color};grp.add(m);pickables.push(m);
     top=Math.max(top,h);
     const fl=Math.round(h/FH);
-    if(fl>=1 && h>0.45 && b.id!=='corridor'){
+    if(fl>=1 && h>0.45 && b.id!=='corridor' && b.id!=='admin'){
       const[a,bz]=P(x0,z0),[c,d]=P(x1,z1);
       for(let f=0;f<fl;f++){const y=(f+0.55)*(h/fl);
         for(let x=a+0.35;x<c-0.2;x+=0.5){winPos.push([x,y,d+0.005,0]);winPos.push([x,y,bz-0.005,0]);}
@@ -643,7 +643,7 @@ TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
   box(0.6,0.03,0.18,felt(0x3f6f5a),at(21.0,7.0,0.3));                        // green entrance awning
   for(let s=0;s<3;s++)box(0.8-s*0.08,0.03,0.12,grey,at(21.0,7.42+0.12*(2-s),0.015+0.03*s)); // steps
   [[20.45,7.45],[21.55,7.45]].forEach(([x,z])=>box(0.35,0.08,0.18,felt(0xd9d4c8),at(x,z,0.04)));   // planters
-  scene.add(g);
+  g.visible=false; scene.add(g);
   // brick parking court in front with white bay lines
   const S=512,cv=document.createElement('canvas');cv.width=cv.height=S;const c=cv.getContext('2d');
   const pal=['#9a6a62','#8a7a76','#a47d74','#7f7270','#b08a80'];c.fillStyle='#6a5e5c';c.fillRect(0,0,S,S);
@@ -1122,12 +1122,12 @@ let admMode='ext', admNames=true;
 function admSetMode(m){
   admMode=m;
   Object.entries(admObjs).forEach(([fk,o])=>{const f=+fk;
-    if(m==='ext'){o.grp.visible=false;o.grp.position.y=(f-1)*FHA;}
+    if(m==='ext'){o.grp.visible=true;o.shell.visible=true;o.inner.visible=false;o.grp.position.y=(f-1)*FHA;}
     else if(m==='exp'){o.grp.visible=true;o.shell.visible=false;o.inner.visible=true;o.grp.position.y=(f-1)*1.15;}
     else{const n=+m;o.grp.visible=f===n;o.shell.visible=false;o.inner.visible=f===n;o.grp.position.y=(f-1)*FHA;}
     show['admroom'+f]=admNames&&((m==='exp')||(m===String(f)));
   });
-  scene.traverse(o=>{if(o.userData&&o.userData.kind==='b'&&o.userData.id==='admin'&&!o.userData.adm)o.visible=(m==='ext');});
+  scene.traverse(o=>{if(o.userData&&o.userData.kind==='b'&&o.userData.id==='admin'&&!o.userData.adm)o.visible=false;});
   facGroup.children.forEach(o=>{if(o.userData&&o.userData.bid==='admin')o.visible=(m==='ext');});
   document.querySelectorAll('#aseg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===m));
   if(m==='ext')return;
