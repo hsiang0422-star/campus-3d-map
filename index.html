@@ -176,7 +176,6 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
       <button id="bTop">俯視</button>
       <button id="bCtrl" aria-pressed="true">地圖操作</button>
       <button id="bLbl" aria-pressed="false">建築名稱</button>
-      <button id="bFac" aria-pressed="true">電梯・樓梯・廁所</button>
       <button id="bPts" aria-pressed="false">危險角落</button>
       <button id="bSpin" aria-pressed="false">自動旋轉</button>
       <button id="bPanel" aria-expanded="true" aria-controls="panel">教學大樓各樓層 <span class="car" aria-hidden="true">▾</span></button>
@@ -1358,8 +1357,6 @@ floatResizable(document.getElementById('ctrl'),'campus3d-ctrl-size',180,160);
 }
 const bPts=document.getElementById('bPts');
 bPts.onclick=()=>{show.pts=!show.pts;pinGroup.visible=show.pts;if(!show.pts){dpanel.hidden=true;plist.hidden=true;}else{setPanel(true);plist.hidden=false;}floorZones.forEach(g=>g.visible=show.pts);updateDangerVis();bPts.setAttribute('aria-pressed',show.pts);};
-const bFac=document.getElementById('bFac');
-bFac.onclick=()=>{const on=!facGroup.visible;facGroup.visible=on;roomIcons.forEach(o=>o.visible=on);bFac.setAttribute('aria-pressed',on);};
 const bLbl=document.getElementById('bLbl');
 bLbl.onclick=()=>{show.lbl=!show.lbl;if(!show.lbl)BUILDINGS.forEach(b=>{bMeta[b.id].label.force=false;});bLbl.setAttribute('aria-pressed',show.lbl);BUILDINGS.forEach(b=>leadVis(b.id));};
 const panel=document.getElementById('panel');
