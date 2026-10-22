@@ -53,9 +53,19 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .dcard img{display:block;width:100%;border-radius:3px}
 .dcard .dt{font-weight:700;font-size:1.05rem;margin-top:8px}
 .dcard p{margin:4px 0 0;color:#2b2420!important;font-size:.92rem;line-height:1.6}
-.lb.pt.has-photo{background:#c0392b;outline:2px solid #fff;box-shadow:0 0 0 4px rgba(192,57,43,.35)}
-.lb.pt{width:24px;height:24px;border-radius:50%;background:#f08a3c;color:#fff;font-weight:700;font-size:12px;
-  display:grid;place-items:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);font-variant-numeric:tabular-nums}
+.lb.pt{width:26px;height:26px;border-radius:52% 52% 50% 50%/60% 60% 45% 45%;
+  background:radial-gradient(circle at 50% 32%,#ffe08a 0%,#ff9e2c 55%,#ef6a12 100%);
+  color:#4a2c00;font-weight:800;font-size:12px;display:grid;place-items:center;border:2px solid #fff;
+  box-shadow:0 0 9px 3px rgba(255,150,30,.8),0 2px 5px rgba(0,0,0,.4);font-variant-numeric:tabular-nums;
+  animation:beacon 1.1s ease-in-out infinite}
+.lb.pt::after{content:"";position:absolute;left:50%;bottom:-4px;width:16px;height:5px;transform:translateX(-50%);
+  border-radius:0 0 3px 3px;background:#6b6f73;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.lb.pt.has-photo{background:radial-gradient(circle at 50% 32%,#ff9a8a 0%,#e8352a 55%,#b11408 100%);color:#fff;
+  box-shadow:0 0 11px 4px rgba(232,53,42,.9),0 2px 5px rgba(0,0,0,.4);animation:beaconR 0.9s ease-in-out infinite}
+@keyframes beacon{0%,100%{box-shadow:0 0 7px 2px rgba(255,150,30,.5),0 2px 5px rgba(0,0,0,.4)}
+  50%{box-shadow:0 0 18px 7px rgba(255,90,20,.95),0 2px 5px rgba(0,0,0,.4)}}
+@keyframes beaconR{0%,100%{box-shadow:0 0 8px 2px rgba(232,53,42,.55),0 2px 5px rgba(0,0,0,.4)}
+  50%{box-shadow:0 0 20px 8px rgba(232,30,20,1),0 2px 5px rgba(0,0,0,.4)}}
 .lb.nb{font-family:var(--f-display);font-size:14px;color:#5b5047;opacity:.85}
 .lb.here{font-size:12px;font-weight:700;color:#d9452f;background:#fff;padding:2px 7px;border-radius:5px;border:1px solid #d9452f}
 .lb.room{font-size:11px;font-weight:500;color:#3a3027;background:rgba(255,253,248,.9);padding:1px 6px;border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.18)}
@@ -136,7 +146,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
     width:auto;max-height:46%;padding:0 12px 12px}
   h1 small{display:none}
 }
-@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}.lb.pt{animation:none!important}}
 </style>
 
 <div class="app">
@@ -726,7 +736,7 @@ BUILDINGS.forEach(b=>{const m=bMeta[b.id];const lift=LIFT[b.id]||1.1;
   m.label=addLabel(b.name,'bld',top,'lbl');m.label.bottom=true;});
 // danger numbers float well above roofs and building names, tied to the spot by a leader line
 function ptBase(n,x,z){if(n===17)return 1.7;let h=0.05;BUILDINGS.forEach(b=>b.parts.forEach(q=>{if(x>=q[0]&&x<=q[2]&&z>=q[1]&&z<=q[3])h=Math.max(h,q[4]+0.01);}));return h;}
-const PT_Y=POINTS.map(([n,x,z])=>{const base=ptBase(n,x,z);return{base,top:n===17?2.4:Math.max(3.3,base+2.5)};}); // 17 sits low: the teaching-building name is well to its north
+const PT_Y=POINTS.map(([n,x,z])=>{const base=ptBase(n,x,z);return{base,top:base+(n===17?0.9:1.25)};}); // short leaders that still clear the building name
 const ptLabels=POINTS.map(([n,x,z],k)=>{const[a,b]=P(x,z);const L=addLabel(n,'pt',new THREE.Vector3(a,PT_Y[k].top,b),'pts');L.bottom=true;return L;});
 // surroundings and road names as small standing felt signboards (real 3D objects, hidden behind buildings like anything else)
 (function(){
@@ -754,7 +764,7 @@ const pinGroup=new THREE.Group();scene.add(pinGroup);
 const ptLeadMat=new THREE.LineDashedMaterial({color:0xc0392b,dashSize:0.12,gapSize:0.07});
 POINTS.forEach(([n,x,z],k)=>{const[a,b]=P(x,z);const{base,top}=PT_Y[k];
   const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a,base,b),new THREE.Vector3(a,top,b)]),ptLeadMat);ln.computeLineDistances();pinGroup.add(ln);
-  const dot=new THREE.Mesh(new THREE.SphereGeometry(0.06,12,10),new THREE.MeshBasicMaterial({color:0xc0392b}));dot.position.set(a,base+0.02,b);pinGroup.add(dot);
+  const dot=new THREE.Mesh(new THREE.SphereGeometry(0.075,14,12),new THREE.MeshBasicMaterial({color:0xe8352a}));dot.position.set(a,base+0.02,b);pinGroup.add(dot);
   const dsk=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,0.02,20),felt(0xf08a3c));dsk.position.set(a,base+0.005,b);pinGroup.add(dsk);});
 
 
