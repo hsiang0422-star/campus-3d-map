@@ -179,6 +179,9 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .qdesc{font-size:13px;line-height:1.6;margin:6px 0}
 .qrtitle{font-weight:600;margin:6px 0}
 .qactions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.qtop{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.qtop .qprog{margin:4px 0}
+.qtb{display:flex;gap:6px}
 </style>
 
 <div class="app">
@@ -1481,7 +1484,7 @@ const QUIZ=[
  {q:'「教學大樓側邊步道」是幾號危險角落？',o:['9 號','11 號','13 號','15 號'],a:1,pt:11}
 ];
 const qpanel=document.getElementById('qpanel'),qbody=document.getElementById('qbody'),qhead=document.getElementById('qhead'),bQuiz=document.getElementById('bQuiz');
-let qi=0,qScore=0,qAnswered=false;
+let qi=0,qScore=0,qAnswered=false,qTimer=null;
 function qReveal(item){
   const info=item.pt!=null?POINT_INFO[item.pt]:null;
   const bld=item.b?BUILDINGS.find(x=>x.id===item.b):null;
@@ -1507,14 +1510,17 @@ function qRender(){
     document.getElementById('qRestart').onclick=()=>{qi=0;qScore=0;qRender();};
     return;
   }
+  clearTimeout(qTimer);
   const item=QUIZ[qi];qAnswered=false;
   if(item.pt!=null)quizFly(item.pt);
-  qbody.innerHTML=`<p class="qprog">第 ${qi+1} / ${QUIZ.length} 題（得分 ${qScore}）</p>
+  qbody.innerHTML=`<div class="qtop"><span class="qprog">第 ${qi+1} / ${QUIZ.length} 題（得分 ${qScore}）</span><span class="qtb"><button id="qRedo1">重做一次</button><button id="qRedoAll">全部重做</button></span></div>
     <p class="qq">${item.q}</p>
     <div class="qopts">${item.o.map((t,k)=>`<button class="qopt" data-k="${k}">${t}</button>`).join('')}</div>
     <p class="qfb" id="qfb" aria-live="polite"></p>
     <div id="qreveal"></div>
     <div class="qactions" id="qactions"></div>`;
+  document.getElementById('qRedo1').onclick=()=>qRender();
+  document.getElementById('qRedoAll').onclick=()=>{qi=0;qScore=0;qRender();};
   const opts=[...qbody.querySelectorAll('.qopt')];
   opts.forEach(b=>b.onclick=()=>{
     if(qAnswered)return;qAnswered=true;
@@ -1523,7 +1529,7 @@ function qRender(){
     const fb=document.getElementById('qfb');
     if(ok){
       qScore++;fb.textContent='答對了！';
-      setTimeout(()=>{if(!qpanel.hidden){qi++;qRender();}},900);
+      qTimer=setTimeout(()=>{if(!qpanel.hidden){qi++;qRender();}},900);
     }else{
       fb.textContent='答錯了，正確答案是「'+item.o[item.a]+'」。';
       qReveal(item);
