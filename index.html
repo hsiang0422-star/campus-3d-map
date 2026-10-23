@@ -1323,7 +1323,7 @@ const DM_START={x:11.0,y:2.6,z:-0.2,yaw:Math.PI/2};    // 校門口上方
 const DRONE={on:false,view:'chase',p:new THREE.Vector3(DM_START.x,DM_START.y,DM_START.z),yaw:DM_START.yaw,
   vf:0,vs:0,vy:0,yr:0,pitch:0,roll:0,batt:100,hp:DM_HP_MAX,dead:false,hitCd:0,shake:0,
   last:0,t:0,hudT:0,status:'',note:'',noteUntil:0,saved:null,
-  group:null,rotors:[],shadow:null,shadowMat:null,solids:null,boom:null,zoneIn:new Set(),floats:[],keys:{},pad:{}};
+  group:null,rotors:[],shadow:null,shadowMat:null,solids:null,boom:null,zoneIn:new Set(),floats:[],cardOpen:false,keys:{},pad:{}};
 const DM_KEYS={fwd:['KeyW','ArrowUp'],back:['KeyS','ArrowDown'],left:['KeyA'],right:['KeyD'],
   yawL:['KeyQ','ArrowLeft'],yawR:['KeyE','ArrowRight'],up:['Space','KeyR'],down:['ShiftLeft','ShiftRight','KeyF']};
 const DM_CODES=new Set([].concat(...Object.values(DM_KEYS),'KeyV','Escape'));
@@ -1467,7 +1467,7 @@ function dmRespawn(){
 // 靠近危險角落時自動打開該地點的危險地圖說明（照片與說明卡）
 function dmShowPoint(n){
   const info=POINT_INFO[n];
-  dpanel.hidden=false;
+  dpanel.hidden=false;DRONE.cardOpen=true;
   dbody.innerHTML=info?`<div class="dcard">${(info.imgs||[info.img]).map(u=>`<img src="${u}" alt="${info.title}">`).join('')}<div class="dt">${info.title}</div><p>${info.desc}</p></div>`
     :`<div class="name">校園危險角落 ${n}</div><p>這個位置的照片與說明還沒有補上。</p>`;
   dmNote('靠近危險地點：'+(info?info.title:n+'號'),4000);
@@ -1500,6 +1500,8 @@ function dmCheckZones(){
     if(d.zoneIn.has(k)){if(dist>DM_FAR)d.zoneIn.delete(k);}
     else if(dist<DM_NEAR){d.zoneIn.add(k);newly.push(n);}
   });
+  // 離開所有危險地點的範圍後，自動關閉由無人機打開的說明卡
+  if(d.cardOpen&&d.zoneIn.size===0){dpanel.hidden=true;d.cardOpen=false;}
   if(newly.length){
     dmShowPoint(newly[0]);
     if(!d.dead&&d.hp<DM_HP_MAX){d.hp=Math.min(DM_HP_MAX,d.hp+1);dmHeal();}
