@@ -1989,7 +1989,11 @@ function qRender(){
 }
 bQuiz.onclick=()=>{
   const open=qpanel.hidden;qpanel.hidden=!open;bQuiz.setAttribute('aria-pressed',open);
-  if(open){if(!qbody.hasChildNodes())qRender();if(qSaved)qPlace(qSaved.x,qSaved.y);}
+  if(open){
+    if(!qbody.hasChildNodes())qRender();if(qSaved)qPlace(qSaved.x,qSaved.y);
+    // 開啟測驗時，預設同時開啟危險地圖燈號，標示全校所有危險地點
+    if(!show.pts){show.pts=true;pinGroup.visible=true;bPts.setAttribute('aria-pressed','true');updateDangerVis();}
+  }
 };
 document.getElementById('qClose').onclick=()=>{qpanel.hidden=true;bQuiz.setAttribute('aria-pressed','false');};
 let qSaved=null;try{qSaved=JSON.parse(localStorage.getItem('quizPos')||'null');}catch(e){}
