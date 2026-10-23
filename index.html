@@ -1482,6 +1482,8 @@ const QUIZ=[
  {q:'校門口小熊前面的那一塊大空地，可以在那邊到處跑來跑去玩耍嗎？',o:['可以','不行，那裡有很多車子來來往往，非常危險'],a:1,b:'gate'},
  {q:'去「垃圾場後方角落」時，應該怎麼做？',o:['必須是老師請我去幫忙倒垃圾才可以走過去，避免單獨前往，倒完垃圾趕快回教室','想去就自己去','在角落裡停留聊天','把門窗都關上不理會'],a:0,pt:10},
  {q:'「教學大樓側邊步道」兩側灌木茂密、人車稀少，經過時應該？',o:['不隨意前往；如需經過，應由老師帶領大家一起通過','獨自快速穿越','停留拍照','拿著貴重物品慢慢走'],a:0,pt:11}
+ ,{q:'在學校走廊可以跑來跑去，這個說法對嗎？',o:['對','錯'],a:1,note:'走廊人來人往，跑跑跳跳容易撞到人或摔倒受傷，應該慢慢走、靠右行走。'},
+ {q:'可以隨便找同學去沒有人的地方聊天，這個說法對嗎？',o:['對','錯'],a:1,note:'沒有人的地方容易發生危險，不可以隨便離開大家，應該在有老師或同學看得到的地方一起活動。'}
 ];
 const qpanel=document.getElementById('qpanel'),qbody=document.getElementById('qbody'),qhead=document.getElementById('qhead'),bQuiz=document.getElementById('bQuiz');
 let qi=0,qScore=0,qAnswered=false,qTimer=null;
@@ -1491,7 +1493,9 @@ function qReveal(item){
   const title=info?info.title:(bld?bld.name:'');
   const desc=info?info.desc:(bld?bld.desc:'');
   const imgs=info?(info.imgs||(info.img?[info.img]:[])):[];
-  document.getElementById('qreveal').innerHTML=`<div class="qreveal"><p class="qrtitle">正確位置：${title}${info&&info.floor?`（${info.floor}樓）`:''}</p>${imgs.map(u=>`<img class="qimg" src="${u}" alt="${title}">`).join('')}<p class="qdesc">${desc}</p></div>`;
+  const head=title?`<p class="qrtitle">正確位置：${title}${info&&info.floor?`（${info.floor}樓）`:''}</p>`:'';
+  const body=desc||item.note||'';
+  document.getElementById('qreveal').innerHTML=`<div class="qreveal">${head}${imgs.map(u=>`<img class="qimg" src="${u}" alt="${title}">`).join('')}<p class="qdesc">${body}</p></div>`;
   document.getElementById('qactions').innerHTML='<button id="qRetry">再做一次</button><button id="qCloseQ">關閉</button>';
   document.getElementById('qRetry').onclick=()=>qRender();
   document.getElementById('qCloseQ').onclick=()=>{qpanel.hidden=true;bQuiz.setAttribute('aria-pressed','false');};
