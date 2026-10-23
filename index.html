@@ -1496,9 +1496,10 @@ function qReveal(item){
 function quizFly(n){
   const p=POINTS.find(q=>q[0]===n);if(!p)return;
   const info=POINT_INFO[n];if(info&&info.floor)setMode(String(info.floor));
+  show.pts=true;pinGroup.visible=true;bPts.setAttribute('aria-pressed','true');
   const[a,b]=P(p[1],p[2]);const fy=info&&info.floor?(info.floor-1)*FHB:0;const t=new THREE.Vector3(a,fy,b);
   const dir=camera.position.clone().sub(controls.target).setY(0).normalize();
-  flyTo(t.clone().add(dir.multiplyScalar(5)).setY(fy+5),t,reduce?1:900);
+  flyTo(t.clone().add(dir.multiplyScalar(4)).setY(fy+3.5),t,reduce?1:900);
 }
 function qRender(){
   if(qi>=QUIZ.length){
