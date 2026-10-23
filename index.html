@@ -198,7 +198,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .dm-float{position:absolute;z-index:5;pointer-events:none;font-weight:700;font-size:1.25rem;color:#2fa86a;text-shadow:0 1px 3px rgba(0,0,0,.45);white-space:nowrap}
 .plitem.dm-hl{outline:3px solid var(--accent);outline-offset:-3px}
 .dh-msg{min-height:1.2em;color:var(--accent);font-size:.76rem;margin-top:4px}
-.dh-btns{display:flex;gap:6px;margin-top:8px}
+.dh-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .dh-btns button{flex:1;font-size:.76rem;padding:5px 8px}
 #dpad{left:12px;bottom:12px;display:grid;grid-template-columns:repeat(3,50px);gap:6px}
 #dvpad{right:12px;bottom:12px;display:flex;flex-direction:column;gap:6px}
@@ -265,7 +265,7 @@ body.drone-on #panel,body.drone-on #apanel,body.drone-on #qpanel,body.drone-on #
       <div class="dh-row"><span>電量</span><div class="dh-bar"><i id="dhBat"></i></div><b id="dhBatT">100%</b></div>
       <div class="dh-row"><span>機身</span><div class="dh-bar dh-hp" id="dhHpBar"><i id="dhHp"></i></div><b id="dhHpT">100%</b></div>
       <div class="dh-msg" id="dhMsg"></div>
-      <div class="dh-btns"><button id="dhView">視角：追隨</button><button id="dhRespawn" hidden>重新出發</button><button id="dhExit">離開飛行</button></div>
+      <div class="dh-btns"><button id="dhView">視角：追隨</button><button id="dhDanger">關閉危險地圖</button><button id="dhRespawn" hidden>重新出發</button><button id="dhExit">離開飛行</button></div>
     </aside>
     <div id="dpad" hidden>
       <button class="gap" tabindex="-1" aria-hidden="true"></button>
@@ -1333,6 +1333,7 @@ const dmElAlt=document.getElementById('dhAlt'), dmElSpd=document.getElementById(
 const dmElBat=document.getElementById('dhBat'), dmElBatT=document.getElementById('dhBatT');
 const dmHpBar=document.getElementById('dhHpBar'), dmElHp=document.getElementById('dhHp'), dmElHpT=document.getElementById('dhHpT');
 const dmElMsg=document.getElementById('dhMsg'), dmElView=document.getElementById('dhView'), dmRespawnBtn=document.getElementById('dhRespawn');
+const dmDangerBtn=document.getElementById('dhDanger');
 const dmClamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dmIn=a=>(DM_KEYS[a].some(k=>DRONE.keys[k])||DRONE.pad[a])?1:0;
 const DM_DIRS=[[1,0,0],[-1,0,0],[0,0,1],[0,0,-1],[.707,0,.707],[-.707,0,.707],[.707,0,-.707],[-.707,0,-.707],[0,1,0],[0,-1,0]].map(a=>new THREE.Vector3(a[0],a[1],a[2]));
@@ -1508,6 +1509,15 @@ function dmCheckZones(){
   }
 }
 
+// 危險地圖顯示／隱藏（與工具列「危險角落」按鈕相同的效果）
+function dmSetDanger(on){
+  show.pts=on;pinGroup.visible=on;floorZones.forEach(g=>g.visible=on);updateDangerVis();
+  bPts.setAttribute('aria-pressed',on);
+  if(!on){dpanel.hidden=true;DRONE.cardOpen=false;plist.hidden=true;}
+  dmDangerBtn.textContent=on?'關閉危險地圖':'開啟危險地圖';
+}
+dmDangerBtn.onclick=()=>dmSetDanger(!show.pts);
+
 function dmEnter(){
   if(DRONE.on)return;
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
@@ -1525,6 +1535,7 @@ function dmEnter(){
   document.body.classList.add('drone-on');
   dmHud.hidden=false;dmPad.hidden=false;dmVPad.hidden=false;dmKeys.hidden=false;
   dmRespawnBtn.hidden=!DRONE.dead;
+  dmSetDanger(true);
   dmBtn.setAttribute('aria-pressed','true');
   dmNote(DRONE.dead?'無人機已損壞，請按「重新出發」':'已從校門口起飛',2500);
 }
@@ -1622,6 +1633,7 @@ function dmUpdate(now){
     else if(bat<20)s='電量偏低，請準備返航';
     else if(hp<35)s='機身受損，請小心飛行';
     d.status=s;
+    dmDangerBtn.textContent=show.pts?'關閉危險地圖':'開啟危險地圖';
     dmElMsg.textContent=now<d.noteUntil?d.note:s;
   }
 }
