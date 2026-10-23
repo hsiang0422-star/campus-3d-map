@@ -1527,11 +1527,15 @@ function qRender(){
   }
   clearTimeout(qTimer);
   const item=QUIZ[qOrder[qi]];qAnswered=false;
+  const perm=item.o.map((_,i)=>i);
+  for(let i=perm.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[perm[i],perm[j]]=[perm[j],perm[i]];}
+  const shown=perm.map(i=>item.o[i]);
+  const ci=perm.indexOf(item.a);
   if(item.pt!=null)quizFly(item.pt);
   qbody.innerHTML=`<div class="qtop"><span class="qprog">第 ${qi+1} / ${QUIZ.length} 題（得分 ${qScore}）</span><span class="qtb"><button id="qPrev"${qi===0?' disabled':''}>上一題</button><button id="qRedo1">重做一次</button><button id="qRedoAll">全部重做</button></span></div>
     <p class="qq">${item.q}</p>
     ${qPhotos(item)}
-    <div class="qopts">${item.o.map((t,k)=>`<button class="qopt" data-k="${k}">${k+1}. ${markOf(t)}${t}</button>`).join('')}</div>
+    <div class="qopts">${shown.map((t,k)=>`<button class="qopt" data-k="${k}">${k+1}. ${markOf(t)}${t}</button>`).join('')}</div>
     <p class="qfb" id="qfb" aria-live="polite"></p>
     <div id="qreveal"></div>
     <div class="qactions" id="qactions"></div>`;
@@ -1541,9 +1545,9 @@ function qRender(){
   const opts=[...qbody.querySelectorAll('.qopt')];
   opts.forEach(b=>b.onclick=()=>{
     if(qAnswered)return;qAnswered=true;
-    const k=+b.dataset.k,ok=k===item.a;
+    const k=+b.dataset.k,ok=perm[k]===item.a;
     if(qRes[qi]===true)qScore--;qRes[qi]=ok;
-    opts.forEach((x,j)=>{x.disabled=true;if(j===item.a)x.classList.add('right');else if(j===k)x.classList.add('wrong');});
+    opts.forEach((x,j)=>{x.disabled=true;if(j===ci)x.classList.add('right');else if(j===k)x.classList.add('wrong');});
     const fb=document.getElementById('qfb');
     if(ok){
       qScore++;fb.textContent='答對了！';
