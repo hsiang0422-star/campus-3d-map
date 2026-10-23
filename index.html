@@ -1489,7 +1489,7 @@ const QUIZ=[
 const qpanel=document.getElementById('qpanel'),qbody=document.getElementById('qbody'),qhead=document.getElementById('qhead'),bQuiz=document.getElementById('bQuiz');
 let qi=0,qScore=0,qAnswered=false,qTimer=null;
 const qRes=[];
-function markOf(t){return t==="是"||t==="對"?'<span class="qmark">○</span>':(t==="否"||t==="錯"?'<span class="qmark">✕</span>':"");}
+function markOf(t){if(t==="是"||t==="對"||t==="可以")return '<span class="qmark">○</span>';if(t==="否"||t==="錯"||t.startsWith("不行"))return '<span class="qmark">✕</span>';return "";}
 function qReveal(item){
   const info=item.pt!=null?POINT_INFO[item.pt]:null;
   const bld=item.b?BUILDINGS.find(x=>x.id===item.b):null;
