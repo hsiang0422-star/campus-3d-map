@@ -194,6 +194,8 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .dh-bar i{display:block;height:100%;width:100%;background:#4caf7a;transition:width .3s}
 .dh-bar i.low{background:var(--accent)}
 .dh-bar.hit{box-shadow:0 0 0 2px var(--accent)}
+.dh-bar.heal{box-shadow:0 0 0 2px #2fa86a}
+.dm-float{position:absolute;z-index:5;pointer-events:none;font-weight:700;font-size:1.25rem;color:#2fa86a;text-shadow:0 1px 3px rgba(0,0,0,.45);white-space:nowrap}
 .plitem.dm-hl{outline:3px solid var(--accent);outline-offset:-3px}
 .dh-msg{min-height:1.2em;color:var(--accent);font-size:.76rem;margin-top:4px}
 .dh-btns{display:flex;gap:6px;margin-top:8px}
@@ -1313,14 +1315,15 @@ const DM_MAX_Y=10;                                     // 最高飛行高度（�
 const DM_MPU=8.33;                                     // 1 單位 ≈ 8.3 公尺（樓層高 0.42 ≈ 3.5 公尺）
 const DM_V={fwd:2.4,side:1.4,vert:1.4};                // 最高速度（單位／秒）
 const DM_BOUND={x0:-12.5,x1:13,z0:-6.3,z1:5.8};        // 校園範圍（世界座標）
-const DM_R=0.22;                                       // 碰撞半徑
+const DM_SCALE=0.6;                                    // 無人機縮放比例
+const DM_R=0.14;                                       // 碰撞半徑（配合縮小後的機身）
 const DM_NEAR=1.4, DM_FAR=2.2;                         // 靠近危險角落的觸發距離（進入／離開）
 const DM_HP_MAX=100;
 const DM_START={x:11.0,y:2.6,z:-0.2,yaw:Math.PI/2};    // 校門口上方
 const DRONE={on:false,view:'chase',p:new THREE.Vector3(DM_START.x,DM_START.y,DM_START.z),yaw:DM_START.yaw,
   vf:0,vs:0,vy:0,yr:0,pitch:0,roll:0,batt:100,hp:DM_HP_MAX,dead:false,hitCd:0,shake:0,
   last:0,t:0,hudT:0,status:'',note:'',noteUntil:0,saved:null,
-  group:null,rotors:[],shadow:null,shadowMat:null,solids:null,boom:null,zoneIn:new Set(),keys:{},pad:{}};
+  group:null,rotors:[],shadow:null,shadowMat:null,solids:null,boom:null,zoneIn:new Set(),floats:[],keys:{},pad:{}};
 const DM_KEYS={fwd:['KeyW','ArrowUp'],back:['KeyS','ArrowDown'],left:['KeyA'],right:['KeyD'],
   yawL:['KeyQ','ArrowLeft'],yawR:['KeyE','ArrowRight'],up:['Space','KeyR'],down:['ShiftLeft','ShiftRight','KeyF']};
 const DM_CODES=new Set([].concat(...Object.values(DM_KEYS),'KeyV','Escape'));
@@ -1394,6 +1397,7 @@ function dmBuild(){
   });
   const led=(c,x,z)=>{const m=new THREE.Mesh(new THREE.SphereGeometry(.03,8,6),new THREE.MeshBasicMaterial({color:c}));m.position.set(x,.05,z);g.add(m);};
   led(0x3ddc84,-.34,-.34);led(0xff4d4d,.34,-.34);   // 機頭：左綠右紅
+  g.scale.setScalar(DM_SCALE);
   return {g,rotors};
 }
 
@@ -1460,15 +1464,34 @@ function dmRespawn(){
   dmNote('重新出發，已回到校門口',3000);
 }
 
-// 靠近危險角落時自動打開危險角落清單，並標出附近的編號
-function dmOpenDangerList(ns){
-  show.pts=true;pinGroup.visible=true;floorZones.forEach(g=>g.visible=true);updateDangerVis();
-  bPts.setAttribute('aria-pressed','true');
-  plist.hidden=false;
-  plbody.querySelectorAll('.plitem').forEach(el=>el.classList.toggle('dm-hl',ns.includes(+el.dataset.n)));
-  const first=plbody.querySelector('.plitem.dm-hl');
-  if(first)first.scrollIntoView({block:'nearest'});
-  dmNote('靠近危險角落：'+ns.map(n=>n+'號').join('、'),5000);
+// 靠近危險角落時自動打開該地點的危險地圖說明（照片與說明卡）
+function dmShowPoint(n){
+  const info=POINT_INFO[n];
+  dpanel.hidden=false;
+  dbody.innerHTML=info?`<div class="dcard">${(info.imgs||[info.img]).map(u=>`<img src="${u}" alt="${info.title}">`).join('')}<div class="dt">${info.title}</div><p>${info.desc}</p></div>`
+    :`<div class="name">校園危險角落 ${n}</div><p>這個位置的照片與說明還沒有補上。</p>`;
+  dmNote('靠近危險地點：'+(info?info.title:n+'號'),4000);
+}
+// 修復提示：血條閃綠光，並在無人機上方浮出 +1
+function dmHeal(){
+  dmHpBar.classList.add('heal');setTimeout(()=>dmHpBar.classList.remove('heal'),400);
+  const el=document.createElement('div');
+  el.className='dm-float';el.textContent='+1';
+  canvas.parentElement.appendChild(el);
+  DRONE.floats.push({el,t:0});
+}
+function dmFloats(dt){
+  const d=DRONE,w=canvas.clientWidth,h=canvas.clientHeight;
+  const v=new THREE.Vector3(d.p.x,d.p.y+0.25,d.p.z).project(camera);
+  d.floats=d.floats.filter(f=>{
+    f.t+=dt;
+    if(f.t>1.2){f.el.remove();return false;}
+    f.el.style.left=((v.x*0.5+0.5)*w)+'px';
+    f.el.style.top=((-v.y*0.5+0.5)*h)+'px';
+    f.el.style.opacity=String(Math.max(0,1-f.t/1.2));
+    f.el.style.transform=`translate(-50%,${-f.t*40}px)`;
+    return true;
+  });
 }
 function dmCheckZones(){
   const d=DRONE,newly=[];
@@ -1477,7 +1500,10 @@ function dmCheckZones(){
     if(d.zoneIn.has(k)){if(dist>DM_FAR)d.zoneIn.delete(k);}
     else if(dist<DM_NEAR){d.zoneIn.add(k);newly.push(n);}
   });
-  if(newly.length)dmOpenDangerList([...new Set(newly)]);
+  if(newly.length){
+    dmShowPoint(newly[0]);
+    if(!d.dead&&d.hp<DM_HP_MAX){d.hp=Math.min(DM_HP_MAX,d.hp+1);dmHeal();}
+  }
 }
 
 function dmEnter(){
@@ -1506,6 +1532,7 @@ function dmExit(){
   DRONE.on=false;DRONE.group.visible=false;DRONE.shadow.visible=false;
   DRONE.keys={};DRONE.pad={};
   dmClearBoom();
+  DRONE.floats.forEach(f=>f.el.remove());DRONE.floats=[];
   document.body.classList.remove('drone-on');
   dmHud.hidden=true;dmPad.hidden=true;dmVPad.hidden=true;dmKeys.hidden=true;
   dmBtn.setAttribute('aria-pressed','false');
@@ -1576,6 +1603,7 @@ function dmUpdate(now){
   else camera.lookAt(d.p.x+fx*6,d.p.y-1.4,d.p.z+fz*6);
 
   dmCheckZones();
+  dmFloats(dt);
 
   // HUD（約每 120 毫秒更新一次）
   if(now-d.hudT>120){
