@@ -1006,7 +1006,7 @@ Object.values(POINT_INFO).forEach(info=>{if(!info.zone)return;const[x0,z0,x1,z1]
 const floorZones=[];
 // danger corners get their own floating card, separate from the info panel
 const dpanel=document.getElementById('dpanel'),dbody=document.getElementById('dbody'),dhead=document.getElementById('dhead');
-document.getElementById('dClose').onclick=()=>{dpanel.hidden=true;};
+document.getElementById('dClose').onclick=()=>{dpanel.hidden=true;DRONE.cardOpen=false;DRONE.cardZone=null;};
 {const KEY='campus3d-dpanel',stage=dpanel.parentElement;
  const place=(x,y)=>{const W=stage.clientWidth,H=stage.clientHeight;x=Math.min(Math.max(4,x),Math.max(4,W-dpanel.offsetWidth-4));y=Math.min(Math.max(4,y),Math.max(4,H-Math.min(dpanel.offsetHeight,120)-4));
    Object.assign(dpanel.style,{left:x+'px',top:y+'px',bottom:'auto'});return{x,y};};
@@ -1319,11 +1319,11 @@ const DM_SCALE=0.6;                                    // 無人機縮放比例
 const DM_R=0.14;                                       // 碰撞半徑（配合縮小後的機身）
 const DM_NEAR=1.4, DM_FAR=2.2;                         // 靠近危險角落的觸發距離（進入／離開）
 const DM_HP_MAX=100;
-const DM_START={x:11.0,y:2.6,z:-0.2,yaw:Math.PI/2};    // 校門口上方
+const DM_START={x:11.4,y:2.6,z:-0.15,yaw:Math.PI/2};   // 校門口小熊雕塑所在位置上方
 const DRONE={on:false,view:'chase',p:new THREE.Vector3(DM_START.x,DM_START.y,DM_START.z),yaw:DM_START.yaw,
   vf:0,vs:0,vy:0,yr:0,pitch:0,roll:0,batt:100,hp:DM_HP_MAX,dead:false,hitCd:0,shake:0,
   last:0,t:0,hudT:0,status:'',note:'',noteUntil:0,saved:null,
-  group:null,rotors:[],shadow:null,shadowMat:null,solids:null,boom:null,zoneIn:new Set(),floats:[],cardOpen:false,mouseYawAcc:0,keys:{},pad:{}};
+  group:null,rotors:[],shadow:null,shadowMat:null,solids:null,boom:null,zoneIn:new Set(),floats:[],cardOpen:false,cardZone:null,mouseYawAcc:0,keys:{},pad:{}};
 const DM_KEYS={fwd:['KeyW','ArrowUp'],back:['KeyS','ArrowDown'],left:['KeyA'],right:['KeyD'],
   yawL:['KeyQ','ArrowLeft'],yawR:['KeyE','ArrowRight'],up:['Space','KeyR'],down:['ShiftLeft','ShiftRight','KeyF']};
 const DM_CODES=new Set([].concat(...Object.values(DM_KEYS),'KeyV','Escape'));
@@ -1454,21 +1454,28 @@ function dmBoomUpdate(dt){
   });
   if(t>3)dmClearBoom();
 }
-function dmRespawn(){
+// 恢復無人機預設值：血量、電量全滿，回到校門口小熊處，關閉說明卡
+function dmReset(){
   const d=DRONE;
   dmClearBoom();
   d.hp=DM_HP_MAX;d.batt=100;d.dead=false;d.hitCd=0;d.shake=0;
   d.p.set(DM_START.x,DM_START.y,DM_START.z);d.yaw=DM_START.yaw;
-  d.vf=d.vs=d.vy=d.yr=0;d.pitch=d.roll=0;
-  d.group.visible=d.view==='chase';d.shadow.visible=true;
+  d.vf=d.vs=d.vy=d.yr=0;d.pitch=d.roll=0;d.mouseYawAcc=0;
+  // 起點若正好在某危險地點旁（校門口小熊後方），視為已在該範圍內，不會一開始就跳出說明卡
+  d.zoneIn.clear();POINTS.forEach(([n,x,z],k)=>{const[a,b]=P(x,z);if(Math.hypot(a-d.p.x,b-d.p.z)<DM_FAR)d.zoneIn.add(k);});
+  d.cardZone=null;d.cardOpen=false;dpanel.hidden=true;
+  if(d.group){d.group.visible=d.on;d.shadow.visible=true;}
   dmRespawnBtn.hidden=true;
+}
+function dmRespawn(){
+  dmReset();
   dmNote('重新出發，已回到校門口',3000);
 }
 
 // 靠近危險角落時自動打開該地點的危險地圖說明（照片與說明卡）
-function dmShowPoint(n){
+function dmShowPoint(n,k){
   const info=POINT_INFO[n];
-  dpanel.hidden=false;DRONE.cardOpen=true;
+  dpanel.hidden=false;DRONE.cardOpen=true;DRONE.cardZone=k;
   dbody.innerHTML=info?`<div class="dcard">${(info.imgs||[info.img]).map(u=>`<img src="${u}" alt="${info.title}">`).join('')}<div class="dt">${info.title}</div><p>${info.desc}</p></div>`
     :`<div class="name">校園危險角落 ${n}</div><p>這個位置的照片與說明還沒有補上。</p>`;
   dmNote('靠近危險地點：'+(info?info.title:n+'號'),4000);
@@ -1499,12 +1506,15 @@ function dmCheckZones(){
   POINTS.forEach(([n,x,z],k)=>{
     const[a,b]=P(x,z);const dist=Math.hypot(a-d.p.x,b-d.p.z);
     if(d.zoneIn.has(k)){if(dist>DM_FAR)d.zoneIn.delete(k);}
-    else if(dist<DM_NEAR){d.zoneIn.add(k);newly.push(n);}
+    else if(dist<DM_NEAR){d.zoneIn.add(k);newly.push({n,k});}
   });
-  // 離開所有危險地點的範圍後，自動關閉由無人機打開的說明卡
-  if(d.cardOpen&&d.zoneIn.size===0){dpanel.hidden=true;d.cardOpen=false;}
+  // 離開說明卡所屬地點的範圍時，自動關閉說明卡
+  if(d.cardOpen&&d.cardZone!=null){
+    const[n0,x0,z0]=POINTS[d.cardZone];const[a0,b0]=P(x0,z0);
+    if(Math.hypot(a0-d.p.x,b0-d.p.z)>DM_FAR){dpanel.hidden=true;d.cardOpen=false;d.cardZone=null;}
+  }
   if(newly.length){
-    dmShowPoint(newly[0]);
+    dmShowPoint(newly[0].n,newly[0].k);
     if(!d.dead&&d.hp<DM_HP_MAX){d.hp=Math.min(DM_HP_MAX,d.hp+1);dmHeal();}
   }
 }
@@ -1528,23 +1538,22 @@ function dmEnter(){
     DRONE.shadow=new THREE.Mesh(new THREE.CircleGeometry(.5,28),DRONE.shadowMat);
     DRONE.shadow.rotation.x=-Math.PI/2;DRONE.shadow.position.y=.02;scene.add(DRONE.shadow);
   }
-  DRONE.group.visible=!DRONE.dead;DRONE.shadow.visible=!DRONE.dead;
   DRONE.saved={pos:camera.position.clone(),target:controls.target.clone()};
   controls.enabled=false;fly=null;
-  DRONE.on=true;DRONE.last=performance.now();DRONE.vf=DRONE.vs=DRONE.vy=DRONE.yr=0;
+  DRONE.on=true;dmReset();DRONE.group.visible=true;DRONE.shadow.visible=true;
+  DRONE.last=performance.now();
   document.body.classList.add('drone-on');
   dmHud.hidden=false;dmPad.hidden=false;dmVPad.hidden=false;dmKeys.hidden=false;
-  dmRespawnBtn.hidden=!DRONE.dead;
   dmSetDanger(true);
   dmBtn.setAttribute('aria-pressed','true');
-  dmNote(DRONE.dead?'無人機已損壞，請按「重新出發」':'已從校門口起飛',2500);
+  dmNote('已從校門口小熊處起飛',2500);
 }
 
 function dmExit(){
   if(!DRONE.on)return;
   DRONE.on=false;DRONE.group.visible=false;DRONE.shadow.visible=false;
   DRONE.keys={};DRONE.pad={};
-  dmClearBoom();
+  dmClearBoom();dpanel.hidden=true;DRONE.cardOpen=false;DRONE.cardZone=null;DRONE.zoneIn.clear();
   DRONE.floats.forEach(f=>f.el.remove());DRONE.floats=[];
   document.body.classList.remove('drone-on');
   dmHud.hidden=true;dmPad.hidden=true;dmVPad.hidden=true;dmKeys.hidden=true;
