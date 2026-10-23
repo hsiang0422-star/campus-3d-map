@@ -283,7 +283,7 @@ body.drone-on #panel,body.drone-on #apanel,body.drone-on #qpanel,body.drone-on #
       <button data-d="up" aria-label="上升">升</button>
       <button data-d="down" aria-label="下降">降</button>
     </div>
-    <div id="dkeys" hidden>W/S 前後・A/D 左右・Q/E 轉向・Space/Shift 升降・V 切換視角・Esc 離開</div>
+    <div id="dkeys" hidden>W/S 前後・A/D 左右・Q/E 或拖曳滑鼠轉向・Space/Shift 升降・V 切換視角・Esc 離開</div>
     <aside class="dpanel" id="dpanel" hidden aria-label="危險角落資訊">
       <div class="phead dhead" id="dhead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>危險角落資訊・拖曳移動<button class="collapse" id="dMin">收合</button><button class="collapse" id="dClose">關閉</button></div>
       <div class="dbody" id="dbody"></div>
@@ -1323,7 +1323,7 @@ const DM_START={x:11.0,y:2.6,z:-0.2,yaw:Math.PI/2};    // 校門口上方
 const DRONE={on:false,view:'chase',p:new THREE.Vector3(DM_START.x,DM_START.y,DM_START.z),yaw:DM_START.yaw,
   vf:0,vs:0,vy:0,yr:0,pitch:0,roll:0,batt:100,hp:DM_HP_MAX,dead:false,hitCd:0,shake:0,
   last:0,t:0,hudT:0,status:'',note:'',noteUntil:0,saved:null,
-  group:null,rotors:[],shadow:null,shadowMat:null,solids:null,boom:null,zoneIn:new Set(),floats:[],cardOpen:false,keys:{},pad:{}};
+  group:null,rotors:[],shadow:null,shadowMat:null,solids:null,boom:null,zoneIn:new Set(),floats:[],cardOpen:false,mouseYawAcc:0,keys:{},pad:{}};
 const DM_KEYS={fwd:['KeyW','ArrowUp'],back:['KeyS','ArrowDown'],left:['KeyA'],right:['KeyD'],
   yawL:['KeyQ','ArrowLeft'],yawR:['KeyE','ArrowRight'],up:['Space','KeyR'],down:['ShiftLeft','ShiftRight','KeyF']};
 const DM_CODES=new Set([].concat(...Object.values(DM_KEYS),'KeyV','Escape'));
@@ -1575,7 +1575,7 @@ function dmUpdate(now){
   d.vs+=(si*DM_V.side-d.vs)*k(2.6);
   d.vy+=(vi*DM_V.vert-d.vy)*k(3);
   d.yr+=(yi*1.9-d.yr)*k(4);
-  d.yaw+=d.yr*dt;
+  d.yaw+=d.yr*dt+d.mouseYawAcc;d.mouseYawAcc=0;   // 鍵盤轉向＋滑鼠拖曳轉向
   const fx=-Math.sin(d.yaw),fz=-Math.cos(d.yaw),rx=Math.cos(d.yaw),rz=-Math.sin(d.yaw);
 
   // 移動與碰撞
@@ -1647,6 +1647,21 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{DRONE.keys[e.code]=false;});
 addEventListener('blur',()=>{DRONE.keys={};DRONE.pad={};});
+
+// 滑鼠拖曳轉向：飛行中在畫面上按住左鍵左右拖曳，即可轉向（與 Q／E 相同效果）
+{let drag=false,lastX=0;
+ canvas.addEventListener('pointerdown',e=>{
+   if(!DRONE.on||e.button!==0)return;
+   drag=true;lastX=e.clientX;canvas.setPointerCapture(e.pointerId);
+ });
+ canvas.addEventListener('pointermove',e=>{
+   if(!drag||!DRONE.on)return;
+   DRONE.mouseYawAcc+=(lastX-e.clientX)*0.006;   // 向右拖曳 = 右轉
+   lastX=e.clientX;
+ });
+ const end=()=>{drag=false;};
+ canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
+}
 
 // 觸控／滑鼠按鈕（按住即持續作用）
 document.querySelectorAll('#dpad [data-d],#dvpad [data-d]').forEach(b=>{
