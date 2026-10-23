@@ -166,6 +166,15 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
   h1 small{display:none}
 }
 @media (prefers-reduced-motion: reduce){*{transition:none!important}.lb.pt{animation:none!important}}
+.qprog{font-size:12px;opacity:.7;margin:4px 0}
+.qq{font-size:15px;font-weight:600;margin:6px 0 10px;line-height:1.5}
+.qopts{display:grid;gap:8px}
+.qopt{text-align:left;padding:9px 12px;border-radius:10px;border:1px solid #c9bfae;background:var(--panel,#fff);color:inherit;cursor:pointer;font:inherit}
+.qopt:disabled{cursor:default}
+.qopt.right{background:#d8f0dc;border-color:#3b8a4f}
+.qopt.wrong{background:#f8d7d3;border-color:#b8322a}
+.qfb{min-height:1.4em;margin:8px 0;font-size:14px;line-height:1.5}
+.qscore{font-size:16px;font-weight:600;line-height:1.6}
 </style>
 
 <div class="app">
@@ -177,6 +186,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
       <button id="bCtrl" aria-pressed="true">地圖操作</button>
       <button id="bLbl" aria-pressed="false">建築名稱</button>
       <button id="bPts" aria-pressed="false">危險角落</button>
+      <button id="bQuiz" aria-pressed="false" aria-controls="qpanel">校園小測驗</button>
       <button id="bSpin" aria-pressed="false">自動旋轉</button>
       <button id="bPanel" aria-expanded="true" aria-controls="panel">教學大樓各樓層 <span class="car" aria-hidden="true">▾</span></button>
       <button id="bAdm" aria-pressed="false" aria-controls="apanel">行政大樓各樓層</button>
@@ -221,6 +231,10 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
     <aside class="plist" id="plist" hidden aria-label="校園危險角落清單">
       <div class="phead dhead" id="plhead" title="拖曳移動"><span class="grip" aria-hidden="true"></span>校園危險角落清單・拖曳移動<button class="collapse" id="plMin">收合</button><button class="collapse" id="plClose">關閉</button></div>
       <div class="plbody" id="plbody"></div>
+    </aside>
+    <aside class="plist" id="qpanel" hidden aria-label="校園小測驗" style="left:12px;right:auto;width:300px">
+      <div class="phead dhead" id="qhead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>校園小測驗・拖曳移動<button class="collapse" id="qMin">收合</button><button class="collapse" id="qClose">關閉</button></div>
+      <div class="plbody" id="qbody"></div>
     </aside>
     <aside class="plist" id="apanel" hidden aria-label="行政大樓各樓層">
       <div class="phead dhead" id="ahead" title="拖曳移動"><span class="grip" aria-hidden="true"></span>行政大樓各樓層・拖曳移動<button class="collapse" id="aMin">收合</button></div>
@@ -1448,6 +1462,65 @@ if(innerWidth<=700)setPanel(false);
   head.addEventListener('dblclick',e=>{if(e.target.closest('button'))return;box.style.left='';box.style.top='';try{localStorage.removeItem(KEY);}catch(_){}});
   new ResizeObserver(()=>{if(box.style.left){const a=box.getBoundingClientRect(),s=stage.getBoundingClientRect();place(a.left-s.left,a.top-s.top);}}).observe(stage);
 })();
+
+/* ---------- 校園小測驗 ---------- */
+const QUIZ=[
+ {q:'行政大樓三樓是什麼空間？',o:['教室','活動中心','廚房','圖書館'],a:1},
+ {q:'蕙質樓位於學生餐廳的哪一側？',o:['西側','南側','東側','北側'],a:2},
+ {q:'交流門位於哪兩個地方之間？',o:['學校與安南醫院','學校與宿舍','學校與長和路','行政大樓與洗車場'],a:0},
+ {q:'垃圾場位於校園的哪一端？',o:['北端','東端','西端','南端'],a:3},
+ {q:'「宿舍後方洗衣場」是幾號危險角落？',o:['1 號','2 號','3 號','4 號'],a:1},
+ {q:'「垃圾場旁草地」是幾號危險角落？',o:['7 號','8 號','9 號','10 號'],a:2},
+ {q:'「垃圾場後方角落」是幾號危險角落？',o:['6 號','8 號','10 號','11 號'],a:2},
+ {q:'風雨走廊（校車候車棚）連接的是哪兩個地方？',o:['南棟教學大樓與校門方向','宿舍與洗車場','餐廳與圖書館','行政大樓與垃圾場'],a:0},
+ {q:'行政大樓東北角的高壓電設施，應該怎麼做？',o:['請勿靠近','可以攀爬','改作停車場','已經拆除'],a:0},
+ {q:'校門口石座上刻的是什麼？',o:['學校校名','校訓','建校年份','學號'],a:0}
+];
+const qpanel=document.getElementById('qpanel'),qbody=document.getElementById('qbody'),qhead=document.getElementById('qhead'),bQuiz=document.getElementById('bQuiz');
+let qi=0,qScore=0,qAnswered=false;
+function qRender(){
+  if(qi>=QUIZ.length){
+    qbody.innerHTML=`<p class="qscore">測驗完成！答對 ${qScore} / ${QUIZ.length} 題</p><p><button id="qRestart">重新作答</button></p>`;
+    document.getElementById('qRestart').onclick=()=>{qi=0;qScore=0;qRender();};
+    return;
+  }
+  const item=QUIZ[qi];qAnswered=false;
+  qbody.innerHTML=`<p class="qprog">第 ${qi+1} / ${QUIZ.length} 題（得分 ${qScore}）</p>
+    <p class="qq">${item.q}</p>
+    <div class="qopts">${item.o.map((t,k)=>`<button class="qopt" data-k="${k}">${t}</button>`).join('')}</div>
+    <p class="qfb" id="qfb" aria-live="polite"></p>
+    <p><button id="qNext" hidden>${qi===QUIZ.length-1?'看結果':'下一題'}</button></p>`;
+  const opts=[...qbody.querySelectorAll('.qopt')];
+  opts.forEach(b=>b.onclick=()=>{
+    if(qAnswered)return;qAnswered=true;
+    const k=+b.dataset.k,ok=k===item.a;if(ok)qScore++;
+    opts.forEach((x,j)=>{x.disabled=true;if(j===item.a)x.classList.add('right');else if(j===k)x.classList.add('wrong');});
+    document.getElementById('qfb').textContent=ok?'答對了！':'答錯了，正確答案是「'+item.o[item.a]+'」。';
+    document.getElementById('qNext').hidden=false;
+  });
+  document.getElementById('qNext').onclick=()=>{qi++;qRender();};
+}
+bQuiz.onclick=()=>{
+  const open=qpanel.hidden;qpanel.hidden=!open;bQuiz.setAttribute('aria-pressed',open);
+  if(open){if(!qbody.hasChildNodes())qRender();if(qSaved)qPlace(qSaved.x,qSaved.y);}
+};
+document.getElementById('qClose').onclick=()=>{qpanel.hidden=true;bQuiz.setAttribute('aria-pressed','false');};
+let qSaved=null;try{qSaved=JSON.parse(localStorage.getItem('quizPos')||'null');}catch(e){}
+function qPlace(x,y){
+  const pw=qpanel.parentElement.clientWidth,ph=qpanel.parentElement.clientHeight;
+  x=Math.max(0,Math.min(x,pw-qpanel.offsetWidth));y=Math.max(0,Math.min(y,ph-qpanel.offsetHeight));
+  Object.assign(qpanel.style,{left:x+'px',top:y+'px',right:'auto',bottom:'auto'});return{x,y};
+}
+{let st=null;
+ qhead.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;const a=qpanel.getBoundingClientRect(),b=qpanel.parentElement.getBoundingClientRect();
+   st={sx:e.clientX,sy:e.clientY,x:a.left-b.left,y:a.top-b.top,last:null};qhead.setPointerCapture(e.pointerId);qpanel.classList.add('dragging');e.preventDefault();});
+ qhead.addEventListener('pointermove',e=>{if(st)st.last=qPlace(st.x+e.clientX-st.sx,st.y+e.clientY-st.sy);});
+ const end=()=>{if(!st)return;qpanel.classList.remove('dragging');if(st.last){qSaved=st.last;try{localStorage.setItem('quizPos',JSON.stringify(qSaved));}catch(e){}}st=null;};
+ qhead.addEventListener('pointerup',end);qhead.addEventListener('pointercancel',end);
+ qhead.addEventListener('dblclick',e=>{if(e.target.closest('button'))return;qSaved=null;Object.assign(qpanel.style,{left:'12px',top:'',right:'auto',bottom:''});try{localStorage.removeItem('quizPos');}catch(_){}});
+ floatResizable(qpanel,'quizSize',260,220);
+ floatCollapsible(qpanel,document.getElementById('qMin'),'quizMin');
+}
 
 /* ---------- loop ---------- */
 function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;
