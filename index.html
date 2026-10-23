@@ -1489,6 +1489,9 @@ const QUIZ=[
 const qpanel=document.getElementById('qpanel'),qbody=document.getElementById('qbody'),qhead=document.getElementById('qhead'),bQuiz=document.getElementById('bQuiz');
 let qi=0,qScore=0,qAnswered=false,qTimer=null;
 const qRes=[];
+let qOrder=[];
+function qShuffle(){qOrder=QUIZ.map((_,i)=>i);for(let i=qOrder.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[qOrder[i],qOrder[j]]=[qOrder[j],qOrder[i]];}}
+qShuffle();
 function markOf(t){if(t==="是"||t==="對"||t==="可以")return '<span class="qmark">○</span>';if(t==="否"||t==="錯"||t.startsWith("不行"))return '<span class="qmark">✕</span>';return "";}
 function qReveal(item){
   const info=item.pt!=null?POINT_INFO[item.pt]:null;
@@ -1519,11 +1522,11 @@ function qPhotos(item){
 function qRender(){
   if(qi>=QUIZ.length){
     qbody.innerHTML=`<p class="qscore">測驗完成！答對 ${qScore} / ${QUIZ.length} 題</p><p><button id="qRestart">重新作答</button></p>`;
-    document.getElementById('qRestart').onclick=()=>{qi=0;qScore=0;qRes.length=0;qRender();};
+    document.getElementById('qRestart').onclick=()=>{qi=0;qScore=0;qRes.length=0;qShuffle();qRender();};
     return;
   }
   clearTimeout(qTimer);
-  const item=QUIZ[qi];qAnswered=false;
+  const item=QUIZ[qOrder[qi]];qAnswered=false;
   if(item.pt!=null)quizFly(item.pt);
   qbody.innerHTML=`<div class="qtop"><span class="qprog">第 ${qi+1} / ${QUIZ.length} 題（得分 ${qScore}）</span><span class="qtb"><button id="qPrev"${qi===0?' disabled':''}>上一題</button><button id="qRedo1">重做一次</button><button id="qRedoAll">全部重做</button></span></div>
     <p class="qq">${item.q}</p>
@@ -1534,7 +1537,7 @@ function qRender(){
     <div class="qactions" id="qactions"></div>`;
   document.getElementById('qRedo1').onclick=()=>qRender();
   document.getElementById('qPrev').onclick=()=>{if(qi>0){qi--;qRender();}};
-  document.getElementById('qRedoAll').onclick=()=>{qi=0;qScore=0;qRes.length=0;qRender();};
+  document.getElementById('qRedoAll').onclick=()=>{qi=0;qScore=0;qRes.length=0;qShuffle();qRender();};
   const opts=[...qbody.querySelectorAll('.qopt')];
   opts.forEach(b=>b.onclick=()=>{
     if(qAnswered)return;qAnswered=true;
