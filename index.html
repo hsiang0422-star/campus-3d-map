@@ -193,6 +193,8 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .dh-bar{flex:1;height:8px;border-radius:4px;background:var(--chip);overflow:hidden}
 .dh-bar i{display:block;height:100%;width:100%;background:#4caf7a;transition:width .3s}
 .dh-bar i.low{background:var(--accent)}
+.dh-bar.hit{box-shadow:0 0 0 2px var(--accent)}
+.plitem.dm-hl{outline:3px solid var(--accent);outline-offset:-3px}
 .dh-msg{min-height:1.2em;color:var(--accent);font-size:.76rem;margin-top:4px}
 .dh-btns{display:flex;gap:6px;margin-top:8px}
 .dh-btns button{flex:1;font-size:.76rem;padding:5px 8px}
@@ -259,8 +261,9 @@ body.drone-on #panel,body.drone-on #apanel,body.drone-on #qpanel,body.drone-on #
       <div class="dh-row"><span>速度</span><b id="dhSpd">0.0</b><span>公尺/秒</span></div>
       <div class="dh-row"><span>航向</span><b id="dhHdg">0°</b><span>相對地圖</span></div>
       <div class="dh-row"><span>電量</span><div class="dh-bar"><i id="dhBat"></i></div><b id="dhBatT">100%</b></div>
+      <div class="dh-row"><span>機身</span><div class="dh-bar dh-hp" id="dhHpBar"><i id="dhHp"></i></div><b id="dhHpT">100%</b></div>
       <div class="dh-msg" id="dhMsg"></div>
-      <div class="dh-btns"><button id="dhView">視角：追隨</button><button id="dhExit">離開飛行</button></div>
+      <div class="dh-btns"><button id="dhView">視角：追隨</button><button id="dhRespawn" hidden>重新出發</button><button id="dhExit">離開飛行</button></div>
     </aside>
     <div id="dpad" hidden>
       <button class="gap" tabindex="-1" aria-hidden="true"></button>
@@ -1305,12 +1308,19 @@ camera.position.copy(HOME.pos);controls.target.copy(HOME.target);
 let fly=null;
 
 /* ---------- drone flight (無人機飛行) ---------- */
-const DRONE={on:false,view:'chase',p:new THREE.Vector3(11.0,2.6,-0.2),yaw:Math.PI/2,
-  vf:0,vs:0,vy:0,yr:0,pitch:0,roll:0,batt:100,last:0,t:0,hudT:0,msg:'',saved:null,
-  group:null,rotors:[],shadow:null,shadowMat:null,keys:{},pad:{}};
-const DM_MPU=8.33;                                   // 1 單位 ≈ 8.3 公尺（樓層高 0.42 ≈ 3.5 公尺）
-const DM_MIN_Y=2.2, DM_MAX_Y=10;                     // 最低安全高度高於最高屋頂（約 1.7 單位）
-const DM_BOUND={x0:-12.5,x1:13,z0:-6.3,z1:5.8};     // 校園範圍（世界座標）
+const DM_GROUND=0.12;                                  // 機身底部貼地時的中心高度（單位）
+const DM_MAX_Y=10;                                     // 最高飛行高度（單位）
+const DM_MPU=8.33;                                     // 1 單位 ≈ 8.3 公尺（樓層高 0.42 ≈ 3.5 公尺）
+const DM_V={fwd:2.4,side:1.4,vert:1.4};                // 最高速度（單位／秒）
+const DM_BOUND={x0:-12.5,x1:13,z0:-6.3,z1:5.8};        // 校園範圍（世界座標）
+const DM_R=0.22;                                       // 碰撞半徑
+const DM_NEAR=1.4, DM_FAR=2.2;                         // 靠近危險角落的觸發距離（進入／離開）
+const DM_HP_MAX=100;
+const DM_START={x:11.0,y:2.6,z:-0.2,yaw:Math.PI/2};    // 校門口上方
+const DRONE={on:false,view:'chase',p:new THREE.Vector3(DM_START.x,DM_START.y,DM_START.z),yaw:DM_START.yaw,
+  vf:0,vs:0,vy:0,yr:0,pitch:0,roll:0,batt:100,hp:DM_HP_MAX,dead:false,hitCd:0,shake:0,
+  last:0,t:0,hudT:0,status:'',note:'',noteUntil:0,saved:null,
+  group:null,rotors:[],shadow:null,shadowMat:null,solids:null,boom:null,zoneIn:new Set(),keys:{},pad:{}};
 const DM_KEYS={fwd:['KeyW','ArrowUp'],back:['KeyS','ArrowDown'],left:['KeyA'],right:['KeyD'],
   yawL:['KeyQ','ArrowLeft'],yawR:['KeyE','ArrowRight'],up:['Space','KeyR'],down:['ShiftLeft','ShiftRight','KeyF']};
 const DM_CODES=new Set([].concat(...Object.values(DM_KEYS),'KeyV','Escape'));
@@ -1318,9 +1328,54 @@ const dmBtn=document.getElementById('bDrone'), dmHud=document.getElementById('dh
 const dmPad=document.getElementById('dpad'), dmVPad=document.getElementById('dvpad'), dmKeys=document.getElementById('dkeys');
 const dmElAlt=document.getElementById('dhAlt'), dmElSpd=document.getElementById('dhSpd'), dmElHdg=document.getElementById('dhHdg');
 const dmElBat=document.getElementById('dhBat'), dmElBatT=document.getElementById('dhBatT');
-const dmElMsg=document.getElementById('dhMsg'), dmElView=document.getElementById('dhView');
+const dmHpBar=document.getElementById('dhHpBar'), dmElHp=document.getElementById('dhHp'), dmElHpT=document.getElementById('dhHpT');
+const dmElMsg=document.getElementById('dhMsg'), dmElView=document.getElementById('dhView'), dmRespawnBtn=document.getElementById('dhRespawn');
 const dmClamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dmIn=a=>(DM_KEYS[a].some(k=>DRONE.keys[k])||DRONE.pad[a])?1:0;
+const DM_DIRS=[[1,0,0],[-1,0,0],[0,0,1],[0,0,-1],[.707,0,.707],[-.707,0,.707],[.707,0,-.707],[-.707,0,-.707],[0,1,0],[0,-1,0]].map(a=>new THREE.Vector3(a[0],a[1],a[2]));
+const dmRay=new THREE.Raycaster();
+
+// 碰撞物件：場景中有一定高度的實體（建築、樹、欄杆等）；平面的地面、道路標線與危險角落標示不列入
+function dmSolids(){
+  if(DRONE.solids)return DRONE.solids;
+  const list=[],box=new THREE.Box3(),size=new THREE.Vector3();
+  scene.traverse(o=>{
+    if(!o.isMesh||!o.geometry||(o.material&&o.material.visible===false))return;
+    for(let a=o.parent;a;a=a.parent)if(a===pinGroup)return;
+    box.setFromObject(o);if(box.isEmpty())return;
+    box.getSize(size);
+    if(box.max.y>0.2&&size.y>0.2)list.push(o);
+  });
+  DRONE.solids=list;return list;
+}
+// 以十個方向射線檢查機身周圍是否有碰撞物（只計入目前看得見的物件）
+function dmHit(pos){
+  for(const dv of DM_DIRS){
+    dmRay.set(pos,dv);dmRay.far=DM_R;
+    const hits=dmRay.intersectObjects(DRONE.solids,false);
+    for(const h of hits){if(h.distance<DM_R&&visDeep(h.object))return h;}
+  }
+  return null;
+}
+// 分段移動：撞到時盡量沿牆面滑動；完全被擋住則回傳撞擊速度（單位／秒），否則回傳 0
+function dmMove(d,dx,dy,dz,dt){
+  const len=Math.hypot(dx,dy,dz);
+  const n=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy),Math.abs(dz))/0.04));
+  const sx=dx/n,sy=dy/n,sz=dz/n;
+  let impact=0;
+  for(let i=0;i<n;i++){
+    const full=d.p.clone().add(new THREE.Vector3(sx,sy,sz));
+    if(!dmHit(full)){d.p.copy(full);continue;}
+    let moved=false;
+    for(const [ax,ay,az] of [[sx,0,0],[0,sy,0],[0,0,sz]]){
+      if(!ax&&!ay&&!az)continue;
+      const c=d.p.clone().add(new THREE.Vector3(ax,ay,az));
+      if(!dmHit(c)){d.p.copy(c);moved=true;}
+    }
+    if(!moved&&dt>0)impact=Math.max(impact,len/dt);
+  }
+  return impact;
+}
 
 function dmBuild(){
   const g=new THREE.Group();
@@ -1342,31 +1397,115 @@ function dmBuild(){
   return {g,rotors};
 }
 
-function dmMsg(t){if(DRONE.msg!==t){DRONE.msg=t;dmElMsg.textContent=t;}}
+function dmNote(t,ms=4000){DRONE.note=t;DRONE.noteUntil=performance.now()+ms;}
+function dmFlashHp(){dmHpBar.classList.add('hit');setTimeout(()=>dmHpBar.classList.remove('hit'),300);}
+
+// 撞擊：速度（單位／秒）換算成公尺／秒，超過門檻才扣血；有冷卻時間避免同一次撞擊連扣
+function dmCrash(speed){
+  const d=DRONE;if(d.dead)return;
+  const mps=speed*DM_MPU;
+  d.shake=Math.max(d.shake,Math.min(1,mps/12));
+  if(mps<2||d.hitCd>0)return;
+  d.hitCd=0.5;
+  d.hp=Math.max(0,d.hp-Math.min(60,4+(mps-2)*2.2));
+  dmFlashHp();
+  if(d.hp<=0)dmExplode();
+  else dmNote('撞到東西！機身受損',1500);
+}
+
+function dmExplode(){
+  const d=DRONE;
+  d.dead=true;d.hp=0;d.group.visible=false;d.shadow.visible=false;
+  d.keys={};d.pad={};
+  const g=new THREE.Group();g.position.copy(d.p);scene.add(g);
+  const fire=new THREE.Mesh(new THREE.SphereGeometry(.2,16,12),new THREE.MeshBasicMaterial({color:0xffa230,transparent:true,opacity:1}));g.add(fire);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.05,.1,40),new THREE.MeshBasicMaterial({color:0xffe08a,transparent:true,opacity:.9,side:THREE.DoubleSide,depthWrite:false}));
+  ring.rotation.x=-Math.PI/2;g.add(ring);
+  const debris=[];
+  for(let i=0;i<16;i++){
+    const m=new THREE.Mesh(new THREE.BoxGeometry(.05,.02,.08),new THREE.MeshStandardMaterial({color:i%3?0x33373d:0xf4f4f2}));
+    g.add(m);const a=Math.random()*Math.PI*2,s=0.6+Math.random()*1.2;
+    debris.push({m,v:new THREE.Vector3(Math.cos(a)*s,0.9+Math.random()*1.0,Math.sin(a)*s),w:new THREE.Vector3(Math.random()*12,Math.random()*12,Math.random()*12)});
+  }
+  d.boom={g,fire,ring,debris,t:0};
+  dmNote('無人機損壞，已爆炸！',6000);
+  dmRespawnBtn.hidden=false;
+}
+function dmClearBoom(){
+  const b=DRONE.boom;if(!b)return;
+  scene.remove(b.g);
+  b.g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
+  DRONE.boom=null;
+}
+function dmBoomUpdate(dt){
+  const b=DRONE.boom;if(!b)return;
+  b.t+=dt;const t=b.t;
+  b.fire.scale.setScalar(0.5+Math.min(1,t/0.5)*2.4);b.fire.material.opacity=Math.max(0,1-t/1.2);
+  b.ring.scale.setScalar(1+t*9);b.ring.material.opacity=Math.max(0,0.9-t/1.0);
+  b.debris.forEach(o=>{
+    o.v.y-=1.2*dt;o.m.position.addScaledVector(o.v,dt);
+    o.m.rotation.x+=o.w.x*dt;o.m.rotation.y+=o.w.y*dt;
+    if(o.m.position.y<0){o.m.position.y=0;o.v.set(o.v.x*0.5,0,o.v.z*0.5);}
+  });
+  if(t>3)dmClearBoom();
+}
+function dmRespawn(){
+  const d=DRONE;
+  dmClearBoom();
+  d.hp=DM_HP_MAX;d.batt=100;d.dead=false;d.hitCd=0;d.shake=0;
+  d.p.set(DM_START.x,DM_START.y,DM_START.z);d.yaw=DM_START.yaw;
+  d.vf=d.vs=d.vy=d.yr=0;d.pitch=d.roll=0;
+  d.group.visible=d.view==='chase';d.shadow.visible=true;
+  dmRespawnBtn.hidden=true;
+  dmNote('重新出發，已回到校門口',3000);
+}
+
+// 靠近危險角落時自動打開危險角落清單，並標出附近的編號
+function dmOpenDangerList(ns){
+  show.pts=true;pinGroup.visible=true;floorZones.forEach(g=>g.visible=true);updateDangerVis();
+  bPts.setAttribute('aria-pressed','true');
+  plist.hidden=false;
+  plbody.querySelectorAll('.plitem').forEach(el=>el.classList.toggle('dm-hl',ns.includes(+el.dataset.n)));
+  const first=plbody.querySelector('.plitem.dm-hl');
+  if(first)first.scrollIntoView({block:'nearest'});
+  dmNote('靠近危險角落：'+ns.map(n=>n+'號').join('、'),5000);
+}
+function dmCheckZones(){
+  const d=DRONE,newly=[];
+  POINTS.forEach(([n,x,z],k)=>{
+    const[a,b]=P(x,z);const dist=Math.hypot(a-d.p.x,b-d.p.z);
+    if(d.zoneIn.has(k)){if(dist>DM_FAR)d.zoneIn.delete(k);}
+    else if(dist<DM_NEAR){d.zoneIn.add(k);newly.push(n);}
+  });
+  if(newly.length)dmOpenDangerList([...new Set(newly)]);
+}
 
 function dmEnter(){
   if(DRONE.on)return;
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+  dmSolids();
   if(!DRONE.group){
     const b=dmBuild();DRONE.group=b.g;DRONE.rotors=b.rotors;scene.add(b.g);
     DRONE.shadowMat=new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.3,depthWrite:false});
     DRONE.shadow=new THREE.Mesh(new THREE.CircleGeometry(.5,28),DRONE.shadowMat);
     DRONE.shadow.rotation.x=-Math.PI/2;DRONE.shadow.position.y=.02;scene.add(DRONE.shadow);
   }
-  DRONE.group.visible=true;DRONE.shadow.visible=true;
+  DRONE.group.visible=!DRONE.dead;DRONE.shadow.visible=!DRONE.dead;
   DRONE.saved={pos:camera.position.clone(),target:controls.target.clone()};
   controls.enabled=false;fly=null;
   DRONE.on=true;DRONE.last=performance.now();DRONE.vf=DRONE.vs=DRONE.vy=DRONE.yr=0;
   document.body.classList.add('drone-on');
   dmHud.hidden=false;dmPad.hidden=false;dmVPad.hidden=false;dmKeys.hidden=false;
+  dmRespawnBtn.hidden=!DRONE.dead;
   dmBtn.setAttribute('aria-pressed','true');
-  dmMsg('已從校門口起飛');
+  dmNote(DRONE.dead?'無人機已損壞，請按「重新出發」':'已從校門口起飛',2500);
 }
 
 function dmExit(){
   if(!DRONE.on)return;
   DRONE.on=false;DRONE.group.visible=false;DRONE.shadow.visible=false;
   DRONE.keys={};DRONE.pad={};
+  dmClearBoom();
   document.body.classList.remove('drone-on');
   dmHud.hidden=true;dmPad.hidden=true;dmVPad.hidden=true;dmKeys.hidden=true;
   dmBtn.setAttribute('aria-pressed','false');
@@ -1383,62 +1522,77 @@ function dmView(){
 function dmUpdate(now){
   const d=DRONE;
   const dt=Math.min(0.05,Math.max(0,(now-d.last)/1000));d.last=now;d.t+=dt;
-  const live=d.batt>0;
+  if(d.hitCd>0)d.hitCd-=dt;
+  d.shake=Math.max(0,d.shake-dt*1.6);
+  dmBoomUpdate(dt);
+  const live=d.batt>0&&!d.dead;
+  const k=r=>1-Math.exp(-r*dt);                        // 平滑係數：加減速有慣性
   const fi=live?dmIn('fwd')-dmIn('back'):0;
   const si=live?dmIn('right')-dmIn('left'):0;
-  const yi=live?dmIn('yawL')-dmIn('yawR'):0;   // 增加航向角 = 左轉（機頭往 -X 方向）
+  const yi=live?dmIn('yawL')-dmIn('yawR'):0;          // 航向角增加 = 左轉
   const vi=live?dmIn('up')-dmIn('down'):0;
-  const k=r=>1-Math.exp(-r*dt);                       // 平滑係數：讓加速和減速有慣性
-  d.vf+=(fi*5.2-d.vf)*k(2.2);
-  d.vs+=(si*3.6-d.vs)*k(2.6);
-  d.vy+=(vi*2.6-d.vy)*k(3);
+  d.vf+=(fi*DM_V.fwd-d.vf)*k(2.2);
+  d.vs+=(si*DM_V.side-d.vs)*k(2.6);
+  d.vy+=(vi*DM_V.vert-d.vy)*k(3);
   d.yr+=(yi*1.9-d.yr)*k(4);
   d.yaw+=d.yr*dt;
-  // 機頭方向（與無人機群組的 rotation.y 一致：局部 -Z 為前方）
   const fx=-Math.sin(d.yaw),fz=-Math.cos(d.yaw),rx=Math.cos(d.yaw),rz=-Math.sin(d.yaw);
-  d.p.x+=(fx*d.vf+rx*d.vs)*dt;d.p.z+=(fz*d.vf+rz*d.vs)*dt;d.p.y+=d.vy*dt;
-  d.p.x=dmClamp(d.p.x,DM_BOUND.x0,DM_BOUND.x1);d.p.z=dmClamp(d.p.z,DM_BOUND.z0,DM_BOUND.z1);
-  d.p.y=dmClamp(d.p.y,DM_MIN_Y,DM_MAX_Y);
-  if(live)d.batt=Math.max(0,d.batt-dt*(100/600)*(1+Math.abs(d.vf)/10+Math.abs(d.vs)/10));
 
-  // 姿態：前進時機頭下傾，側移時機身側傾（有慣性）
+  // 移動與碰撞
+  const hit=dmMove(d,(fx*d.vf+rx*d.vs)*dt,d.vy*dt,(fz*d.vf+rz*d.vs)*dt,dt);
+  if(hit>0){dmCrash(hit);d.vf*=0.2;d.vs*=0.2;d.vy*=0.2;}
+  const bx=dmClamp(d.p.x,DM_BOUND.x0,DM_BOUND.x1),bz=dmClamp(d.p.z,DM_BOUND.z0,DM_BOUND.z1);
+  if(bx!==d.p.x||bz!==d.p.z){const sp=Math.hypot(d.vf,d.vs);if(sp>0.5)dmCrash(sp);d.vf*=0.2;d.vs*=0.2;d.p.x=bx;d.p.z=bz;}
+  d.p.y=dmClamp(d.p.y,DM_GROUND,DM_MAX_Y);
+  if(d.p.y<=DM_GROUND){if(d.vy<0)d.vy=0;d.vf*=0.92;d.vs*=0.92;}   // 貼地時有摩擦力
+  if(live)d.batt=Math.max(0,d.batt-dt*(100/600)*(1+Math.abs(d.vf)/5+Math.abs(d.vs)/5));
+
+  // 姿態：前進時機頭下傾、側移時機身側傾
   d.pitch+=(dmClamp(-d.vf*0.035,-0.35,0.35)-d.pitch)*k(5);
   d.roll+=(dmClamp(-d.vs*0.05,-0.3,0.3)-d.roll)*k(5);
-  const bob=reduce?0:Math.sin(d.t*6.3)*0.012;          // 懸停時的微小起伏
+  const bob=(reduce||d.dead)?0:Math.sin(d.t*6.3)*0.012;
   d.group.position.set(d.p.x,d.p.y+bob,d.p.z);
   d.group.rotation.set(d.pitch,d.yaw,d.roll,'YXZ');
-  d.rotors.forEach(r=>{r.g.rotation.y+=r.dir*dt*(reduce?0:38);});   // 螺旋槳轉動
+  d.rotors.forEach(r=>{r.g.rotation.y+=r.dir*dt*(d.dead?0:38);});
 
   // 地面陰影：越高越大越淡
-  const hgt=d.p.y-DM_MIN_Y;
+  const hgt=d.p.y-DM_GROUND;
   d.shadow.position.set(d.p.x,.02,d.p.z);
   d.shadow.scale.setScalar(0.7+hgt*0.25);
   d.shadowMat.opacity=0.35/(1+hgt*0.25);
 
-  // 視角
+  // 視角（撞擊時鏡頭會微微晃動）
   const wantFov=d.view==='chase'?52:72;
   camera.fov+=(wantFov-camera.fov)*k(4);camera.updateProjectionMatrix();
-  d.group.visible=d.view==='chase';
+  d.group.visible=!d.dead&&d.view==='chase';
   if(d.view==='chase'){
     camera.position.lerp(new THREE.Vector3(d.p.x-fx*3.2,d.p.y+1.0,d.p.z-fz*3.2),k(7));
-    camera.lookAt(d.p.x+fx*1.2,d.p.y-0.35,d.p.z+fz*1.2);
   }else{
     camera.position.set(d.p.x+fx*0.22,d.p.y+0.06,d.p.z+fz*0.22);
-    camera.lookAt(d.p.x+fx*6,d.p.y-1.4,d.p.z+fz*6);
   }
+  const sh=d.shake*0.07;
+  if(sh>0.001){camera.position.x+=(Math.random()-.5)*sh;camera.position.y+=(Math.random()-.5)*sh;camera.position.z+=(Math.random()-.5)*sh;}
+  if(d.view==='chase')camera.lookAt(d.p.x+fx*1.2,d.p.y-0.35,d.p.z+fz*1.2);
+  else camera.lookAt(d.p.x+fx*6,d.p.y-1.4,d.p.z+fz*6);
+
+  dmCheckZones();
 
   // HUD（約每 120 毫秒更新一次）
   if(now-d.hudT>120){
     d.hudT=now;
-    dmElAlt.textContent=Math.round(d.p.y*DM_MPU);
-    dmElSpd.textContent=(Math.hypot(d.vf,d.vs)*DM_MPU).toFixed(1);
+    dmElAlt.textContent=Math.round(hgt*DM_MPU);
+    dmElSpd.textContent=(Math.hypot(d.vf,d.vs,d.vy)*DM_MPU).toFixed(1);
     dmElHdg.textContent=(Math.round((d.yaw*180/Math.PI)%360+360)%360)+'°';
-    const pct=Math.round(d.batt);
-    dmElBat.style.width=pct+'%';dmElBat.className=pct<20?'low':'';dmElBatT.textContent=pct+'%';
-    if(!live)dmMsg('電量耗盡，已停止操控');
-    else if(d.p.y<=DM_MIN_Y+0.01&&vi<0)dmMsg('已達最低安全高度');
-    else if(pct<20)dmMsg('電量偏低，請準備返航');
-    else dmMsg('');
+    const bat=Math.round(d.batt);dmElBat.style.width=bat+'%';dmElBat.className=bat<20?'low':'';dmElBatT.textContent=bat+'%';
+    const hp=Math.round(d.hp);dmElHp.style.width=hp+'%';dmElHp.className=hp<35?'low':'';dmElHpT.textContent=hp+'%';
+    let s='';
+    if(d.dead)s='無人機已損壞';
+    else if(d.batt<=0)s='電量耗盡，已停止操控';
+    else if(d.p.y<=DM_GROUND+0.01&&vi<=0)s='已降到地面';
+    else if(bat<20)s='電量偏低，請準備返航';
+    else if(hp<35)s='機身受損，請小心飛行';
+    d.status=s;
+    dmElMsg.textContent=now<d.noteUntil?d.note:s;
   }
 }
 
@@ -1463,6 +1617,7 @@ document.querySelectorAll('#dpad [data-d],#dvpad [data-d]').forEach(b=>{
 dmBtn.onclick=()=>{DRONE.on?dmExit():dmEnter();};
 document.getElementById('dhExit').onclick=dmExit;
 dmElView.onclick=dmView;
+dmRespawnBtn.onclick=dmRespawn;
 function flyTo(pos,target,ms=900){if(DRONE.on)return;fly={p0:camera.position.clone(),t0:controls.target.clone(),p1:pos,t1:target,s:performance.now(),ms};}
 
 /* ---------- selection ---------- */
