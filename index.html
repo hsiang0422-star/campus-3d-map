@@ -992,7 +992,8 @@ POINTS.forEach(([n,x,z],k)=>{const[a,b]=P(x,z);const{base,top}=PT_Y[k];const pho
   const info=POINT_INFO[n];ptObjs.push({grp,floor:info&&info.floor?info.floor:null});});
 // floor danger corners only show on their own floor; campus (non-floor) ones only in exterior / split view
 function updateDangerVis(){POINTS.forEach((pt,k)=>{const fl=ptObjs[k].floor;
-  const vis=show.pts&&(fl?mode===String(fl):true); // campus (non-floor) corners always show; floor ones only on their floor
+  // 危險地圖開啟時，外觀視角會顯示全校所有危險地點的燈號（室內地點的燈號位於該建物屋頂）；進入樓層視角時只顯示該樓層的地點
+  const vis=show.pts&&(fl?(mode==='ext'||mode===String(fl)):true);
   ptObjs[k].grp.visible=vis;ptLabels[k].pvis=vis;});
   floorZones.forEach(g=>{g.visible=show.pts&&mode===String(g.userData.floor);});}
 
