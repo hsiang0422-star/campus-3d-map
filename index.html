@@ -175,6 +175,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .qopt.wrong{background:#f8d7d3;border-color:#b8322a}
 .qfb{min-height:1.4em;margin:8px 0;font-size:14px;line-height:1.5}
 .qscore{font-size:16px;font-weight:600;line-height:1.6}
+.qmark{font-weight:700;margin-right:6px;font-size:16px}
 .qimg{width:100%;border-radius:10px;margin:6px 0;display:block}
 .qdesc{font-size:13px;line-height:1.6;margin:6px 0}
 .qrtitle{font-weight:600;margin:6px 0}
@@ -1487,6 +1488,8 @@ const QUIZ=[
 ];
 const qpanel=document.getElementById('qpanel'),qbody=document.getElementById('qbody'),qhead=document.getElementById('qhead'),bQuiz=document.getElementById('bQuiz');
 let qi=0,qScore=0,qAnswered=false,qTimer=null;
+const qRes=[];
+function markOf(t){return t==="是"||t==="對"?'<span class="qmark">○</span>':(t==="否"||t==="錯"?'<span class="qmark">✕</span>':"");}
 function qReveal(item){
   const info=item.pt!=null?POINT_INFO[item.pt]:null;
   const bld=item.b?BUILDINGS.find(x=>x.id===item.b):null;
@@ -1516,25 +1519,27 @@ function qPhotos(item){
 function qRender(){
   if(qi>=QUIZ.length){
     qbody.innerHTML=`<p class="qscore">測驗完成！答對 ${qScore} / ${QUIZ.length} 題</p><p><button id="qRestart">重新作答</button></p>`;
-    document.getElementById('qRestart').onclick=()=>{qi=0;qScore=0;qRender();};
+    document.getElementById('qRestart').onclick=()=>{qi=0;qScore=0;qRes.length=0;qRender();};
     return;
   }
   clearTimeout(qTimer);
   const item=QUIZ[qi];qAnswered=false;
   if(item.pt!=null)quizFly(item.pt);
-  qbody.innerHTML=`<div class="qtop"><span class="qprog">第 ${qi+1} / ${QUIZ.length} 題（得分 ${qScore}）</span><span class="qtb"><button id="qRedo1">重做一次</button><button id="qRedoAll">全部重做</button></span></div>
+  qbody.innerHTML=`<div class="qtop"><span class="qprog">第 ${qi+1} / ${QUIZ.length} 題（得分 ${qScore}）</span><span class="qtb"><button id="qPrev"${qi===0?' disabled':''}>上一題</button><button id="qRedo1">重做一次</button><button id="qRedoAll">全部重做</button></span></div>
     <p class="qq">${item.q}</p>
     ${qPhotos(item)}
-    <div class="qopts">${item.o.map((t,k)=>`<button class="qopt" data-k="${k}">${t}</button>`).join('')}</div>
+    <div class="qopts">${item.o.map((t,k)=>`<button class="qopt" data-k="${k}">${markOf(t)}${t}</button>`).join('')}</div>
     <p class="qfb" id="qfb" aria-live="polite"></p>
     <div id="qreveal"></div>
     <div class="qactions" id="qactions"></div>`;
   document.getElementById('qRedo1').onclick=()=>qRender();
-  document.getElementById('qRedoAll').onclick=()=>{qi=0;qScore=0;qRender();};
+  document.getElementById('qPrev').onclick=()=>{if(qi>0){qi--;qRender();}};
+  document.getElementById('qRedoAll').onclick=()=>{qi=0;qScore=0;qRes.length=0;qRender();};
   const opts=[...qbody.querySelectorAll('.qopt')];
   opts.forEach(b=>b.onclick=()=>{
     if(qAnswered)return;qAnswered=true;
     const k=+b.dataset.k,ok=k===item.a;
+    if(qRes[qi]===true)qScore--;qRes[qi]=ok;
     opts.forEach((x,j)=>{x.disabled=true;if(j===item.a)x.classList.add('right');else if(j===k)x.classList.add('wrong');});
     const fb=document.getElementById('qfb');
     if(ok){
