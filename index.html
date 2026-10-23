@@ -212,14 +212,14 @@ body.drone-on #panel,body.drone-on #apanel,body.drone-on #qpanel,body.drone-on #
   <header>
     <h1>臺南特教校園 3D 地圖<small>拖曳旋轉・Shift＋拖曳平移・滾輪縮放・雙指可平移</small></h1>
     <div class="tools">
-      <button id="bQuiz" aria-pressed="false" aria-controls="qpanel">校園小測驗</button>
+      <button id="bQuiz" aria-pressed="false" aria-controls="qpanel">校園危險地點測驗</button>
+      <button id="bDrone" aria-pressed="false">無人機模擬遊戲</button>
       <button id="bReset">重設視角</button>
       <button id="bTop">俯視</button>
       <button id="bCtrl" aria-pressed="true">地圖操作</button>
       <button id="bLbl" aria-pressed="false">建築名稱</button>
       <button id="bPts" aria-pressed="false">危險角落</button>
       <button id="bSpin" aria-pressed="false">自動旋轉</button>
-      <button id="bDrone" aria-pressed="false">無人機飛行</button>
       <button id="bPanel" aria-expanded="true" aria-controls="panel">教學大樓各樓層 <span class="car" aria-hidden="true">▾</span></button>
       <button id="bAdm" aria-pressed="false" aria-controls="apanel">行政大樓各樓層</button>
       <div class="bwrap" id="bwrap">
@@ -290,8 +290,8 @@ body.drone-on #panel,body.drone-on #apanel,body.drone-on #qpanel,body.drone-on #
       <div class="phead dhead" id="plhead" title="拖曳移動"><span class="grip" aria-hidden="true"></span>校園危險角落清單・拖曳移動<button class="collapse" id="plMin">收合</button><button class="collapse" id="plClose">關閉</button></div>
       <div class="plbody" id="plbody"></div>
     </aside>
-    <aside class="plist" id="qpanel" hidden aria-label="校園小測驗" style="left:12px;right:auto;width:300px">
-      <div class="phead dhead" id="qhead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>校園小測驗・拖曳移動<button class="collapse" id="qMin">收合</button><button class="collapse" id="qClose">關閉</button></div>
+    <aside class="plist" id="qpanel" hidden aria-label="校園危險地點測驗" style="left:12px;right:auto;width:300px">
+      <div class="phead dhead" id="qhead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>校園危險地點測驗・拖曳移動<button class="collapse" id="qMin">收合</button><button class="collapse" id="qClose">關閉</button></div>
       <div class="plbody" id="qbody"></div>
     </aside>
     <aside class="plist" id="apanel" hidden aria-label="行政大樓各樓層">
