@@ -1800,7 +1800,12 @@ const panel=document.getElementById('panel');
 const bMin=document.getElementById('bMin');
 // the info panel opens and closes from the 資訊面板 button in the top toolbar; 收合 inside the panel closes it too
 const bPanel=document.getElementById('bPanel');
-function setPanel(open){panel.hidden=!open;panel.classList.remove('min');bPanel.setAttribute('aria-expanded',open);}
+function setPanel(open){panel.hidden=!open;panel.classList.remove('min');bPanel.setAttribute('aria-expanded',open);
+  if(!open){   // 離開樓層清單：教學大樓與行政大樓都恢復為外觀
+    if(mode!=='ext'){if(selRoom){selRoom.material=felt(selRoom.userData.base);selRoom=null;}setMode('ext');}
+    if(admMode!=='ext')admSetMode('ext');
+  }
+}
 bPanel.onclick=()=>setPanel(panel.hidden);
 const bRoomNames=document.getElementById('bRoomNames');
 bRoomNames.onclick=()=>{roomNames=!roomNames;bRoomNames.setAttribute('aria-pressed',roomNames);bRoomNames.textContent='教室名稱：'+(roomNames?'顯示':'隱藏');};
