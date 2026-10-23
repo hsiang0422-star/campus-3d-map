@@ -1508,6 +1508,11 @@ function quizFly(n){
   const dir=camera.position.clone().sub(controls.target).setY(0).normalize();
   flyTo(t.clone().add(dir.multiplyScalar(4)).setY(fy+3.5),t,reduce?1:900);
 }
+function qPhotos(item){
+  const info=item.pt!=null?POINT_INFO[item.pt]:null;
+  const imgs=info?(info.imgs||(info.img?[info.img]:[])):[];
+  return imgs.map(u=>`<img class="qimg" src="${u}" alt="">`).join('');
+}
 function qRender(){
   if(qi>=QUIZ.length){
     qbody.innerHTML=`<p class="qscore">測驗完成！答對 ${qScore} / ${QUIZ.length} 題</p><p><button id="qRestart">重新作答</button></p>`;
@@ -1519,6 +1524,7 @@ function qRender(){
   if(item.pt!=null)quizFly(item.pt);
   qbody.innerHTML=`<div class="qtop"><span class="qprog">第 ${qi+1} / ${QUIZ.length} 題（得分 ${qScore}）</span><span class="qtb"><button id="qRedo1">重做一次</button><button id="qRedoAll">全部重做</button></span></div>
     <p class="qq">${item.q}</p>
+    ${qPhotos(item)}
     <div class="qopts">${item.o.map((t,k)=>`<button class="qopt" data-k="${k}">${t}</button>`).join('')}</div>
     <p class="qfb" id="qfb" aria-live="polite"></p>
     <div id="qreveal"></div>
