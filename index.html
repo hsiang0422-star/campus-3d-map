@@ -1493,6 +1493,13 @@ function qReveal(item){
   document.getElementById('qRetry').onclick=()=>qRender();
   document.getElementById('qCloseQ').onclick=()=>{qpanel.hidden=true;bQuiz.setAttribute('aria-pressed','false');};
 }
+function quizFly(n){
+  const p=POINTS.find(q=>q[0]===n);if(!p)return;
+  const info=POINT_INFO[n];if(info&&info.floor)setMode(String(info.floor));
+  const[a,b]=P(p[1],p[2]);const fy=info&&info.floor?(info.floor-1)*FHB:0;const t=new THREE.Vector3(a,fy,b);
+  const dir=camera.position.clone().sub(controls.target).setY(0).normalize();
+  flyTo(t.clone().add(dir.multiplyScalar(5)).setY(fy+5),t,reduce?1:900);
+}
 function qRender(){
   if(qi>=QUIZ.length){
     qbody.innerHTML=`<p class="qscore">測驗完成！答對 ${qScore} / ${QUIZ.length} 題</p><p><button id="qRestart">重新作答</button></p>`;
@@ -1500,6 +1507,7 @@ function qRender(){
     return;
   }
   const item=QUIZ[qi];qAnswered=false;
+  if(item.pt!=null)quizFly(item.pt);
   qbody.innerHTML=`<p class="qprog">第 ${qi+1} / ${QUIZ.length} 題（得分 ${qScore}）</p>
     <p class="qq">${item.q}</p>
     <div class="qopts">${item.o.map((t,k)=>`<button class="qopt" data-k="${k}">${t}</button>`).join('')}</div>
