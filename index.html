@@ -1528,7 +1528,7 @@ function qRender(){
   qbody.innerHTML=`<div class="qtop"><span class="qprog">第 ${qi+1} / ${QUIZ.length} 題（得分 ${qScore}）</span><span class="qtb"><button id="qPrev"${qi===0?' disabled':''}>上一題</button><button id="qRedo1">重做一次</button><button id="qRedoAll">全部重做</button></span></div>
     <p class="qq">${item.q}</p>
     ${qPhotos(item)}
-    <div class="qopts">${item.o.map((t,k)=>`<button class="qopt" data-k="${k}">${markOf(t)}${t}</button>`).join('')}</div>
+    <div class="qopts">${item.o.map((t,k)=>`<button class="qopt" data-k="${k}">${k+1}. ${markOf(t)}${t}</button>`).join('')}</div>
     <p class="qfb" id="qfb" aria-live="polite"></p>
     <div id="qreveal"></div>
     <div class="qactions" id="qactions"></div>`;
