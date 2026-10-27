@@ -208,6 +208,10 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 #dkeys{left:50%;bottom:12px;transform:translateX(-50%);color:var(--muted);font-size:.74rem;white-space:nowrap;background:var(--panel);padding:4px 12px;border-radius:999px;opacity:.92}
 body.drone-on #panel,body.drone-on #apanel,body.drone-on #qpanel,body.drone-on #blist{display:none!important}
 @media (max-width:700px){#dkeys{display:none}#dhud{min-width:0;right:12px}}
+/* 瀏覽人數：固定在最右下角；無人機飛行時隱藏，避免與操控鍵重疊 */
+#vcount{position:fixed;right:max(8px,env(safe-area-inset-right,0px));bottom:max(6px,env(safe-area-inset-bottom,0px));z-index:3;pointer-events:none;line-height:0;opacity:.9}
+#vcount img{height:20px;width:auto}
+body.drone-on #vcount{display:none}
 </style>
 
 <div class="app">
@@ -324,6 +328,7 @@ body.drone-on #panel,body.drone-on #apanel,body.drone-on #qpanel,body.drone-on #
   </div>
 </div>
 
+<div id="vcount" aria-label="瀏覽人數"><img src="https://hits.sh/hsiang0422-star.github.io/campus-3d-map.svg?label=%E7%80%8F%E8%A6%BD%E4%BA%BA%E6%95%B8&amp;color=c0392b" alt="瀏覽人數" loading="lazy"></div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
 <script>
