@@ -218,7 +218,7 @@ body.drone-on #vcount{display:none}
   <header>
     <h1>臺南特教校園 3D 地圖<small>拖曳旋轉・Shift＋拖曳平移・滾輪縮放・雙指可平移</small></h1>
     <div class="tools">
-      <details id="teachQuizDrop" style="position:relative"><summary style="list-style:none;cursor:pointer">危險地圖教學與測驗</summary><div style="position:absolute;top:calc(100% + 8px);left:0;z-index:30;min-width:230px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 8px 24px #0002;display:grid;gap:8px"><button id="openQuiz" type="button">校園危險地點測驗</button><a href="teaching.html" target="_blank" rel="noopener" style="display:block;text-align:center;padding:8px;color:var(--ink);text-decoration:none;border:1px solid var(--line);border-radius:999px">危險地點教學版</a></div></details>
+      <button id="bQuiz" aria-pressed="false" aria-controls="qpanel">校園危險地點測驗</button>
       <button id="bDrone" aria-pressed="false">無人機模擬遊戲</button>
       <button id="bReset">重設視角</button>
       <button id="bTop">俯視</button>
@@ -1983,7 +1983,6 @@ function qRender(){
     }
   });
 }
-document.getElementById('openQuiz').onclick=()=>{document.getElementById('teachQuizDrop').open=false;bQuiz.click();};
 bQuiz.onclick=()=>{
   const open=qpanel.hidden;qpanel.hidden=!open;bQuiz.setAttribute('aria-pressed',open);
   if(open){
