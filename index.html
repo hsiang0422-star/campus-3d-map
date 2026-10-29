@@ -218,7 +218,7 @@ body.drone-on #vcount{display:none}
   <header>
     <h1>臺南特教校園 3D 地圖<small>拖曳旋轉・Shift＋拖曳平移・滾輪縮放・雙指可平移</small></h1>
     <div class="tools">
-      <details id="teachQuizDrop" style="position:relative"><summary style="list-style:none;cursor:pointer;display:inline-block;border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--chip);font:inherit;font-size:.82rem;color:var(--ink)">危險地點教學與測驗　⌄</summary><div style="position:absolute;top:calc(100% + 8px);left:0;z-index:30;min-width:230px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 8px 24px #0002;display:grid;gap:8px"><a href="teaching.html" style="display:block;text-align:center;padding:6px 12px;color:var(--ink);background:var(--chip);font:inherit;font-size:.82rem;text-decoration:none;border:1px solid var(--line);border-radius:999px">危險地點教學版</a><button id="openQuiz" type="button">校園危險地點測驗</button></div></details>
+      <details id="teachQuizDrop" style="position:relative"><summary style="list-style:none;cursor:pointer;display:inline-block;border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--chip);font:inherit;font-size:.82rem;color:var(--ink)">危險地點教學與測驗　⌄</summary><div style="position:absolute;top:calc(100% + 8px);left:0;z-index:30;min-width:230px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 8px 24px #0002;display:grid;gap:8px"><a href="teaching.html" style="display:block;text-align:center;padding:6px 12px;color:var(--ink);background:var(--chip);font:inherit;font-size:.82rem;text-decoration:none;border:1px solid var(--line);border-radius:999px">危險地點教學版</a><a id="openQuiz" href="quiz.html" style="display:block;text-align:center;padding:6px 12px;color:var(--ink);background:var(--chip);font:inherit;font-size:.82rem;text-decoration:none;border:1px solid var(--line);border-radius:999px">校園危險地點測驗</a></div></details>
       <button id="bQuiz" hidden aria-pressed="false" aria-controls="qpanel">校園危險地點測驗</button>
       <button id="bDrone" aria-pressed="false">無人機模擬遊戲</button>
       <button id="bReset">重設視角</button>
@@ -1940,6 +1940,21 @@ function quizFly(n){
   const dir=camera.position.clone().sub(controls.target).setY(0).normalize();
   flyTo(t.clone().add(dir.multiplyScalar(4)).setY(fy+3.5),t,reduce?1:900);
 }
+function quizFocusBuilding(id){
+  const b=BUILDINGS.find(q=>q.id===id);if(!b||!b.label)return;
+  show.pts=true;pinGroup.visible=true;bPts.setAttribute('aria-pressed','true');updateDangerVis();
+  const[a,z]=P(b.label[0],b.label[1]);const ty=id==='tower'?0.45:0.1;const t=new THREE.Vector3(a,ty,z);
+  const dir=camera.position.clone().sub(controls.target).setY(0).normalize();
+  flyTo(t.clone().add(dir.multiplyScalar(4)).setY(ty+3.5),t,reduce?1:900);
+}
+if(window.parent!==window){
+  window.addEventListener('message',e=>{
+    if(e.origin!==location.origin||e.source!==window.parent||!e.data||e.data.type!=='campus-quiz-focus')return;
+    if(Number.isInteger(e.data.point))quizFly(e.data.point);
+    else if(typeof e.data.building==='string')quizFocusBuilding(e.data.building);
+    else if(e.data.home)document.getElementById('bReset').click();
+  });
+}
 function qPhotos(item){
   const info=item.pt!=null?POINT_INFO[item.pt]:null;
   const imgs=info?(info.imgs||(info.img?[info.img]:[])):[];
@@ -1984,7 +1999,6 @@ function qRender(){
     }
   });
 }
-document.getElementById('openQuiz').onclick=()=>{document.getElementById('teachQuizDrop').open=false;bQuiz.click();};
 bQuiz.onclick=()=>{
   const open=qpanel.hidden;qpanel.hidden=!open;bQuiz.setAttribute('aria-pressed',open);
   if(open){
