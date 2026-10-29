@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="校園危險地點互動測驗，左側作答，右側同步查看 3D 校園地圖。">
+<title>校園危險地點測驗｜國立臺南特殊教育學校</title>
+<style>
+:root{--ink:#153b3a;--green:#12675e;--cream:#f6f4eb;--yellow:#ffe298;--muted:#536b69;--line:#d5dfd7}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:"Microsoft JhengHei","PingFang TC","Arial Unicode MS",sans-serif;font-size:17px;line-height:1.6}
+button,a{font:inherit;touch-action:manipulation}
+button,a.link{cursor:pointer;border:1px solid #b8cfca;border-radius:14px;background:white;color:var(--ink);padding:9px 15px;min-height:46px;font-weight:700;text-decoration:none}
+button:hover,a.link:hover{background:#e3efeb}
+button:focus-visible,a:focus-visible{outline:4px solid #d8891e;outline-offset:3px}
+button:disabled{opacity:.45;cursor:default}
+.shell{max-width:1600px;margin:auto;padding:18px 24px}
+header{display:flex;justify-content:space-between;align-items:center;gap:15px;border-bottom:1px solid var(--line);padding-bottom:14px}
+.brand{font-weight:800;font-size:18px}.brand small{display:block;font-size:13px;letter-spacing:.08em;color:var(--muted)}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+h1{font-size:clamp(27px,3vw,40px);line-height:1.25;margin:18px 0 6px}
+.intro{margin:0 0 16px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(360px,.82fr) minmax(480px,1.18fr);gap:18px;align-items:stretch;min-height:min(76vh,900px)}
+.quiz{background:white;border:1px solid var(--line);border-radius:22px;padding:24px;display:flex;flex-direction:column;min-height:620px;box-shadow:0 8px 24px #153b3a0d}
+.qtop{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:14px}
+.progress{font-weight:800;color:var(--green)}
+.qtools{display:flex;gap:8px;flex-wrap:wrap}
+.question{font-size:clamp(22px,2vw,30px);line-height:1.5;margin:20px 0}
+.choices{display:grid;gap:11px}
+.choice{text-align:left;font-size:18px;line-height:1.5;padding:14px 16px;min-height:58px}
+.choice.correct{background:#e3f2e9;border-color:#3a9a65}
+.choice.incorrect{background:#fce8e4;border-color:#d95d4d}
+.feedback{min-height:76px;margin:16px 0;padding:15px 17px;border-radius:15px;background:#f0f5f1;font-size:18px;font-weight:700}
+.feedback.bad{background:#fff0e8}
+.foot{margin-top:auto;padding-top:12px;display:flex;justify-content:space-between;gap:12px;align-items:center;border-top:1px solid var(--line)}
+.minor{font-size:14px;color:var(--muted)}
+.map{background:#e7e4dc;border:1px solid #c9d1c9;border-radius:22px;overflow:hidden;display:flex;flex-direction:column;min-height:620px}
+.maphead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;background:#fffaf2;border-bottom:1px solid var(--line)}
+.maphead strong{font-size:18px}.maphead span{font-size:13px;color:var(--muted)}
+iframe{display:block;width:100%;flex:1;min-height:570px;border:0;background:#e9dfcf}
+.done{font-size:25px;font-weight:800;margin:auto 0;text-align:center}
+@media(max-width:900px){.shell{padding:14px}.layout{grid-template-columns:1fr;min-height:0}.quiz{min-height:520px}.map{min-height:560px}iframe{min-height:500px}}
+@media(max-width:520px){header{align-items:flex-start}.tools{justify-content:flex-end}.brand{max-width:190px}.shell{padding:12px}.quiz{padding:18px;min-height:540px}.map{min-height:500px}iframe{min-height:440px}.maphead{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<main class="shell">
+<header>
+  <div class="brand">🦋 國立臺南特殊教育學校<small>校園危險地圖・互動測驗</small></div>
+  <div class="tools"><a class="link" href="./">回到 3D 地圖</a><a class="link" href="teaching.html">前往危險地點教學版</a></div>
+</header>
+<h1>校園危險地點測驗</h1>
+<p class="intro">左側作答，右側地圖會跟著題目移動到相對應的校園位置。</p>
+<div class="layout">
+  <section class="quiz" aria-label="測驗題目">
+    <div class="qtop"><span class="progress" id="progress" aria-live="polite"></span><div class="qtools"><button id="restart">重新作答</button></div></div>
+    <div id="questionArea"></div>
+    <div class="foot"><span class="minor">答題時也可以拖曳右側地圖旋轉、縮放查看。</span><button id="next" disabled>下一題</button></div>
+  </section>
+  <section class="map" aria-label="校園 3D 地圖">
+    <div class="maphead"><strong id="mapTitle">校園 3D 地圖</strong><span>題目有地點時會自動定位；地圖可自行操作</span></div>
+    <iframe id="mapFrame" title="可互動的校園 3D 地圖" src="index.html?quiz-map=1" loading="eager" allow="fullscreen"></iframe>
+  </section>
+</div>
+</main>
+<script>
+const QUIZ=[
+ {q:'儀安洗車場旁邊有一個高壓電的設施，為什麼請勿靠近？',o:['內部有高壓電，靠近可能發生觸電危險','只是放置雜物的倉庫','空間狹窄不便通行','沒有特別原因'],a:0,b:'tower',place:'高壓電設施'},
+ {q:'在雜草茂密、可能有蛇出沒的草地附近，比較安全的做法是？',o:['注意腳下，避免踩進草叢','在草地上直接坐臥休息','用手撥開草叢找東西','餵食附近的動物'],a:0,pt:9,place:'垃圾場後方角落'},
+ {q:'遇到蛇出沒時，正確的處理方式是？',o:['保持距離、不驚擾，趕快告訴老師','用手抓起來丟棄','靠近拍照','追趕驅離'],a:0,pt:9,place:'垃圾場後方角落'},
+ {q:'發現學校有樹林茂密、人車稀少的綠地角落時，我可以怎麼做？',o:['不要隨便前往','獨自慢慢探索','在裡面長時間停留','把物品留在草叢中'],a:0,pt:8,place:'校園綠地角落'},
+ {q:'「餐廳二樓走廊」（桌球室外面）可以隨便在那邊休息，不用經過老師。這個說法對嗎？',o:['是','否'],a:1,pt:12,place:'餐廳二樓走廊'},
+ {q:'「二樓廁所」是學校最安全的地方，遇到問題時應該跑去廁所躲起來。這個說法對嗎？',o:['是','否'],a:1,pt:18,place:'二樓廁所'},
+ {q:'教學大樓 3 樓到 4 樓的樓梯間可以隨便去那邊玩耍嗎？',o:['可以','不行，那裡很危險，沒有人走來走去，不能隨便往上走'],a:1,pt:24,place:'三樓至四樓樓梯間'},
+ {q:'校門口小熊前面的那一塊大空地，可以在那邊到處跑來跑去玩耍嗎？',o:['可以','不行，那裡有很多車子來來往往，非常危險'],a:1,b:'gate',place:'校門口'},
+ {q:'去「垃圾場後方角落」時，應該怎麼做？',o:['必須是老師請我去幫忙倒垃圾才可以走過去，避免單獨前往，倒完垃圾趕快回教室','想去就自己去','在角落裡停留聊天','把門窗都關上不理會'],a:0,pt:10,place:'垃圾場後方角落'},
+ {q:'「教學大樓側邊步道」兩側灌木茂密、人車稀少，經過時應該？',o:['不隨意前往；如需經過，應由老師帶領大家一起通過','獨自快速穿越','停留拍照','拿著貴重物品慢慢走'],a:0,pt:11,place:'教學大樓側邊步道'},
+ {q:'在學校走廊可以跑來跑去，這個說法對嗎？',o:['對','錯'],a:1,note:'走廊人來人往，跑跑跳跳容易撞到人或摔倒受傷，應該慢慢走、靠右行走。'},
+ {q:'可以隨便找同學去沒有人的地方聊天，這個說法對嗎？',o:['對','錯'],a:1,note:'沒有人的地方容易發生危險，不可以隨便離開大家，應該在有老師或同學看得到的地方一起活動。'}
+];
+const mapFrame=document.getElementById('mapFrame');
+let order=[],index=0,score=0,answered=false,permutation=[];
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function focusMap(item){document.getElementById('mapTitle').textContent=item.place?'地圖定位：'+item.place:'校園 3D 地圖';if(item.pt!=null&&mapFrame.contentWindow)mapFrame.contentWindow.postMessage({type:'campus-quiz-focus',point:item.pt},location.origin);}
+function render(){
+  const area=document.getElementById('questionArea');
+  if(index>=order.length){document.getElementById('progress').textContent='測驗完成';document.getElementById('next').disabled=true;area.innerHTML='<div class="done">答對 '+score+' / '+QUIZ.length+' 題<br><span class="minor">可以重新作答，再練習一次。</span></div>';document.getElementById('mapTitle').textContent='校園 3D 地圖';return;}
+  const item=QUIZ[order[index]];answered=false;permutation=shuffle(item.o.map((_,i)=>i));focusMap(item);
+  document.getElementById('progress').textContent='第 '+(index+1)+' / '+QUIZ.length+' 題　｜　得分 '+score;
+  document.getElementById('next').disabled=true;
+  area.innerHTML='<p class="question">'+item.q+'</p><div class="choices">'+permutation.map((n,k)=>'<button class="choice" data-choice="'+k+'">'+(k+1)+'. '+item.o[n]+'</button>').join('')+'</div><div class="feedback" id="feedback" aria-live="polite">選一個你認為安全的做法。</div>';
+  area.querySelectorAll('.choice').forEach(btn=>btn.addEventListener('click',()=>{if(answered)return;answered=true;const selected=+btn.dataset.choice,correct=permutation[selected]===item.a;const choices=[...area.querySelectorAll('.choice')];choices.forEach((el,k)=>{el.disabled=true;if(permutation[k]===item.a)el.classList.add('correct');else if(k===selected)el.classList.add('incorrect');});const fb=document.getElementById('feedback');if(correct){score++;fb.textContent='答對了！';fb.classList.remove('bad');}else{fb.textContent='再看一下：正確答案是「'+item.o[item.a]+'」。'+(item.note||'');fb.classList.add('bad');}document.getElementById('progress').textContent='第 '+(index+1)+' / '+QUIZ.length+' 題　｜　得分 '+score;document.getElementById('next').disabled=false;}));
+}
+document.getElementById('next').addEventListener('click',()=>{if(answered){index++;render();}});
+document.getElementById('restart').addEventListener('click',()=>{score=0;index=0;order=shuffle(QUIZ.map((_,i)=>i));render();});
+mapFrame.addEventListener('load',()=>{if(order.length)focusMap(QUIZ[order[index]]);});
+order=shuffle(QUIZ.map((_,i)=>i));render();
+</script>
+</body>
+</html>
