@@ -81,7 +81,7 @@ const QUIZ=[
 const mapFrame=document.getElementById('mapFrame');
 let order=[],index=0,score=0,answered=false,permutation=[];
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function focusMap(item){document.getElementById('mapTitle').textContent=item.place?'地圖定位：'+item.place:'校園 3D 地圖';if(item.pt!=null&&mapFrame.contentWindow)mapFrame.contentWindow.postMessage({type:'campus-quiz-focus',point:item.pt},location.origin);}
+function focusMap(item){document.getElementById('mapTitle').textContent=item.place?'地圖定位：'+item.place:'校園 3D 地圖';const data=item.pt!=null?{type:'campus-quiz-focus',point:item.pt}:item.b?{type:'campus-quiz-focus',building:item.b}:{type:'campus-quiz-focus',home:true};if(mapFrame.contentWindow)mapFrame.contentWindow.postMessage(data,location.origin);}
 function render(){
   const area=document.getElementById('questionArea');
   if(index>=order.length){document.getElementById('progress').textContent='測驗完成';document.getElementById('next').disabled=true;area.innerHTML='<div class="done">答對 '+score+' / '+QUIZ.length+' 題<br><span class="minor">可以重新作答，再練習一次。</span></div>';document.getElementById('mapTitle').textContent='校園 3D 地圖';return;}
