@@ -225,6 +225,7 @@ body.drone-on #vcount{display:none}
       <button id="bCtrl" aria-pressed="true">地圖操作</button>
       <button id="bLbl" aria-pressed="false">建築名稱</button>
       <button id="bPts" aria-pressed="false">危險角落</button>
+      <button id="bTeach" type="button">校園危險地點教學版</button>
       <button id="bSpin" aria-pressed="false">自動旋轉</button>
       <button id="bPanel" aria-expanded="true" aria-controls="panel">樓層清單 <span class="car" aria-hidden="true">▾</span></button>
       <div class="bwrap" id="bwrap">
@@ -1798,6 +1799,7 @@ floatResizable(document.getElementById('ctrl'),'campus3d-ctrl-size',180,160);
  plhead.addEventListener('dblclick',e=>{if(e.target.closest('button'))return;plist.style.left='';plist.style.top='';plist.style.right='';});
 }
 const bPts=document.getElementById('bPts');
+document.getElementById('bTeach').addEventListener('click',()=>window.open('teaching.html','_blank','noopener'));
 bPts.onclick=()=>{show.pts=!show.pts;pinGroup.visible=show.pts;if(!show.pts){dpanel.hidden=true;plist.hidden=true;}else{setPanel(true);plist.hidden=false;}floorZones.forEach(g=>g.visible=show.pts);updateDangerVis();bPts.setAttribute('aria-pressed',show.pts);};
 const bLbl=document.getElementById('bLbl');
 bLbl.onclick=()=>{show.lbl=!show.lbl;if(!show.lbl)BUILDINGS.forEach(b=>{bMeta[b.id].label.force=false;});bLbl.setAttribute('aria-pressed',show.lbl);BUILDINGS.forEach(b=>leadVis(b.id));};
