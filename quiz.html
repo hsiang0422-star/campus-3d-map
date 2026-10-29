@@ -33,12 +33,26 @@ h1{font-size:clamp(27px,3vw,40px);line-height:1.25;margin:18px 0 6px}
 .feedback{min-height:76px;margin:16px 0;padding:15px 17px;border-radius:15px;background:#f0f5f1;font-size:18px;font-weight:700}
 .feedback.bad{background:#fff0e8}
 .foot{margin-top:auto;padding-top:12px;display:flex;justify-content:space-between;gap:12px;align-items:center;border-top:1px solid var(--line)}
+.foot-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
 .minor{font-size:14px;color:var(--muted)}
 .map{background:#e7e4dc;border:1px solid #c9d1c9;border-radius:22px;overflow:hidden;display:flex;flex-direction:column;min-height:620px}
 .maphead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;background:#fffaf2;border-bottom:1px solid var(--line)}
 .maphead strong{font-size:18px}.maphead span{font-size:13px;color:var(--muted)}
 iframe{display:block;width:100%;flex:1;min-height:570px;border:0;background:#e9dfcf}
 .done{font-size:25px;font-weight:800;margin:auto 0;text-align:center}
+dialog{width:min(680px,calc(100vw - 28px));max-height:calc(100dvh - 36px);padding:0;border:1px solid var(--line);border-radius:22px;background:white;color:var(--ink);box-shadow:0 24px 80px #10252255}
+dialog::backdrop{background:#10252299;backdrop-filter:blur(2px)}
+.explain{max-height:calc(100dvh - 36px);overflow:auto;padding:22px}
+.explain-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.explain-head h2{font-size:clamp(24px,3vw,32px);line-height:1.35;margin:3px 0 8px}
+.explain-kicker{margin:0;color:#a94532;font-weight:800}
+.explain-place{font-weight:800;color:var(--green);margin:8px 0}
+.explain-photo{display:block;width:100%;max-height:38dvh;object-fit:contain;background:#e1e9e2;border-radius:14px;margin:12px 0}
+.explain-answer{padding:12px 15px;border-radius:13px;background:#e3f2e9;font-weight:800}
+.explain-reason{font-size:18px}
+.explain-actions{display:flex;justify-content:flex-end;margin-top:16px}
+.explain-actions button{background:var(--green);color:white;border-color:var(--green)}
+@media(max-width:520px){.foot{align-items:flex-end}.foot-actions{flex-wrap:wrap;justify-content:flex-end}.foot-actions button{padding:8px 10px;min-height:44px}.explain{padding:17px}.explain-photo{max-height:32dvh}}
 @media(max-width:900px){.shell{padding:14px}.layout{grid-template-columns:1fr;min-height:0}.quiz{min-height:520px}.map{min-height:560px}iframe{min-height:500px}}
 @media(max-width:520px){header{align-items:flex-start}.tools{justify-content:flex-end}.brand{max-width:190px}.shell{padding:12px}.quiz{padding:18px;min-height:540px}.map{min-height:500px}iframe{min-height:440px}.maphead{align-items:flex-start;flex-direction:column}}
 </style>
@@ -53,9 +67,9 @@ iframe{display:block;width:100%;flex:1;min-height:570px;border:0;background:#e9d
 <p class="intro">左側作答，右側地圖會跟著題目移動到相對應的校園位置。</p>
 <div class="layout">
   <section class="quiz" aria-label="測驗題目">
-    <div class="qtop"><span class="progress" id="progress" aria-live="polite"></span><div class="qtools"><button id="restart">重新作答</button></div></div>
+    <div class="qtop"><span class="progress" id="progress" aria-live="polite"></span></div>
     <div id="questionArea"></div>
-    <div class="foot"><span class="minor">答題時也可以拖曳右側地圖旋轉、縮放查看。</span><button id="next" disabled>下一題</button></div>
+    <div class="foot"><span class="minor">答題時也可以拖曳右側地圖旋轉、縮放查看。</span><div class="foot-actions"><button id="restart">重新作答</button><button id="next" disabled>下一題</button></div></div>
   </section>
   <section class="map" aria-label="校園 3D 地圖">
     <div class="maphead"><strong id="mapTitle">校園 3D 地圖</strong><span>題目有地點時會自動定位；地圖可自行操作</span></div>
@@ -63,20 +77,30 @@ iframe{display:block;width:100%;flex:1;min-height:570px;border:0;background:#e9d
   </section>
 </div>
 </main>
+<dialog id="explanationDialog" aria-labelledby="explanationTitle">
+  <div class="explain">
+    <div class="explain-head"><div><p class="explain-kicker">這題答錯了，看看安全做法</p><h2 id="explanationTitle">地點說明</h2></div><button id="explanationClose" type="button">關閉</button></div>
+    <p class="explain-place" id="explanationPlace"></p>
+    <img class="explain-photo" id="explanationPhoto" alt="" hidden>
+    <p class="explain-answer" id="explanationAnswer"></p>
+    <p class="explain-reason" id="explanationReason"></p>
+    <div class="explain-actions"><button id="explanationContinue" type="button">看懂了，繼續</button></div>
+  </div>
+</dialog>
 <script>
 const QUIZ=[
- {q:'儀安洗車場旁邊有一個高壓電的設施，為什麼請勿靠近？',o:['內部有高壓電，靠近可能發生觸電危險','只是放置雜物的倉庫','空間狹窄不便通行','沒有特別原因'],a:0,b:'tower',place:'高壓電設施'},
- {q:'在雜草茂密、可能有蛇出沒的草地附近，比較安全的做法是？',o:['注意腳下，避免踩進草叢','在草地上直接坐臥休息','用手撥開草叢找東西','餵食附近的動物'],a:0,pt:9,place:'垃圾場後方角落'},
- {q:'遇到蛇出沒時，正確的處理方式是？',o:['保持距離、不驚擾，趕快告訴老師','用手抓起來丟棄','靠近拍照','追趕驅離'],a:0,pt:9,place:'垃圾場後方角落'},
- {q:'發現學校有樹林茂密、人車稀少的綠地角落時，我可以怎麼做？',o:['不要隨便前往','獨自慢慢探索','在裡面長時間停留','把物品留在草叢中'],a:0,pt:8,place:'校園綠地角落'},
- {q:'「餐廳二樓走廊」（桌球室外面）可以隨便在那邊休息，不用經過老師。這個說法對嗎？',o:['是','否'],a:1,pt:12,place:'餐廳二樓走廊'},
- {q:'「二樓廁所」是學校最安全的地方，遇到問題時應該跑去廁所躲起來。這個說法對嗎？',o:['是','否'],a:1,pt:18,place:'二樓廁所'},
- {q:'教學大樓 3 樓到 4 樓的樓梯間可以隨便去那邊玩耍嗎？',o:['可以','不行，那裡很危險，沒有人走來走去，不能隨便往上走'],a:1,pt:24,place:'三樓至四樓樓梯間'},
- {q:'校門口小熊前面的那一塊大空地，可以在那邊到處跑來跑去玩耍嗎？',o:['可以','不行，那裡有很多車子來來往往，非常危險'],a:1,b:'gate',place:'校門口'},
- {q:'去「垃圾場後方角落」時，應該怎麼做？',o:['必須是老師請我去幫忙倒垃圾才可以走過去，避免單獨前往，倒完垃圾趕快回教室','想去就自己去','在角落裡停留聊天','把門窗都關上不理會'],a:0,pt:10,place:'垃圾場後方角落'},
- {q:'「教學大樓側邊步道」兩側灌木茂密、人車稀少，經過時應該？',o:['不隨意前往；如需經過，應由老師帶領大家一起通過','獨自快速穿越','停留拍照','拿著貴重物品慢慢走'],a:0,pt:11,place:'教學大樓側邊步道'},
- {q:'在學校走廊可以跑來跑去，這個說法對嗎？',o:['對','錯'],a:1,note:'走廊人來人往，跑跑跳跳容易撞到人或摔倒受傷，應該慢慢走、靠右行走。'},
- {q:'可以隨便找同學去沒有人的地方聊天，這個說法對嗎？',o:['對','錯'],a:1,note:'沒有人的地方容易發生危險，不可以隨便離開大家，應該在有老師或同學看得到的地方一起活動。'}
+ {q:'儀安洗車場旁邊有一個高壓電的設施，為什麼請勿靠近？',o:['內部有高壓電，靠近可能發生觸電危險','只是放置雜物的倉庫','空間狹窄不便通行','沒有特別原因'],a:0,b:'tower',place:'高壓電設施',photo:'photos/danger-14-1.jpg',why:'高壓電可能造成觸電與嚴重傷害，請保持距離，並依老師指示行動。'},
+ {q:'在雜草茂密、可能有蛇出沒的草地附近，比較安全的做法是？',o:['注意腳下，避免踩進草叢','在草地上直接坐臥休息','用手撥開草叢找東西','餵食附近的動物'],a:0,pt:9,place:'垃圾場後方角落',photo:'photos/danger-09-1.jpg',why:'草叢可能有蛇或看不清的障礙物。走在安全通道，不要踩進草叢，並告訴老師。'},
+ {q:'遇到蛇出沒時，正確的處理方式是？',o:['保持距離、不驚擾，趕快告訴老師','用手抓起來丟棄','靠近拍照','追趕驅離'],a:0,pt:9,place:'垃圾場後方角落',photo:'photos/danger-09-1.jpg',why:'不要靠近、觸碰或追趕蛇。保持距離，離開現場並立即告訴老師。'},
+ {q:'發現學校有樹林茂密、人車稀少的綠地角落時，我可以怎麼做？',o:['不要隨便前往','獨自慢慢探索','在裡面長時間停留','把物品留在草叢中'],a:0,pt:8,place:'校園綠地角落',photo:'photos/danger-08-1.jpg',why:'人少又被樹木遮住的角落不適合獨自前往，請留在老師看得到的安全範圍。'},
+ {q:'「餐廳二樓走廊」（桌球室外面）可以隨便在那邊休息，不用經過老師。這個說法對嗎？',o:['是','否'],a:1,pt:12,place:'餐廳二樓走廊',photo:'photos/danger-12-1.jpg',why:'在校園內活動前要先讓老師知道，並在老師能看見、能協助的地方活動。'},
+ {q:'「二樓廁所」是學校最安全的地方，遇到問題時應該跑去廁所躲起來。這個說法對嗎？',o:['是','否'],a:1,pt:18,place:'二樓廁所',photo:'photos/danger-18-1.jpg',why:'遇到問題不要躲起來，請離開現場並找老師或可信任的大人幫忙。'},
+ {q:'教學大樓 3 樓到 4 樓的樓梯間可以隨便去那邊玩耍嗎？',o:['可以','不行，那裡很危險，沒有人走來走去，不能隨便往上走'],a:1,pt:24,place:'三樓至四樓樓梯間',photo:'photos/danger-24-1.jpg',why:'樓梯間有上下樓與跌倒風險，不在這裡玩耍；依老師安排通行。'},
+ {q:'校門口小熊前面的那一塊大空地，可以在那邊到處跑來跑去玩耍嗎？',o:['可以','不行，那裡有很多車子來來往往，非常危險'],a:1,b:'gate',place:'校門口',photo:'photos/danger-25-1.jpg',why:'校門附近有車輛進出，請在指定安全區域等候，不在車道或出入口奔跑。'},
+ {q:'去「垃圾場後方角落」時，應該怎麼做？',o:['必須是老師請我去幫忙倒垃圾才可以走過去，避免單獨前往，倒完垃圾趕快回教室','想去就自己去','在角落裡停留聊天','把門窗都關上不理會'],a:0,pt:10,place:'垃圾場後方角落',photo:'photos/danger-10-1.jpg',why:'不要單獨前往。只有在老師交代時才去，完成指定事情後盡快回到安全區域。'},
+ {q:'「教學大樓側邊步道」兩側灌木茂密、人車稀少，經過時應該？',o:['不隨意前往；如需經過，應由老師帶領大家一起通過','獨自快速穿越','停留拍照','拿著貴重物品慢慢走'],a:0,pt:11,place:'教學大樓側邊步道',photo:'photos/danger-11-1.jpg',why:'灌木可能遮住視線，人少的路段不宜獨自通過；需要經過時請由老師帶領。'},
+ {q:'在學校走廊可以跑來跑去，這個說法對嗎？',o:['對','錯'],a:1,note:'走廊人來人往，跑跑跳跳容易撞到人或摔倒受傷，應該慢慢走、靠右行走。',why:'走廊有人通行，跑動容易撞到人或跌倒。請放慢腳步、靠右行走。'},
+ {q:'可以隨便找同學去沒有人的地方聊天，這個說法對嗎？',o:['對','錯'],a:1,note:'沒有人的地方容易發生危險，不可以隨便離開大家，應該在有老師或同學看得到的地方一起活動。',why:'不要自行離開大家到無人的地方。留在老師或同學看得到的範圍，需要協助時找老師。'}
 ];
 const mapFrame=document.getElementById('mapFrame');
 let order=[],index=0,score=0,answered=false,permutation=[],reviewOpened=false;
@@ -89,9 +113,12 @@ function render(){
   document.getElementById('progress').textContent='第 '+(index+1)+' / '+QUIZ.length+' 題　｜　得分 '+score;
   document.getElementById('next').disabled=true;
   area.innerHTML='<p class="question">'+item.q+'</p><div class="choices">'+permutation.map((n,k)=>'<button class="choice" data-choice="'+k+'">'+(k+1)+'. '+item.o[n]+'</button>').join('')+'</div><div class="feedback" id="feedback" aria-live="polite">選一個你認為安全的做法。</div>';
-  area.querySelectorAll('.choice').forEach(btn=>btn.addEventListener('click',()=>{if(answered)return;answered=true;const selected=+btn.dataset.choice,correct=permutation[selected]===item.a;const choices=[...area.querySelectorAll('.choice')];choices.forEach((el,k)=>{el.disabled=true;if(permutation[k]===item.a)el.classList.add('correct');else if(k===selected)el.classList.add('incorrect');});const fb=document.getElementById('feedback');if(correct){score++;fb.textContent='答對了！';fb.classList.remove('bad');}else{fb.textContent='再看一下：正確答案是「'+item.o[item.a]+'」。'+(item.note||'');fb.classList.add('bad');}document.getElementById('progress').textContent='第 '+(index+1)+' / '+QUIZ.length+' 題　｜　得分 '+score;document.getElementById('next').disabled=false;}));
+  area.querySelectorAll('.choice').forEach(btn=>btn.addEventListener('click',()=>{if(answered)return;answered=true;const selected=+btn.dataset.choice,correct=permutation[selected]===item.a;const choices=[...area.querySelectorAll('.choice')];choices.forEach((el,k)=>{el.disabled=true;if(permutation[k]===item.a)el.classList.add('correct');else if(k===selected)el.classList.add('incorrect');});const fb=document.getElementById('feedback');if(correct){score++;fb.textContent='答對了！';fb.classList.remove('bad');}else{fb.textContent='答錯了，請看安全說明。';fb.classList.add('bad');document.getElementById('explanationTitle').textContent='地點說明：'+(item.place||'安全行動');document.getElementById('explanationPlace').textContent=item.place?'相關地點：'+item.place:'';const photo=document.getElementById('explanationPhoto');if(item.photo){photo.src=item.photo;photo.alt=(item.place||'校園危險地點')+'現場照片';photo.hidden=false;}else{photo.removeAttribute('src');photo.alt='';photo.hidden=true;}document.getElementById('explanationAnswer').textContent='正確答案：'+item.o[item.a];document.getElementById('explanationReason').textContent=item.why||item.note||'遇到不確定的情況，先停下來並請老師協助。';const dialog=document.getElementById('explanationDialog');if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');}document.getElementById('progress').textContent='第 '+(index+1)+' / '+QUIZ.length+' 題　｜　得分 '+score;document.getElementById('next').disabled=false;}));
 }
 document.getElementById('next').addEventListener('click',()=>{if(answered){index++;if(index>=order.length&&!reviewOpened){reviewOpened=true;window.open(new URL('teaching.html',location.href).href,'_blank','noopener,noreferrer');}render();}});
+document.getElementById('explanationClose').addEventListener('click',()=>document.getElementById('explanationDialog').close());
+document.getElementById('explanationContinue').addEventListener('click',()=>document.getElementById('explanationDialog').close());
+document.getElementById('explanationDialog').addEventListener('close',()=>document.getElementById('next').focus());
 document.getElementById('restart').addEventListener('click',()=>{score=0;index=0;reviewOpened=false;order=shuffle(QUIZ.map((_,i)=>i));render();});
 mapFrame.addEventListener('load',()=>{if(order.length)focusMap(QUIZ[order[index]]);});
 order=shuffle(QUIZ.map((_,i)=>i));render();
