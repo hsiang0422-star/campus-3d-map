@@ -238,7 +238,7 @@ body.drone-on #vcount{display:none}
       </div>
     </div>
   </header>
-  <div id="learnMenu" role="dialog" aria-modal="true" aria-labelledby="learnMenuTitle" hidden style="position:fixed;inset:0;z-index:20;background:#241c16aa;place-items:center;padding:20px">
+  <div id="learnMenu" role="dialog" aria-modal="true" aria-labelledby="learnMenuTitle" hidden style="position:fixed;inset:0;z-index:20;background:#241c16aa;display:none;place-items:center;padding:20px">
     <div style="background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:18px;padding:24px;max-width:360px;width:100%;box-shadow:0 16px 48px #0004">
       <h2 id="learnMenuTitle">教學及測驗</h2><button id="learnQuiz" type="button">校園危險地點測驗</button><button id="learnTeach" type="button">危險地點教學版</button><button id="learnClose" type="button">關閉</button>
     </div>
@@ -1806,9 +1806,9 @@ floatResizable(document.getElementById('ctrl'),'campus3d-ctrl-size',180,160);
 const bPts=document.getElementById('bPts');
 const learnMenu=document.getElementById('learnMenu');
 document.getElementById('bLearnQuiz').addEventListener('click',()=>{learnMenu.hidden=false;learnMenu.style.display='grid';});
-document.getElementById('learnClose').addEventListener('click',()=>{learnMenu.hidden=true;});
-learnMenu.addEventListener('click',e=>{if(e.target===learnMenu)learnMenu.hidden=true;});
-document.getElementById('learnQuiz').addEventListener('click',()=>{learnMenu.hidden=true;document.getElementById('bQuiz').click();});
+document.getElementById('learnClose').addEventListener('click',()=>{learnMenu.hidden=true;learnMenu.style.display='none';});
+learnMenu.addEventListener('click',e=>{if(e.target===learnMenu){learnMenu.hidden=true;learnMenu.style.display='none';}});
+document.getElementById('learnQuiz').addEventListener('click',()=>{learnMenu.hidden=true;learnMenu.style.display='none';document.getElementById('bQuiz').click();});
 document.getElementById('learnTeach').addEventListener('click',()=>window.open('teaching.html','_blank','noopener'));
 bPts.onclick=()=>{show.pts=!show.pts;pinGroup.visible=show.pts;if(!show.pts){dpanel.hidden=true;plist.hidden=true;}else{setPanel(true);plist.hidden=false;}floorZones.forEach(g=>g.visible=show.pts);updateDangerVis();bPts.setAttribute('aria-pressed',show.pts);};
 const bLbl=document.getElementById('bLbl');
