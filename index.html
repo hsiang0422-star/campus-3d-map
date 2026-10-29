@@ -218,7 +218,7 @@ body.drone-on #vcount{display:none}
   <header>
     <h1>臺南特教校園 3D 地圖<small>拖曳旋轉・Shift＋拖曳平移・滾輪縮放・雙指可平移</small></h1>
     <div class="tools">
-      <button id="bQuiz" aria-pressed="false" aria-controls="qpanel">校園危險地點測驗</button>
+      <button id="bTeachQuiz" type="button">危險地圖教學與測驗</button>
       <button id="bDrone" aria-pressed="false">無人機模擬遊戲</button>
       <button id="bReset">重設視角</button>
       <button id="bTop">俯視</button>
@@ -237,6 +237,7 @@ body.drone-on #vcount{display:none}
       </div>
     </div>
   </header>
+  <div id="teachQuizMenu" hidden style="position:fixed;inset:0;z-index:20;background:#241c16aa;display:none;place-items:center;padding:20px"><div style="background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:18px;padding:24px;max-width:360px;width:100%;box-shadow:0 16px 48px #0004;display:grid;gap:10px"><h2 style="margin:0 0 8px">危險地圖教學與測驗</h2><button id="openQuiz">校園危險地點測驗</button><button id="openTeaching">危險地點教學版</button><button id="closeTeachQuiz">關閉</button></div></div>
   <div class="stage">
     <canvas id="c"></canvas>
     <div id="labels"></div>
@@ -1983,6 +1984,7 @@ function qRender(){
     }
   });
 }
+const teachQuizMenu=document.getElementById('teachQuizMenu');const closeTeachQuiz=()=>{teachQuizMenu.hidden=true;teachQuizMenu.style.display='none';};document.getElementById('bTeachQuiz').onclick=()=>{teachQuizMenu.hidden=false;teachQuizMenu.style.display='grid';};document.getElementById('closeTeachQuiz').onclick=closeTeachQuiz;teachQuizMenu.onclick=e=>{if(e.target===teachQuizMenu)closeTeachQuiz();};document.getElementById('openQuiz').onclick=()=>{closeTeachQuiz();bQuiz.click();};document.getElementById('openTeaching').onclick=()=>window.open('teaching.html','_blank','noopener');
 bQuiz.onclick=()=>{
   const open=qpanel.hidden;qpanel.hidden=!open;bQuiz.setAttribute('aria-pressed',open);
   if(open){
