@@ -1819,17 +1819,23 @@ const accOn={entrance:true,ramp:true,elevator:true,wc:true,parking:true};
 const accTex={};Object.keys(ACC.img).forEach(k=>{const t=new THREE.TextureLoader().load(ACC.img[k]);t.encoding=THREE.sRGBEncoding;accTex[k]=t;});
 function accHit(x,z){const rc=new THREE.Raycaster(new THREE.Vector3(x,40,z),new THREE.Vector3(0,-1,0),0,60);
   const objs=pickables.filter(o=>o.userData&&o.userData.kind==='b'&&visDeep(o));const h=rc.intersectObjects(objs,false)[0];return h?{y:h.point.y,id:h.object.userData.id}:{y:0,id:''};}
+function accRoofNear(a,b,maxR){ // 電梯：找附近建築的屋頂（電梯圖示一律放在最上層）
+  let h=accHit(a,b);if(h.y>0.01)return h;
+  for(let r=.1;r<=maxR;r+=.1){const n=Math.ceil(r*40);let best=null;
+    for(let k=0;k<n;k++){const t=k/n*Math.PI*2,q=accHit(a+r*Math.cos(t),b+r*Math.sin(t));if(q.y>0.01&&(!best||q.y>best.y))best=q;}
+    if(best)return best;}
+  return h;}
 function accGroundY(x,z){ // 從上往下找建築屋頂或地面高度
   const rc=new THREE.Raycaster(new THREE.Vector3(x,40,z),new THREE.Vector3(0,-1,0),0,60);
   const objs=pickables.filter(o=>o.userData&&o.userData.kind==='b'&&visDeep(o));
   const h=rc.intersectObjects(objs,false)[0];return h?h.point.y:0;}
 const accItems=[];
 function makeAcc(t,x,z,bid,inside){const[a,b]=P(x,z);
-  const hitB=accHit(a,b);const y=inside?hitB.y:0;if(inside===-1)inside=y>0.01?1:0;
+  const hitB=t==='elevator'?accRoofNear(a,b,.9):accHit(a,b);const y=(inside||t==='elevator')?hitB.y:0;if(inside===-1||t==='elevator')inside=y>0.01?1:0;
   if(!bid&&inside)bid=hitB.id;
   const g=new THREE.Group();g.position.set(a,y,b);g.userData={accT:t,teach:!!(inside&&hitB.id==='teach')};g.visible=accOn[t];
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.42,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=.21;g.add(pole);
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t]}));sp.scale.set(.46,.46,1);sp.position.y=.62;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:t!=='elevator'}));if(t==='elevator')sp.renderOrder=40;sp.scale.set(.46,.46,1);sp.position.y=.62;
   const where=bid&&bMeta[bid]?bMeta[bid].name+(inside?'':'旁'):'戶外';
   sp.userData={kind:'acc',t,where,bid,g};g.add(sp);pickables.push(sp);g.userData.sp=sp;
   accGroup.add(g);accItems.push(g);return g;}
@@ -1922,7 +1928,7 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
   +`<div class="accwarn" id="accDraftNote" hidden>目前顯示的是尚未送出的位置調整（只存在這台裝置）。<button id="accDiscard" style="font-size:.72rem;padding:2px 8px;margin-left:4px">捨棄調整</button></div>`
   +`<div class="row" style="display:flex;gap:6px;margin-top:6px"><button id="accEdit" aria-pressed="false">調整位置</button></div>`
   +`<div class="accedit" id="accEditBox" hidden>
-     <p>直接拖曳 3D 圖示到正確位置；拖到建築上會自動放到屋頂（代表樓內設施）。拖曳空白處仍可旋轉地圖。</p>
+     <p>直接拖曳 3D 圖示到正確位置；拖到建築上會自動放到屋頂（代表樓內設施），電梯一律顯示在最上層。拖曳空白處仍可旋轉地圖。</p>
      <h4>選取的項目</h4><p id="accEdSel">尚未選取，點一下圖示或斜坡道即可選取。</p>
      <div class="row"><button id="accEdDel" disabled>刪除選取的項目</button></div>
      <div id="accRampTools" hidden style="display:grid;gap:4px">
@@ -2033,7 +2039,7 @@ let accPulse=()=>{};
  canvas.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;setM(e);if(!rc.ray.intersectPlane(plane,hit))return;
    const x=Math.max(-14,Math.min(14,hit.x+drag.dx)),z=Math.max(-8,Math.min(8,hit.z+drag.dz));
    if(sel.userData.isRamp){sel.position.set(x,accSurfaceY(x,z),z);const[px,pz]=toP(x,z);sel.userData.r.x=px;sel.userData.r.z=pz;}
-   else sel.position.set(x,accGroundY(x,z),z);
+   else sel.position.set(x,sel.userData.accT==='elevator'?accRoofNear(x,z,.9).y:accGroundY(x,z),z);
    setSel(sel);});
  const end=e=>{if(!drag||e.pointerId!==drag.id)return;drag=null;controls.enabled=true;save();};
  canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
