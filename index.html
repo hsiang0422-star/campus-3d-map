@@ -1833,7 +1833,7 @@ const accItems=[];
 function makeAcc(t,x,z,bid,inside){const[a,b]=P(x,z);
   const hitB=t==='elevator'?accRoofNear(a,b,.9):accHit(a,b);const y=(inside||t==='elevator')?hitB.y:0;if(inside===-1||t==='elevator')inside=y>0.01?1:0;
   if(!bid&&inside)bid=hitB.id;
-  const g=new THREE.Group();g.position.set(a,y,b);g.userData={accT:t,teach:!!(inside&&hitB.id==='teach')};g.visible=accOn[t];
+  const g=new THREE.Group();g.position.set(a,y,b);g.userData={accT:t,bld:inside?hitB.id:''};g.visible=accOn[t];
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.42,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=.21;g.add(pole);
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:t!=='elevator'}));if(t==='elevator')sp.renderOrder=40;sp.scale.set(.46,.46,1);sp.position.y=.62;
   const where=bid&&bMeta[bid]?bMeta[bid].name+(inside?'':'旁'):'戶外';
@@ -1874,20 +1874,22 @@ function accSurfaceY(a,b){ // 斜坡道底部：找下方最高的地面（草�
 function makeRamp(x,z,ang,len,w,rev){const g=new THREE.Group();g.userData={isRamp:true,accT:'ramp',r:{x,z,ang,len,w,rev:rev?1:0}};
   buildRampMesh(g);g.visible=accOn.ramp;accGroup.add(g);accRamps.push(g);return g;}
 ACC_RAMPS.forEach(r=>makeRamp(...r));
-/* 教學大樓各樓層：選到樓層時，只顯示該層的無障礙廁所與電梯（取自 FLOORS 平面資料） */
+/* 教學大樓、行政大樓各樓層：選到樓層時只顯示該層的無障礙廁所（取自 FLOORS／ADMIN_PLAN）；電梯一律以屋頂圖示顯示 */
 const accFloorIcons=[];
-Object.keys(FLOORS).forEach(fk=>{const f=+fk,o=floorObjs[f];if(!o)return;
-  FLOORS[fk].rooms.forEach(r=>{const t=r[4]==='acc'?'wc':r[4]==='el'?'elevator':null;if(!t)return;
-    const w=prect(r),cx=(w.x0+w.x1)/2,cz=(w.z0+w.z1)/2;
-    const g=new THREE.Group();g.position.set(cx,0.32,cz);
-    const pole=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.3,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=.15;g.add(pole);
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:false}));sp.renderOrder=22;sp.scale.set(.4,.4,1);sp.position.y=.48;
-    sp.userData={kind:'acc',t,where:`教學大樓 ${f}F・${r[5]}`};g.add(sp);pickables.push(sp);
-    g.userData={accT:t};g.visible=false;o.inner.add(g);accFloorIcons.push(g);});});
-function accSyncFloors(){ // 外觀：屋頂圖示；樓層／分層：只顯示樓層內圖示
-  const ext=(typeof mode==='undefined')||mode==='ext';
-  accItems.forEach(g=>{if(g.userData.teach)g.visible=accOn[g.userData.accT]&&ext;});
-  accFloorIcons.forEach(g=>{g.visible=accGroup.visible&&accOn[g.userData.accT]&&!ext;});}
+function accFloorIcon(parent,cx,cz,t,where){
+  const g=new THREE.Group();g.position.set(cx,0.32,cz);
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.3,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=.15;g.add(pole);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:false}));sp.renderOrder=22;sp.scale.set(.4,.4,1);sp.position.y=.48;
+  sp.userData={kind:'acc',t,where};g.add(sp);pickables.push(sp);
+  g.userData={accT:t};g.visible=false;parent.add(g);accFloorIcons.push(g);}
+Object.keys(FLOORS).forEach(fk=>{const o=floorObjs[+fk];if(!o)return;
+  FLOORS[fk].rooms.forEach(r=>{if(r[4]!=='acc')return;const w=prect(r);accFloorIcon(o.inner,(w.x0+w.x1)/2,(w.z0+w.z1)/2,'wc',`教學大樓 ${fk}F・${r[5]}`);});});
+Object.keys(ADMIN_PLAN).forEach(fk=>{const o=admObjs[+fk];if(!o)return;
+  ADMIN_PLAN[fk].rooms.forEach(r=>{if(r[4]!=='acc')return;const w=admRect(r);accFloorIcon(o.inner,(w.x0+w.x1)/2,(w.z0+w.z1)/2,'wc',`行政大樓 ${fk}F・${r[5]}`);});});
+function accSyncFloors(){ // 外觀：屋頂圖示；選樓層／分層：該棟只留電梯（永遠顯示）＋所選樓層的圖示
+  const extOf={teach:(typeof mode==='undefined')||mode==='ext',admin:(typeof admMode==='undefined')||admMode==='ext'};
+  accItems.forEach(g=>{const b=g.userData.bld;if(b in extOf)g.visible=accOn[g.userData.accT]&&(extOf[b]||g.userData.accT==='elevator');});
+  accFloorIcons.forEach(g=>{g.visible=accGroup.visible&&accOn[g.userData.accT];});} // 只有所選樓層的 inner 會顯示
 /* 無障礙通路：白邊藍色帶狀路線＋流動箭頭；穿過建築的部分以淡色透出 */
 const ROUTE_Y=.2,ROUTE_W=.11,ROUTE_EDGE=.17;
 const accFlowTex=(()=>{const c=document.createElement('canvas');c.width=128;c.height=32;const g=c.getContext('2d');
