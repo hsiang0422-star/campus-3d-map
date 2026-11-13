@@ -76,15 +76,13 @@ body.acc-editing #c{cursor:move}
 .access-dialog p,.access-dialog li{font-size:.9rem;line-height:1.7}
 .access-dialog ul{padding-left:1.4em;margin:10px 0}
 .access-dialog .access-close{display:flex;justify-content:flex-end;margin-top:16px}
-.compass{position:absolute;right:16px;bottom:16px;width:78px;height:78px;border:1px solid var(--line);border-radius:50%;background:rgba(255,250,242,.94);box-shadow:0 3px 12px rgba(40,30,20,.22);z-index:5;pointer-events:none;color:var(--ink)}
-.compass-rose{position:absolute;inset:0}
-.compass-rose span{position:absolute;font-size:.68rem;font-weight:800;line-height:1}
-.compass-n{top:5px;left:50%;transform:translateX(-50%)}
-.compass-s{bottom:5px;left:50%;transform:translateX(-50%)}
-.compass-e{right:5px;top:50%;transform:translateY(-50%)}
-.compass-w{left:5px;top:50%;transform:translateY(-50%)}
-.compass-needle{top:20px;left:50%;width:0;height:0;transform:translateX(-50%);border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:23px solid #b8322a}
-@media(max-width:700px){.compass{right:12px;bottom:12px;width:68px;height:68px}}
+.compass{position:absolute;left:28px;top:46px;width:88px;height:88px;border:3px solid #514c47;border-radius:50%;z-index:5;pointer-events:none;color:#514c47}
+.compass-n{position:absolute;left:50%;top:-43px;transform:translateX(-50%);font-size:30px;font-weight:700;line-height:1}
+.compass-pointer{position:absolute;inset:0;transform-origin:50% 50%}
+.compass-needle-north,.compass-needle-south{position:absolute;left:50%;width:0;height:0;transform:translateX(-50%)}
+.compass-needle-north{top:10px;border-left:17px solid transparent;border-right:17px solid transparent;border-bottom:34px solid #514c47}
+.compass-needle-south{top:42px;border-left:15px solid transparent;border-right:15px solid transparent;border-top:34px solid #fff}
+@media(max-width:700px){.compass{left:16px;top:44px;width:72px;height:72px}.compass-n{top:-34px;font-size:26px}.compass-needle-north{top:8px;border-left-width:14px;border-right-width:14px;border-bottom-width:29px}.compass-needle-south{top:35px;border-left-width:13px;border-right-width:13px;border-top-width:28px}}
 .aseg{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0}.aseg button{font:inherit;font-size:.85rem;padding:5px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}.aseg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
 #apanel{left:auto;right:48px;top:48px;bottom:auto;width:230px;z-index:2}
 .fmin{height:auto!important}
@@ -277,8 +275,9 @@ body.drone-on #vcount{display:none}
   <div class="stage">
     <canvas id="c"></canvas>
     <div id="labels"></div>
-    <div class="compass" role="img" aria-label="指北針：依目前地圖視角顯示北方方向">
-      <div class="compass-rose" id="compassRose" aria-hidden="true"><span class="compass-n">北</span><span class="compass-needle"></span><span class="compass-e">東</span><span class="compass-s">南</span><span class="compass-w">西</span></div>
+    <div class="compass" role="img" aria-label="指北針，指針指向北方">
+      <span class="compass-n" aria-hidden="true">N</span>
+      <div class="compass-pointer" id="compassPointer" aria-hidden="true"><span class="compass-needle-north"></span><span class="compass-needle-south"></span></div>
     </div>
     <dialog class="access-dialog" id="accessDialog" aria-labelledby="accessTitle">
       <div class="access-dialog-inner">
@@ -1941,13 +1940,13 @@ const accessDialog=document.getElementById('accessDialog'),bAccess=document.getE
 bAccess.onclick=()=>{accessDialog.showModal();bAccess.setAttribute('aria-expanded','true');};
 document.getElementById('accessClose').onclick=()=>accessDialog.close();
 accessDialog.addEventListener('close',()=>bAccess.setAttribute('aria-expanded','false'));
-const compassRose=document.getElementById('compassRose'),northVector=new THREE.Vector3(-1,0,0),compassOrigin=new THREE.Vector3(),compassTip=new THREE.Vector3(); // 校園北端在世界座標 -X
+const compassPointer=document.getElementById('compassPointer'),northVector=new THREE.Vector3(-1,0,0),compassOrigin=new THREE.Vector3(),compassTip=new THREE.Vector3(); // 校園北端在世界座標 -X
 function updateCompass(){
   camera.updateMatrixWorld(true);
   compassOrigin.copy(controls.target).project(camera);
   compassTip.copy(controls.target).add(northVector).project(camera);
   const dx=compassTip.x-compassOrigin.x,dy=compassOrigin.y-compassTip.y;
-  compassRose.style.transform='rotate('+Math.atan2(dx,dy)*180/Math.PI+'deg)';
+  compassPointer.style.transform='rotate('+Math.atan2(dx,dy)*180/Math.PI+'deg)';
 }
 const bSpin=document.getElementById('bSpin');
 bSpin.onclick=()=>{controls.autoRotate=!controls.autoRotate;bSpin.setAttribute('aria-pressed',controls.autoRotate);};
