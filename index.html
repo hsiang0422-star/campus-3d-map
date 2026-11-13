@@ -58,6 +58,15 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .accroute i{display:block;width:26px;border-top:3px dotted #2b6cb0}
 .accnote{font-size:.72rem;color:var(--muted);line-height:1.5;margin:6px 0 2px}
 .accsel{font-size:.8rem;margin:6px 0 0;padding:6px 8px;border-radius:8px;background:var(--chip)}
+.accedit{border-top:1px dashed var(--line);margin-top:8px;padding-top:8px;display:grid;gap:6px}
+.accedit h4{margin:0;font-size:.8rem}
+.accedit p{margin:0;font-size:.75rem;color:var(--muted);line-height:1.5}
+.accedit .row{display:flex;flex-wrap:wrap;gap:4px}
+.accedit .row button{font-size:.75rem;padding:4px 8px}
+.accedit .addt img{width:18px;height:18px;vertical-align:middle}
+.accedit textarea{width:100%;box-sizing:border-box;min-height:90px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;resize:vertical}
+.accwarn{font-size:.75rem;background:#fff3cd;color:#5c4400;border-radius:8px;padding:6px 8px}
+body.acc-editing #c{cursor:move}
 .plist.dragging{box-shadow:0 14px 40px rgba(80,20,10,.35)}
 .plist .plbody{overflow:auto;min-height:0;flex:1}
 .access-dialog{width:min(560px,calc(100% - 24px));max-height:min(82vh,720px);margin:auto;padding:0;border:2px solid var(--line);border-radius:16px;background:var(--panel);color:var(--ink);box-shadow:0 18px 60px rgba(0,0,0,.28)}
@@ -1830,14 +1839,15 @@ function accGroundY(x,z){ // 從上往下找建築屋頂或地面高度
   const objs=pickables.filter(o=>o.userData&&o.userData.kind==='b'&&visDeep(o));
   const h=rc.intersectObjects(objs,false)[0];return h?h.point.y:0;}
 const accItems=[];
-ACC.icons.forEach(([t,x,z,bid,inside])=>{const[a,b]=P(x,z);
+function makeAcc(t,x,z,bid,inside){const[a,b]=P(x,z);
   const y=inside?accGroundY(a,b):0;
-  const g=new THREE.Group();g.position.set(a,y,b);g.userData={accT:t};
+  const g=new THREE.Group();g.position.set(a,y,b);g.userData={accT:t};g.visible=accOn[t];
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.42,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=.21;g.add(pole);
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t]}));sp.scale.set(.46,.46,1);sp.position.y=.62;
   const where=bid&&bMeta[bid]?bMeta[bid].name+(inside?'':'旁'):'戶外';
-  sp.userData={kind:'acc',t,where,bid};g.add(sp);pickables.push(sp);
-  accGroup.add(g);accItems.push(g);});
+  sp.userData={kind:'acc',t,where,bid,g};g.add(sp);pickables.push(sp);g.userData.sp=sp;
+  accGroup.add(g);accItems.push(g);return g;}
+ACC.icons.forEach(i=>makeAcc(...i));
 const accLineMat=new THREE.LineDashedMaterial({color:0x2b6cb0,dashSize:.12,gapSize:.12,depthTest:false,transparent:true});
 const accArrowMat=new THREE.MeshBasicMaterial({color:0x2b6cb0,depthTest:false,transparent:true});
 ACC.routes.forEach(([pts,end])=>{const v=pts.map(([x,z])=>{const[a,b]=P(x,z);return new THREE.Vector3(a,.06,b);});
@@ -1850,6 +1860,19 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
  accbody.innerHTML=Object.keys(ACC_NAME).map(t=>`<button class="accrow" data-t="${t}" aria-pressed="true"><img src="${ACC.img[t]}" alt=""><span>${ACC_NAME[t]}</span><span class="n">${cnt[t]||0} 處</span></button>`).join('')
   +`<button class="accrow accroute" data-t="route" aria-pressed="true"><i></i><span>無障礙通路路線</span><span class="n">${ACC.routes.length} 段</span></button>`
   +`<div class="accsel" id="accsel" hidden></div>`
+  +`<div class="accwarn" id="accDraftNote" hidden>目前顯示的是尚未送出的位置調整（只存在這台裝置）。<button id="accDiscard" style="font-size:.72rem;padding:2px 8px;margin-left:4px">捨棄調整</button></div>`
+  +`<div class="row" style="display:flex;gap:6px;margin-top:6px"><button id="accEdit" aria-pressed="false">調整位置</button></div>`
+  +`<div class="accedit" id="accEditBox" hidden>
+     <p>直接拖曳 3D 圖示到正確位置；拖到建築上會自動放到屋頂（代表樓內設施）。拖曳空白處仍可旋轉地圖。</p>
+     <h4>選取的圖示</h4><p id="accEdSel">尚未選取，點一下圖示即可選取。</p>
+     <div class="row"><button id="accEdDel" disabled>刪除選取的圖示</button></div>
+     <h4>新增設施（會出現在畫面中央，再拖到正確位置）</h4>
+     <div class="row" id="accEdAdd"></div>
+     <div class="row"><button id="accEdDone">完成並產生文字</button><button id="accEdReset">全部還原成原始位置</button></div>
+     <div id="accEdOut" hidden style="display:grid;gap:6px"><p>請把下面整段文字複製後貼給 Claude，我會更新到 GitHub。</p>
+       <textarea id="accEdText" readonly aria-label="位置調整結果"></textarea>
+       <div class="row"><button id="accEdCopy">複製文字</button><span id="accEdCopied" class="accnote" hidden>已複製</span></div></div>
+   </div>`
   +`<p class="accnote">點按項目切換顯示；點 3D 圖示看位置。屋頂上的圖示代表樓內設施。位置由學校無障礙平面圖換算，僅供參考。</p>`
   +`<p class="accnote"><a href="accessibility.html">開啟獨立的校園無障礙 3D 地圖 →</a></p>`;
  accbody.addEventListener('click',e=>{const r=e.target.closest('.accrow');if(!r)return;const t=r.dataset.t;
@@ -1868,6 +1891,46 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
  const end=()=>{if(!st)return;if(st.lx!=null){try{localStorage.setItem(KEY,JSON.stringify({x:st.lx,y:st.ly}));}catch(e){}}st=null;acclist.classList.remove('dragging');};
  head.addEventListener('pointerup',end);head.addEventListener('pointercancel',end);
  head.addEventListener('dblclick',e=>{if(e.target.closest('button'))return;acclist.style.left='';acclist.style.top='';acclist.style.bottom='';try{localStorage.removeItem(KEY);}catch(e){}});
+}
+/* ---------- 無障礙設施：調整模式 ---------- */
+{const DRAFT='campus3d-acc-draft';
+ const orig=ACC.icons.map(i=>i.slice());
+ const edBtn=document.getElementById('accEdit'),box=document.getElementById('accEditBox'),selEl=document.getElementById('accEdSel'),
+   delBtn=document.getElementById('accEdDel'),outBox=document.getElementById('accEdOut'),outTx=document.getElementById('accEdText'),note=document.getElementById('accDraftNote');
+ let editing=false,sel=null,drag=null,dirty=false;
+ const toP=(a,b)=>[+(a+CX).toFixed(2),+(b+CZ).toFixed(2)];
+ const current=()=>accItems.map(g=>{const[x,z]=toP(g.position.x,g.position.z);return[g.userData.accT,x,z];});
+ const clearAll=()=>{accItems.slice().forEach(g=>{accGroup.remove(g);const k=pickables.indexOf(g.userData.sp);if(k>=0)pickables.splice(k,1);});accItems.length=0;};
+ const load=list=>{clearAll();list.forEach(([t,x,z])=>{const[a,b]=P(x,z);const inside=accGroundY(a,b)>0.01;makeAcc(t,x,z,'',inside?1:0);});};
+ const save=()=>{dirty=true;note.hidden=false;try{localStorage.setItem(DRAFT,JSON.stringify(current()));}catch(e){}};
+ const setSel=g=>{if(sel)sel.userData.sp.scale.set(.46,.46,1);sel=g;
+   if(g){g.userData.sp.scale.set(.66,.66,1);const[x,z]=toP(g.position.x,g.position.z);selEl.textContent=`${ACC_NAME[g.userData.accT]}（座標 ${x}, ${z}）`;}
+   else selEl.textContent='尚未選取，點一下圖示即可選取。';delBtn.disabled=!g;};
+ try{const d=JSON.parse(localStorage.getItem(DRAFT)||'null');if(Array.isArray(d)&&d.length){load(d);note.hidden=false;dirty=true;}}catch(e){}
+ document.getElementById('accDiscard').onclick=()=>{try{localStorage.removeItem(DRAFT);}catch(e){}load(orig);note.hidden=true;dirty=false;setSel(null);outBox.hidden=true;};
+ document.getElementById('accEdAdd').innerHTML=Object.keys(ACC_NAME).map(t=>`<button class="addt" data-t="${t}"><img src="${ACC.img[t]}" alt=""> ${ACC_NAME[t].replace('無障礙','')}</button>`).join('');
+ document.getElementById('accEdAdd').addEventListener('click',e=>{const b=e.target.closest('.addt');if(!b)return;const t=b.dataset.t;
+   if(!accOn[t]){const r=accbody.querySelector(`.accrow[data-t="${t}"]`);if(r)r.click();}
+   const tg=controls.target;const[x,z]=toP(tg.x,tg.z);const[a,c]=P(x,z);const g=makeAcc(t,x,z,'',accGroundY(a,c)>0.01?1:0);setSel(g);save();});
+ delBtn.onclick=()=>{if(!sel)return;accGroup.remove(sel);accItems.splice(accItems.indexOf(sel),1);const k=pickables.indexOf(sel.userData.sp);if(k>=0)pickables.splice(k,1);setSel(null);save();};
+ document.getElementById('accEdReset').onclick=()=>{load(orig);setSel(null);try{localStorage.removeItem(DRAFT);}catch(e){}note.hidden=true;dirty=false;outBox.hidden=true;};
+ document.getElementById('accEdDone').onclick=()=>{
+   const list=current();const add=[],del=[];
+   outTx.value='【主地圖無障礙設施位置調整】\n共 '+list.length+' 個設施（類型, x, z）\n'+JSON.stringify(list);
+   outBox.hidden=false;outTx.focus();outTx.select();};
+ document.getElementById('accEdCopy').onclick=()=>{const ok=()=>{const c=document.getElementById('accEdCopied');c.hidden=false;setTimeout(()=>c.hidden=true,1800);};
+   navigator.clipboard&&navigator.clipboard.writeText(outTx.value).then(ok,()=>{outTx.select();document.execCommand&&document.execCommand('copy');ok();})||(outTx.select(),document.execCommand('copy'),ok());};
+ edBtn.onclick=()=>{editing=!editing;edBtn.setAttribute('aria-pressed',editing);edBtn.textContent=editing?'結束調整':'調整位置';box.hidden=!editing;document.body.classList.toggle('acc-editing',editing);if(!editing){setSel(null);controls.enabled=true;}};
+ const stageEl=canvas.parentElement,rc=new THREE.Raycaster(),m=new THREE.Vector2(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0),hit=new THREE.Vector3();
+ const setM=e=>{const r=canvas.getBoundingClientRect();m.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);rc.setFromCamera(m,camera);};
+ stageEl.addEventListener('pointerdown',e=>{if(!editing||!accGroup.visible||e.target!==canvas)return;setM(e);
+   const sprites=accItems.filter(g=>visDeep(g)).map(g=>g.userData.sp);const h=rc.intersectObjects(sprites,false)[0];if(!h)return;
+   e.stopPropagation();e.preventDefault();const g=h.object.userData.g;setSel(g);drag={id:e.pointerId};controls.enabled=false;
+   try{canvas.setPointerCapture(e.pointerId);}catch(err){}},true);
+ canvas.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;setM(e);if(!rc.ray.intersectPlane(plane,hit))return;
+   const x=Math.max(-14,Math.min(14,hit.x)),z=Math.max(-8,Math.min(8,hit.z));sel.position.set(x,accGroundY(x,z),z);setSel(sel);});
+ const end=e=>{if(!drag||e.pointerId!==drag.id)return;drag=null;controls.enabled=true;save();};
+ canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
 }
 function accShow(u){const el=document.getElementById('accsel');el.hidden=false;el.textContent=ACC_NAME[u.t]+'・位置：'+(u.where||'戶外');if(acclist.classList.contains('fmin'))document.getElementById('accMin').click();}
 
