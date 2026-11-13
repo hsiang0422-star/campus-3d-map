@@ -17,6 +17,7 @@
 | `const POINT_INFO` | 危險角落資訊卡：`title`、`desc`、`img`/`imgs`（照片）、`floor`、`fzones` |
 | `FLOORPTS` | 位於教學大樓樓層內的危險角落編號（只在該樓層顯示） |
 | `P(x,z)` | 座標轉換：世界座標 = (x-13, z-8) |
+| `const ACC=` | 無障礙設施圖層：`icons` 為 `[類型, x, z, 所屬建築id, 是否在樓內]`，`routes` 為無障礙通路折線；`img` 為圖示 base64。由 `access-plan/` 的學校無障礙平面圖以相似轉換（縮放約 0.0977、旋轉約 -88.3°）換算而來 |
 
 ## 介面與行為
 - 工具列：重設視角、俯視、教學大樓各樓層、各建築場域、地圖操作、建築名稱、電梯・樓梯・廁所、危險角落、自動旋轉。
@@ -42,7 +43,7 @@
 - `floatCollapsible(box, btn, key)`：綁定收合按鈕並記住收合狀態；收合的 CSS 是 `.fmin`。
 - 拖曳移動仿照 `plist`／`dpanel` 的 pointer 事件寫法。
 
-目前符合標準的：各建築場域（`blist`）、教學大樓各樓層（`panel`）、地圖操作（`ctrl`）、危險角落資訊（`dpanel`）、校園危險角落清單（`plist`）。
+目前符合標準的：無障礙設施（`acclist`）、各建築場域（`blist`）、教學大樓各樓層（`panel`）、地圖操作（`ctrl`）、危險角落資訊（`dpanel`）、校園危險角落清單（`plist`）。
 
 ## 行政大樓模型
 - 平面圖資料：`admin-plan/`；參考照片：`admin-photo/`。
