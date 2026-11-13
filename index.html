@@ -51,6 +51,22 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .plist{position:absolute;top:12px;right:12px;left:auto;width:340px;max-width:calc(100% - 24px);max-height:calc(100% - 24px);display:flex;flex-direction:column;background:var(--panel);border:2px solid #b8322a;border-radius:14px;padding:0 12px 8px;box-shadow:0 8px 28px rgba(80,20,10,.22);z-index:6}
 .plist.dragging{box-shadow:0 14px 40px rgba(80,20,10,.35)}
 .plist .plbody{overflow:auto;min-height:0;flex:1}
+.access-dialog{width:min(560px,calc(100% - 24px));max-height:min(82vh,720px);margin:auto;padding:0;border:2px solid var(--line);border-radius:16px;background:var(--panel);color:var(--ink);box-shadow:0 18px 60px rgba(0,0,0,.28)}
+.access-dialog::backdrop{background:rgba(20,30,28,.55)}
+.access-dialog-inner{padding:20px 24px;overflow:auto}
+.access-dialog h2{font-family:var(--f-display);font-size:1.2rem;margin:0 0 10px}
+.access-dialog p,.access-dialog li{font-size:.9rem;line-height:1.7}
+.access-dialog ul{padding-left:1.4em;margin:10px 0}
+.access-dialog .access-close{display:flex;justify-content:flex-end;margin-top:16px}
+.compass{position:absolute;right:16px;bottom:16px;width:78px;height:78px;border:1px solid var(--line);border-radius:50%;background:rgba(255,250,242,.94);box-shadow:0 3px 12px rgba(40,30,20,.22);z-index:5;pointer-events:none;color:var(--ink)}
+.compass-rose{position:absolute;inset:0}
+.compass-rose span{position:absolute;font-size:.68rem;font-weight:800;line-height:1}
+.compass-n{top:5px;left:50%;transform:translateX(-50%)}
+.compass-s{bottom:5px;left:50%;transform:translateX(-50%)}
+.compass-e{right:5px;top:50%;transform:translateY(-50%)}
+.compass-w{left:5px;top:50%;transform:translateY(-50%)}
+.compass-needle{top:20px;left:50%;width:0;height:0;transform:translateX(-50%);border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:23px solid #b8322a}
+@media(max-width:700px){.compass{right:12px;bottom:12px;width:68px;height:68px}}
 .aseg{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0}.aseg button{font:inherit;font-size:.85rem;padding:5px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}.aseg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
 #apanel{left:auto;right:48px;top:48px;bottom:auto;width:230px;z-index:2}
 .fmin{height:auto!important}
@@ -226,6 +242,7 @@ body.drone-on #vcount{display:none}
       <button id="bCtrl" aria-pressed="true">地圖操作</button>
       <button id="bLbl" aria-pressed="false">建築名稱</button>
       <button id="bPts" aria-pressed="false">危險角落</button>
+      <button id="bAccess" aria-haspopup="dialog" aria-expanded="false" aria-controls="accessDialog">校園無障礙地圖指引</button>
       <button id="bSpin" aria-pressed="false">自動旋轉</button>
       <button id="bPanel" aria-expanded="true" aria-controls="panel">樓層清單 <span class="car" aria-hidden="true">▾</span></button>
       <div class="bwrap" id="bwrap">
@@ -241,6 +258,22 @@ body.drone-on #vcount{display:none}
   <div class="stage">
     <canvas id="c"></canvas>
     <div id="labels"></div>
+    <div class="compass" role="img" aria-label="指北針：依目前地圖視角顯示北方方向">
+      <div class="compass-rose" id="compassRose" aria-hidden="true"><span class="compass-n">北</span><span class="compass-needle"></span><span class="compass-e">東</span><span class="compass-s">南</span><span class="compass-w">西</span></div>
+    </div>
+    <dialog class="access-dialog" id="accessDialog" aria-labelledby="accessTitle">
+      <div class="access-dialog-inner">
+        <h2 id="accessTitle">校園無障礙地圖指引</h2>
+        <p>這裡先整理目前 3D 模型已有的無障礙相關標示，作為後續校園無障礙互動地圖的入口。</p>
+        <ul>
+          <li>教學大樓樓層資料標示電梯、樓梯與無障礙廁所。</li>
+          <li>可使用「樓層清單」切換教學大樓與行政大樓樓層。</li>
+          <li>可用「各建築場域」清單定位校園建築。</li>
+        </ul>
+        <p>目前模型不包含經實測確認的無障礙通行路線、坡道、門寬或路面狀況。規劃實際動線前，請先向校方確認現況。</p>
+        <div class="access-close"><button id="accessClose" type="button">關閉指引</button></div>
+      </div>
+    </dialog>
     <div class="ctrl" id="ctrl">
       <div class="phead" id="chead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>地圖操作<button class="collapse" id="cMin">收合</button></div>
       <div class="cbody">
@@ -1756,6 +1789,17 @@ canvas.addEventListener('pointerleave',()=>tip.hidden=true);
 /* ---------- controls UI ---------- */
 document.getElementById('bReset').onclick=()=>flyTo(HOME.pos.clone(),HOME.target.clone());
 document.getElementById('bTop').onclick=()=>flyTo(new THREE.Vector3(0.5,30,0.9),new THREE.Vector3(0.5,0,0.8));
+const accessDialog=document.getElementById('accessDialog'),bAccess=document.getElementById('bAccess');
+bAccess.onclick=()=>{accessDialog.showModal();bAccess.setAttribute('aria-expanded','true');};
+document.getElementById('accessClose').onclick=()=>accessDialog.close();
+accessDialog.addEventListener('close',()=>bAccess.setAttribute('aria-expanded','false'));
+const compassRose=document.getElementById('compassRose'),northVector=new THREE.Vector3(0,0,-1),compassRight=new THREE.Vector3(),compassUp=new THREE.Vector3();
+function updateCompass(){
+  compassRight.set(1,0,0).applyQuaternion(camera.quaternion);
+  compassUp.set(0,1,0).applyQuaternion(camera.quaternion);
+  const angle=Math.atan2(northVector.dot(compassRight),northVector.dot(compassUp))*180/Math.PI;
+  compassRose.style.transform='rotate('+angle.toFixed(1)+'deg)';
+}
 const bSpin=document.getElementById('bSpin');
 bSpin.onclick=()=>{controls.autoRotate=!controls.autoRotate;bSpin.setAttribute('aria-pressed',controls.autoRotate);};
 // shared helpers for floating lists/panels: resizable corner grip, collapse toggle (all persist per key)
@@ -2039,7 +2083,7 @@ function loop(now){
   }
   Object.values(floorObjs).forEach(o=>{o.grp.position.y+=(o.targetY-o.grp.position.y)*(reduce?1:0.14);});
   if(pinGroup.visible&&!reduce){const kk=(now/900)%1;ptRings.forEach(r=>{r.scale.setScalar(1+kk*0.9);r.material.opacity=0.75*(1-kk);});}
-  renderer.render(scene,camera);placeLabels();
+  updateCompass();renderer.render(scene,camera);placeLabels();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
