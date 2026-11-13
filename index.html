@@ -1862,8 +1862,8 @@ function buildRampMesh(g){ // 依 g.userData.r 重建斜坡道：沿本地 +Z �
 }
 const rampRay=new THREE.Raycaster();
 function accSurfaceY(a,b){ // 斜坡道底部：找下方最高的地面（草地、廣場、步道），略過樹木、屋頂與無障礙圖層
-  rampRay.set(new THREE.Vector3(a,5,b),new THREE.Vector3(0,-1,0));rampRay.far=6;
-  const hits=rampRay.intersectObjects(scene.children,true).filter(h=>h.object.isMesh&&h.point.y<0.45&&visDeep(h.object)&&!(function(o){while(o){if(o===accGroup)return true;o=o.parent;}return false;})(h.object));
+  rampRay.set(new THREE.Vector3(a,5,b),new THREE.Vector3(0,-1,0));rampRay.far=6;rampRay.camera=camera;
+  const hits=rampRay.intersectObjects(scene.children.filter(o=>!o.isSprite),true).filter(h=>h.object.isMesh&&!h.object.isSprite&&h.point.y<0.45&&visDeep(h.object)&&!(function(o){while(o){if(o===accGroup)return true;o=o.parent;}return false;})(h.object));
   return hits.length?Math.max(0,hits[0].point.y):0;}
 function makeRamp(x,z,ang,len,w,rev){const g=new THREE.Group();g.userData={isRamp:true,accT:'ramp',r:{x,z,ang,len,w,rev:rev?1:0}};
   buildRampMesh(g);g.visible=accOn.ramp;accGroup.add(g);accRamps.push(g);return g;}
@@ -1930,7 +1930,7 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
        <div class="row"><button data-rp="len" data-v="0.1">加長</button><button data-rp="len" data-v="-0.1">縮短</button><button data-rp="w" data-v="0.03">加寬</button><button data-rp="w" data-v="-0.03">變窄</button></div>
      </div>
      <h4>新增斜坡道（3D 模型）</h4>
-     <p>會出現在畫面中央：拖曳移動，選取後可旋轉、改長寬、對調高低端。黃色箭頭指向下坡方向。</p>
+     <p>新增後畫面會自動拉近到斜坡道（外圍有橘色閃爍圈）：拖曳移動，選取後可旋轉、改長寬、對調高低端。黃色箭頭指向下坡方向。若畫面中央是建築，會自動放到旁邊最近的空地。</p>
      <div class="row"><button id="accEdRamp">＋ 新增斜坡道</button></div>
      <h4>新增設施圖示（會出現在畫面中央，再拖到正確位置）</h4>
      <div class="row" id="accEdAdd"></div>
@@ -1959,6 +1959,7 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
  head.addEventListener('dblclick',e=>{if(e.target.closest('button'))return;acclist.style.left='';acclist.style.top='';acclist.style.bottom='';try{localStorage.removeItem(KEY);}catch(e){}});
 }
 /* ---------- 無障礙設施：調整模式 ---------- */
+let accPulse=()=>{};
 {const DRAFT='campus3d-acc-draft';
  const orig=ACC.icons.map(i=>i.slice()),origR=ACC_RAMPS.map(i=>i.slice());
  const edBtn=document.getElementById('accEdit'),box=document.getElementById('accEditBox'),selEl=document.getElementById('accEdSel'),
@@ -1975,8 +1976,21 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
    list.forEach(([t,x,z])=>{const[a,b]=P(x,z);makeAcc(t,x,z,'',accGroundY(a,b)>0.01?1:0);});
    (ramps||[]).forEach(r=>makeRamp(...r));};
  const save=()=>{note.hidden=false;try{localStorage.setItem(DRAFT,JSON.stringify({icons:current(),ramps:currentR()}));}catch(e){}};
+ const selRing=new THREE.Mesh(new THREE.RingGeometry(.3,.4,40),new THREE.MeshBasicMaterial({color:0xff7a1a,transparent:true,opacity:.9,depthTest:false,side:THREE.DoubleSide}));
+ selRing.rotation.x=-Math.PI/2;selRing.renderOrder=30;selRing.visible=false;scene.add(selRing);
+ const placeRing=()=>{if(!sel||!editing||!accGroup.visible){selRing.visible=false;return;}
+   const r=sel.userData.isRamp?Math.max(sel.userData.r.len,sel.userData.r.w)*0.75+.15:.35;selRing.userData.r=r;
+   selRing.position.set(sel.position.x,(sel.userData.isRamp?sel.position.y:0)+.2,sel.position.z);selRing.visible=true;};
+ accPulse=now=>{if(!selRing.visible)return;placeRing();const k=1+.18*Math.sin(now/180);selRing.scale.setScalar(selRing.userData.r/.35*k);};
+ const openSpot=([x,z])=>{ // 若中心在建築上，往外螺旋找最近的空地
+   for(let rad=0;rad<=6;rad+=.25){const n=rad?Math.ceil(rad*12):1;
+     for(let k=0;k<n;k++){const t=k/n*Math.PI*2,px=x+rad*Math.cos(t),pz=z+rad*Math.sin(t);const[a,b]=P(px,pz);
+       if(Math.abs(a)<14&&Math.abs(b)<8&&accHit(a,b).y<0.01)return[r2(px),r2(pz)];}}
+   return[x,z];};
+ const focusOn=g=>{const t=g.position.clone();const dir=camera.position.clone().sub(controls.target);dir.y=0;
+   if(dir.lengthSq()<1e-6)dir.set(0,0,1);dir.normalize();flyTo(t.clone().add(dir.multiplyScalar(3.2)).setY(t.y+3.6),t,reduce?1:800);};
  const hl=(g,on)=>{if(!g)return;if(g.userData.isRamp)g.userData.deck.material.emissive.setHex(on?0x7a4a00:0x000000);else g.userData.sp.scale.setScalar(on?.66:.46);};
- const setSel=g=>{hl(sel,false);sel=g;hl(g,true);rampTools.hidden=!(g&&g.userData.isRamp);delBtn.disabled=!g;
+ const setSel=g=>{hl(sel,false);sel=g;hl(g,true);placeRing();rampTools.hidden=!(g&&g.userData.isRamp);delBtn.disabled=!g;
    if(!g){selEl.textContent='尚未選取，點一下圖示或斜坡道即可選取。';return;}
    if(g.userData.isRamp){const r=g.userData.r;selEl.textContent=`斜坡道（座標 ${r2(r.x)}, ${r2(r.z)}，角度 ${Math.round(r.ang)}°，長 ${r2(r.len)}、寬 ${r2(r.w)}）`;}
    else{const[x,z]=toP(g.position.x,g.position.z);selEl.textContent=`${ACC_NAME[g.userData.accT]}（座標 ${x}, ${z}）`;}};
@@ -1990,8 +2004,8 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
  document.getElementById('accEdAdd').innerHTML=Object.keys(ACC_NAME).map(t=>`<button class="addt" data-t="${t}"><img src="${ACC.img[t]}" alt=""> ${ACC_NAME[t].replace('無障礙','')}</button>`).join('');
  const ensureOn=t=>{if(!accOn[t]){const r=accbody.querySelector(`.accrow[data-t="${t}"]`);if(r)r.click();}};
  document.getElementById('accEdAdd').addEventListener('click',e=>{const b=e.target.closest('.addt');if(!b)return;const t=b.dataset.t;ensureOn(t);
-   const[x,z]=center();const[a,c]=P(x,z);setSel(makeAcc(t,x,z,'',accGroundY(a,c)>0.01?1:0));save();});
- document.getElementById('accEdRamp').onclick=()=>{ensureOn('ramp');const[x,z]=center();setSel(makeRamp(x,z,0,0.6,0.2,0));save();};
+   const[x,z]=center();const[a,c]=P(x,z);const g=makeAcc(t,x,z,'',accGroundY(a,c)>0.01?1:0);setSel(g);focusOn(g);save();});
+ document.getElementById('accEdRamp').onclick=()=>{ensureOn('ramp');const[x,z]=openSpot(center());const g=makeRamp(x,z,0,0.6,0.2,0);setSel(g);focusOn(g);save();};
  rampTools.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!sel||!sel.userData.isRamp)return;const r=sel.userData.r,v=+b.dataset.v;
    if(b.dataset.rp==='rot')r.ang=((r.ang+v)%360+360)%360;
    else if(b.dataset.rp==='rev')r.rev=r.rev?0:1;
@@ -2007,7 +2021,7 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
  document.getElementById('accEdCopy').onclick=()=>{const ok=()=>{const c=document.getElementById('accEdCopied');c.hidden=false;setTimeout(()=>c.hidden=true,1800);};
    const fb=()=>{outTx.select();try{document.execCommand('copy');}catch(e){}ok();};
    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(outTx.value).then(ok,fb);else fb();};
- edBtn.onclick=()=>{editing=!editing;edBtn.setAttribute('aria-pressed',editing);edBtn.textContent=editing?'結束調整':'調整位置';box.hidden=!editing;document.body.classList.toggle('acc-editing',editing);if(!editing){setSel(null);controls.enabled=true;}};
+ edBtn.onclick=()=>{editing=!editing;edBtn.setAttribute('aria-pressed',editing);edBtn.textContent=editing?'結束調整':'調整位置';box.hidden=!editing;document.body.classList.toggle('acc-editing',editing);if(!editing){setSel(null);controls.enabled=true;}placeRing();};
  const stageEl=canvas.parentElement,rc=new THREE.Raycaster(),m=new THREE.Vector2(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0),hit=new THREE.Vector3();
  const setM=e=>{const r=canvas.getBoundingClientRect();m.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);rc.setFromCamera(m,camera);};
  stageEl.addEventListener('pointerdown',e=>{if(!editing||!accGroup.visible||e.target!==canvas)return;setM(e);
@@ -2325,7 +2339,7 @@ function loop(now){
   Object.values(floorObjs).forEach(o=>{o.grp.position.y+=(o.targetY-o.grp.position.y)*(reduce?1:0.14);});
   if(pinGroup.visible&&!reduce){const kk=(now/900)%1;ptRings.forEach(r=>{r.scale.setScalar(1+kk*0.9);r.material.opacity=0.75*(1-kk);});}
   if(accGroup.visible&&accRoutes.visible&&!reduce)accFlowTex.offset.x-=0.012;
-  accSyncFloors();
+  accSyncFloors();accPulse(now);
   updateCompass();renderer.render(scene,camera);placeLabels();
   requestAnimationFrame(loop);
 }
