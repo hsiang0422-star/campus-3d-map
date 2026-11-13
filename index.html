@@ -1871,11 +1871,16 @@ const rampSideMat=new THREE.MeshStandardMaterial({color:0x6f8076,roughness:.95})
 const rampMarkMat=new THREE.LineBasicMaterial({color:0xe8bd55});
 function buildRampMesh(g){ // 依 g.userData.r 重建斜坡道：沿本地 +Z 方向由高到低
   const r=g.userData.r;while(g.children.length){const c=g.children[g.children.length-1];g.remove(c);c.geometry&&c.geometry.dispose();const k=pickables.indexOf(c);if(k>=0)pickables.splice(k,1);}
-  const L=r.len,W=r.w,hi=.11,lo=.012,x0=-W/2,x1=W/2,z0=-L/2,z1=L/2;
-  const pos=[x0,hi,z0, x1,hi,z0, x1,lo,z1, x0,lo,z1,  x0,0,z0, x1,0,z0, x1,0,z1, x0,0,z1];
+  const L=r.len,W=r.w,x0=-W/2,x1=W/2,z0=-L/2,z1=L/2;
+  // 貼地：分別量高端與低端下方的地面高度（各取寬度方向 3 點的最高值），斜坡底緣往下埋入地面
+  const th=(r.ang+(r.rev?180:0))*Math.PI/180,cs=Math.cos(th),sn=Math.sin(th);const[ca,cb]=P(r.x,r.z);
+  const gAt=(lx,lz)=>accSurfaceY(ca+lx*cs+lz*sn,cb-lx*sn+lz*cs);
+  const gHi=Math.max(gAt(x0,z0),gAt(0,z0),gAt(x1,z0)),gLo=Math.max(gAt(x0,z1),gAt(0,z1),gAt(x1,z1));
+  const hi=gHi+.11,lo=gLo+.008,bh=Math.min(gHi,gLo)-.06,bl=bh;
+  const pos=[x0,hi,z0, x1,hi,z0, x1,lo,z1, x0,lo,z1,  x0,bh,z0, x1,bh,z0, x1,bl,z1, x0,bl,z1];
   const deckG=new THREE.BufferGeometry();deckG.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));deckG.setIndex([0,2,1,0,3,2]);deckG.computeVertexNormals();
   const sideG=new THREE.BufferGeometry();sideG.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
-  sideG.setIndex([4,0,1,4,1,5, 4,7,3,4,3,0, 5,1,2,5,2,6]);sideG.computeVertexNormals();
+  sideG.setIndex([4,0,1,4,1,5, 4,7,3,4,3,0, 5,1,2,5,2,6, 7,6,2,7,2,3]);sideG.computeVertexNormals();
   const deck=new THREE.Mesh(deckG,rampDeckMat.clone());deck.castShadow=true;deck.receiveShadow=true;
   const side=new THREE.Mesh(sideG,rampSideMat);side.castShadow=true;
   const pts=[];const yAt=t=>hi+(lo-hi)*t+.006;
@@ -1889,12 +1894,12 @@ function buildRampMesh(g){ // 依 g.userData.r 重建斜坡道：沿本地 +Z �
   deck.userData={kind:'acc',t:'ramp',where:'斜坡道（3D 模型）',g};side.userData=deck.userData;pickables.push(deck);
   g.userData.deck=deck;
   g.rotation.y=(r.ang+(r.rev?180:0))*Math.PI/180;
-  {const[a,b]=P(r.x,r.z);g.position.set(a,accSurfaceY(a,b),b);}
+  g.position.set(ca,0,cb);
 }
 const rampRay=new THREE.Raycaster();
-function accSurfaceY(a,b){ // 斜坡道底部：找下方最高的地面（草地、廣場、步道），略過樹木、屋頂與無障礙圖層
+function accSurfaceY(a,b){ // 斜坡道底部：找下方最高的地面（草地、廣場、步道，皆低於 0.15），略過雨遮、花台、車輛、樹木、屋頂與無障礙圖層
   rampRay.set(new THREE.Vector3(a,5,b),new THREE.Vector3(0,-1,0));rampRay.far=6;rampRay.camera=camera;
-  const hits=rampRay.intersectObjects(scene.children.filter(o=>!o.isSprite),true).filter(h=>h.object.isMesh&&!h.object.isSprite&&h.point.y<0.45&&visDeep(h.object)&&!(function(o){while(o){if(o===accGroup)return true;o=o.parent;}return false;})(h.object));
+  const hits=rampRay.intersectObjects(scene.children.filter(o=>!o.isSprite),true).filter(h=>h.object.isMesh&&!h.object.isSprite&&h.point.y<0.15&&visDeep(h.object)&&!(function(o){while(o){if(o===accGroup)return true;o=o.parent;}return false;})(h.object));
   return hits.length?Math.max(0,hits[0].point.y):0;}
 function makeRamp(x,z,ang,len,w,rev){const g=new THREE.Group();g.userData={isRamp:true,accT:'ramp',r:{x,z,ang,len,w,rev:rev?1:0}};
   buildRampMesh(g);g.visible=accOn.ramp;accGroup.add(g);accRamps.push(g);return g;}
@@ -2119,7 +2124,7 @@ let accPulse=()=>{};
  canvas.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;setM(e);if(!rc.ray.intersectPlane(plane,hit))return;
    const x=Math.max(-14,Math.min(14,hit.x+drag.dx)),z=Math.max(-8,Math.min(8,hit.z+drag.dz));
    if(drag.vtx){selRt.userData.pts[selV]=toP(x,z);rebuild();return;}
-   if(sel.userData.isRamp){sel.position.set(x,accSurfaceY(x,z),z);const[px,pz]=toP(x,z);sel.userData.r.x=px;sel.userData.r.z=pz;}
+   if(sel.userData.isRamp){const[px,pz]=toP(x,z);sel.userData.r.x=px;sel.userData.r.z=pz;buildRampMesh(sel);hl(sel,true);}
    else if(sel.userData.floor){const lp=sel.parent.worldToLocal(new THREE.Vector3(x,0,z));sel.position.set(lp.x,.32,lp.z);}
    else sel.position.set(x,sel.userData.accT==='elevator'?accRoofNear(x,z,.9).y:accGroundY(x,z),z);
    setSel(sel);});
