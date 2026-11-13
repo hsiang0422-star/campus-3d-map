@@ -67,6 +67,15 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .accedit textarea{width:100%;box-sizing:border-box;min-height:90px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;resize:vertical}
 .accwarn{font-size:.75rem;background:#fff3cd;color:#5c4400;border-radius:8px;padding:6px 8px}
 body.acc-editing #c{cursor:move}
+#acclegend{top:auto;bottom:12px;right:12px;left:auto;width:230px;border-color:#8a8f96;box-shadow:0 8px 24px rgba(30,30,30,.18);background:#fff;color:#3d4146}
+#acclegend .dhead{color:#4a4f55}
+#acclegend h4{margin:10px 0 6px;font-size:.92rem;font-weight:700;color:#2f3338}
+#acclegend h4:first-child{margin-top:4px}
+.lgrow{display:flex;align-items:center;gap:10px;margin:5px 0 5px 4px;font-size:.85rem;color:#6b7077}
+.lgrow img{width:26px;height:26px;flex:none}
+.lgroute{flex:none;position:relative;width:44px;height:9px;border-radius:5px;background:#1d6fe0;box-shadow:0 0 0 2px #fff,0 0 0 3px #b7c3d1}
+.lgroute::after{content:"";position:absolute;right:-9px;top:-4px;border-left:10px solid #1d6fe0;border-top:8px solid transparent;border-bottom:8px solid transparent}
+.lgroute i{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 6px,rgba(255,255,255,.95) 6px 8px,transparent 8px 12px);border-radius:5px}
 .plist.dragging{box-shadow:0 14px 40px rgba(80,20,10,.35)}
 .plist .plbody{overflow:auto;min-height:0;flex:1}
 .access-dialog{width:min(560px,calc(100% - 24px));max-height:min(82vh,720px);margin:auto;padding:0;border:2px solid var(--line);border-radius:16px;background:var(--panel);color:var(--ink);box-shadow:0 18px 60px rgba(0,0,0,.28)}
@@ -351,6 +360,10 @@ body.drone-on #vcount{display:none}
     <aside class="plist" id="acclist" hidden aria-label="無障礙設施">
       <div class="phead dhead" id="acchead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>無障礙設施・拖曳移動<button class="collapse" id="accMin">收合</button><button class="collapse" id="accClose">關閉</button></div>
       <div class="plbody" id="accbody"></div>
+    </aside>
+    <aside class="plist" id="acclegend" hidden aria-label="無障礙地圖圖例">
+      <div class="phead dhead" id="lghead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>圖例<button class="collapse" id="lgMin">收合</button></div>
+      <div class="plbody" id="lgbody"></div>
     </aside>
     <aside class="plist" id="qpanel" hidden aria-label="校園危險地點測驗" style="left:12px;right:auto;width:300px">
       <div class="phead dhead" id="qhead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>校園危險地點測驗・拖曳移動<button class="collapse" id="qMin">收合</button><button class="collapse" id="qClose">關閉</button></div>
@@ -2062,6 +2075,26 @@ let accPulse=()=>{};
    setSel(sel);});
  const end=e=>{if(!drag||e.pointerId!==drag.id)return;drag=null;controls.enabled=true;save();};
  canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
+}
+/* ---------- 無障礙地圖圖例（開啟無障礙設施時顯示） ---------- */
+{const lg=document.getElementById('acclegend'),body=document.getElementById('lgbody'),head=document.getElementById('lghead');
+ const row=t=>`<div class="lgrow"><img src="${ACC.img[t]}" alt="">${t==='entrance'?'出入口':t==='parking'?'停車空間':ACC_NAME[t]}</div>`;
+ body.innerHTML='<h4>無障礙主要出入口</h4>'+row('entrance')
+  +'<h4>無障礙通路路線</h4><div class="lgrow"><span class="lgroute"><i></i></span><span style="margin-left:8px">無障礙通路路線</span></div>'
+  +'<h4>無障礙設施設備項目</h4>'+['ramp','elevator','wc','parking','lift','shower','seat'].map(row).join('');
+ {let saved=null;try{saved=localStorage.getItem('campus3d-acclegend-min');if(saved===null&&innerWidth<700)localStorage.setItem('campus3d-acclegend-min','1');}catch(e){}
+  floatResizable(lg,'campus3d-acclegend-size',180,120);floatCollapsible(lg,document.getElementById('lgMin'),'campus3d-acclegend-min');
+  if(saved===null&&innerWidth<700){lg.classList.add('fmin');document.getElementById('lgMin').textContent='展開';}}
+ const KEY='campus3d-acclegend-pos',stage=lg.parentElement;let st=null;
+ try{const p=JSON.parse(localStorage.getItem(KEY)||'null');if(p)Object.assign(lg.style,{left:p.x+'px',top:p.y+'px',right:'auto',bottom:'auto'});}catch(e){}
+ head.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;const a=lg.getBoundingClientRect(),b=stage.getBoundingClientRect();st={sx:e.clientX,sy:e.clientY,x:a.left-b.left,y:a.top-b.top};head.setPointerCapture(e.pointerId);lg.classList.add('dragging');});
+ head.addEventListener('pointermove',e=>{if(!st)return;const W=stage.clientWidth,H=stage.clientHeight;
+   const x=Math.min(Math.max(4,st.x+e.clientX-st.sx),Math.max(4,W-lg.offsetWidth-4));const y=Math.min(Math.max(4,st.y+e.clientY-st.sy),Math.max(4,H-60));
+   Object.assign(lg.style,{left:x+'px',top:y+'px',right:'auto',bottom:'auto'});st.lx=x;st.ly=y;});
+ const end=()=>{if(!st)return;if(st.lx!=null){try{localStorage.setItem(KEY,JSON.stringify({x:st.lx,y:st.ly}));}catch(e){}}st=null;lg.classList.remove('dragging');};
+ head.addEventListener('pointerup',end);head.addEventListener('pointercancel',end);
+ head.addEventListener('dblclick',e=>{if(e.target.closest('button'))return;Object.assign(lg.style,{left:'',top:'',right:'',bottom:''});try{localStorage.removeItem(KEY);}catch(e){}});
+ new MutationObserver(()=>{lg.hidden=acclist.hidden;}).observe(acclist,{attributes:true,attributeFilter:['hidden']});
 }
 function accShow(u){const el=document.getElementById('accsel');el.hidden=false;el.textContent=ACC_NAME[u.t]+'・位置：'+(u.where||'戶外');if(acclist.classList.contains('fmin'))document.getElementById('accMin').click();}
 
