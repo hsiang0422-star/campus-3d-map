@@ -55,7 +55,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .accrow img{width:26px;height:26px}
 .accrow .n{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .accrow[aria-pressed="false"]{opacity:.45}
-.accroute i{display:block;width:26px;border-top:3px dotted #2b6cb0}
+.accroute i{display:block;width:26px;height:6px;border-radius:3px;background:#1d6fe0;box-shadow:0 0 0 2px #fff,0 0 0 3px #9bb7dc}
 .accnote{font-size:.72rem;color:var(--muted);line-height:1.5;margin:6px 0 2px}
 .accsel{font-size:.8rem;margin:6px 0 0;padding:6px 8px;border-radius:8px;background:var(--chip)}
 .accedit{border-top:1px dashed var(--line);margin-top:8px;padding-top:8px;display:grid;gap:6px}
@@ -1882,13 +1882,38 @@ function accSyncFloors(){ // 外觀：屋頂圖示；樓層／分層：只顯示
   const ext=(typeof mode==='undefined')||mode==='ext';
   accItems.forEach(g=>{if(g.userData.teach)g.visible=accOn[g.userData.accT]&&ext;});
   accFloorIcons.forEach(g=>{g.visible=accGroup.visible&&accOn[g.userData.accT]&&!ext;});}
-const accLineMat=new THREE.LineDashedMaterial({color:0x2b6cb0,dashSize:.12,gapSize:.12,depthTest:false,transparent:true});
-const accArrowMat=new THREE.MeshBasicMaterial({color:0x2b6cb0,depthTest:false,transparent:true});
-ACC.routes.forEach(([pts,end])=>{const v=pts.map(([x,z])=>{const[a,b]=P(x,z);return new THREE.Vector3(a,.06,b);});
-  [0,.025].forEach(o=>{const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints(v.map(p=>p.clone().add(new THREE.Vector3(o,0,o)))),accLineMat);ln.computeLineDistances();ln.renderOrder=20;accRoutes.add(ln);});
-  const tipP=end?v[v.length-1]:v[0],prev=end?v[Math.max(0,v.length-3)]:v[Math.min(2,v.length-1)];
-  const c=new THREE.Mesh(new THREE.ConeGeometry(.09,.24,10),accArrowMat);c.position.copy(tipP).setY(.09);c.renderOrder=21;
-  c.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),tipP.clone().sub(prev).setY(0).normalize());accRoutes.add(c);});
+/* 無障礙通路：白邊藍色帶狀路線＋流動箭頭；穿過建築的部分以淡色透出 */
+const ROUTE_Y=.2,ROUTE_W=.11,ROUTE_EDGE=.17;
+const accFlowTex=(()=>{const c=document.createElement('canvas');c.width=128;c.height=32;const g=c.getContext('2d');
+  g.fillStyle='#1d6fe0';g.fillRect(0,0,128,32);g.strokeStyle='#ffffff';g.lineWidth=5;g.lineJoin='round';g.lineCap='round';
+  [24,88].forEach(x=>{g.beginPath();g.moveTo(x-9,7);g.lineTo(x+7,16);g.lineTo(x-9,25);g.stroke();});
+  const t=new THREE.CanvasTexture(c);t.wrapS=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return t;})();
+const accLineMat={dashOffset:0}; // 相容舊的動畫呼叫
+const accRouteMat=new THREE.MeshBasicMaterial({map:accFlowTex,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4});
+const accEdgeMat=new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2});
+const accGhostMat=new THREE.MeshBasicMaterial({map:accFlowTex,side:THREE.DoubleSide,transparent:true,opacity:.38,depthTest:false,depthWrite:false});
+const accArrowMat=new THREE.MeshBasicMaterial({color:0x1d6fe0});
+const accArrowEdge=new THREE.MeshBasicMaterial({color:0xffffff});
+function ribbon(v,w,y,uScale){ // 沿折線建立平面帶狀幾何，u 以長度計算讓箭頭等距
+  const pos=[],uv=[],idx=[];let acc=0;
+  for(let i=0;i<v.length;i++){const p=v[i],q=v[Math.min(i+1,v.length-1)],o=v[Math.max(i-1,0)];
+    const d=new THREE.Vector3().subVectors(q,o).setY(0);if(d.lengthSq()<1e-9)d.set(1,0,0);d.normalize();
+    const n=new THREE.Vector3(-d.z,0,d.x).multiplyScalar(w/2);
+    if(i>0)acc+=p.distanceTo(v[i-1]);
+    pos.push(p.x+n.x,y,p.z+n.z,p.x-n.x,y,p.z-n.z);uv.push(acc*uScale,1,acc*uScale,0);
+    if(i>0){const k=i*2;idx.push(k-2,k-1,k,k-1,k+1,k);}}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);return g;}
+ACC.routes.forEach(([pts,end])=>{let v=pts.map(([x,z])=>{const[a,b]=P(x,z);return new THREE.Vector3(a,ROUTE_Y,b);});
+  if(!end)v=v.slice().reverse(); // 讓帶狀箭頭朝行進方向
+  const uS=1/(ROUTE_W*4);
+  const edge=new THREE.Mesh(ribbon(v,ROUTE_EDGE,ROUTE_Y-.004,uS),accEdgeMat);edge.renderOrder=19;accRoutes.add(edge);
+  const main=new THREE.Mesh(ribbon(v,ROUTE_W,ROUTE_Y,uS),accRouteMat);main.renderOrder=20;accRoutes.add(main);
+  const ghost=new THREE.Mesh(ribbon(v,ROUTE_W,ROUTE_Y,uS),accGhostMat);ghost.renderOrder=18;accRoutes.add(ghost);
+  const tipP=v[v.length-1],prev=v[Math.max(0,v.length-3)],dir=tipP.clone().sub(prev).setY(0).normalize();
+  const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
+  const ce=new THREE.Mesh(new THREE.ConeGeometry(.2,.4,16),accArrowEdge);ce.position.copy(tipP).setY(ROUTE_Y+.06);ce.quaternion.copy(q);ce.scale.set(1,1,.35);
+  const c=new THREE.Mesh(new THREE.ConeGeometry(.15,.32,16),accArrowMat);c.position.copy(tipP).setY(ROUTE_Y+.07);c.quaternion.copy(q);c.scale.set(1,1,.4);
+  accRoutes.add(ce,c);});
 const acclist=document.getElementById('acclist'),accbody=document.getElementById('accbody'),bAcc=document.getElementById('bAcc');
 {const cnt={};ACC.icons.forEach(i=>cnt[i[0]]=(cnt[i[0]]||0)+1);
  accbody.innerHTML=Object.keys(ACC_NAME).map(t=>`<button class="accrow" data-t="${t}" aria-pressed="true"><img src="${ACC.img[t]}" alt=""><span>${ACC_NAME[t]}</span><span class="n">${cnt[t]||0} 處</span></button>`).join('')
@@ -2299,7 +2324,7 @@ function loop(now){
   }
   Object.values(floorObjs).forEach(o=>{o.grp.position.y+=(o.targetY-o.grp.position.y)*(reduce?1:0.14);});
   if(pinGroup.visible&&!reduce){const kk=(now/900)%1;ptRings.forEach(r=>{r.scale.setScalar(1+kk*0.9);r.material.opacity=0.75*(1-kk);});}
-  if(accGroup.visible&&!reduce)accLineMat.dashOffset-=0.004;
+  if(accGroup.visible&&accRoutes.visible&&!reduce)accFlowTex.offset.x-=0.012;
   accSyncFloors();
   updateCompass();renderer.render(scene,camera);placeLabels();
   requestAnimationFrame(loop);
