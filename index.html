@@ -1923,7 +1923,7 @@ const accessDialog=document.getElementById('accessDialog'),bAccess=document.getE
 bAccess.onclick=()=>{accessDialog.showModal();bAccess.setAttribute('aria-expanded','true');};
 document.getElementById('accessClose').onclick=()=>accessDialog.close();
 accessDialog.addEventListener('close',()=>bAccess.setAttribute('aria-expanded','false'));
-const compassPointer=document.getElementById('compassPointer'),northVector=new THREE.Vector3(-1,0,0),compassOrigin=new THREE.Vector3(),compassTip=new THREE.Vector3(); // 校園北端在世界座標 -X
+const compassPointer=document.getElementById('compassPointer'),northVector=new THREE.Vector3(1,0,0),compassOrigin=new THREE.Vector3(),compassTip=new THREE.Vector3(); // 校園北端在世界座標 +X
 function updateCompass(){
   camera.updateMatrixWorld(true);
   compassOrigin.copy(controls.target).project(camera);
