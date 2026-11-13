@@ -1267,23 +1267,6 @@ Object.entries(ADMIN_PLAN).forEach(([fk,D])=>{
       wm.position.set((a+c)/2,0.05+WH/2,(b+d)/2);inner.add(wm);});
     if(!r[5].startsWith('（未標示')&&t!=='st'&&t!=='el'){const L=addLabel(r[5],'room',new THREE.Vector3(),'admroom'+f);L.obj=fl;L.dy=0.32;}
   });
-  if(f===1){
-    const rampMat=new THREE.MeshStandardMaterial({color:0x82988a,roughness:.92,side:THREE.DoubleSide});
-    const rampMark=new THREE.LineBasicMaterial({color:0xe8bd55});
-    const addRamp=rect=>{
-      const w=admRect(rect),x0=w.x0,x1=w.x1,z0=w.z0,z1=w.z1,highY=.155,lowY=.075;
-      const geo=new THREE.BufferGeometry();
-      geo.setAttribute('position',new THREE.Float32BufferAttribute([x0,highY,z0,x1,highY,z0,x1,lowY,z1,x0,lowY,z1],3));
-      geo.setIndex([0,1,2,0,2,3]);geo.computeVertexNormals();
-      const deck=new THREE.Mesh(geo,rampMat);deck.receiveShadow=true;inner.add(deck);
-      const marks=[new THREE.Vector3(x0,highY+.006,z0),new THREE.Vector3(x0,lowY+.006,z1),new THREE.Vector3(x1,highY+.006,z0),new THREE.Vector3(x1,lowY+.006,z1)];
-      for(const t of [.25,.5,.75]){const z=z0+(z1-z0)*t,y=highY+(lowY-highY)*t+.006;marks.push(new THREE.Vector3(x0,y,z),new THREE.Vector3(x1,y,z));}
-      inner.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(marks),rampMark));
-      addLabel('斜坡道','room',new THREE.Vector3((x0+x1)/2,(highY+lowY)/2+.13,(z0+z1)/2),'admroom1');
-    };
-    addRamp([760,717,840,790]);
-    addRamp([620,148,690,196]);
-  }
   admObjs[f]={grp,shell,inner};
 });
 
