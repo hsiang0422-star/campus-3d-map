@@ -31,6 +31,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
   border-bottom:1px dashed var(--line);flex-wrap:wrap}
 h1{font-family:var(--f-display);font-size:1.35rem;margin:0;letter-spacing:.04em;text-wrap:balance}
+.hdr-btns{display:inline-flex;flex-wrap:wrap;gap:6px;margin-left:12px;vertical-align:middle;font-family:var(--f-body)}.hdr-btns button{font-size:.8rem;padding:4px 10px}
 h1 small{font-family:var(--f-body);font-size:.75rem;color:var(--muted);font-weight:400;margin-left:8px;letter-spacing:0}
 .tools{display:flex;gap:6px;flex-wrap:wrap}
 button{font:inherit;font-size:.82rem;color:var(--ink);background:var(--chip);border:1px solid var(--line);
@@ -277,13 +278,13 @@ body.view-danger header{display:none!important}
 
 <div class="app">
   <header>
-    <h1>臺南特教校園 3D 地圖<small>拖曳旋轉・Shift＋拖曳平移・滾輪縮放・雙指可平移</small></h1>
+    <h1>臺南特教校園 3D 地圖<small>拖曳旋轉・Shift＋拖曳平移・滾輪縮放・雙指可平移</small><span class="hdr-btns"><button id="bReset">重設視角</button><button id="bTop">俯視</button><button id="bCtrl" aria-pressed="true">地圖操作</button></span></h1>
     <div class="tools">
       <details id="quizGameDrop" style="position:relative"><summary style="list-style:none;cursor:pointer;display:inline-block;border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--chip);font:inherit;font-size:.82rem;color:var(--ink)">測驗與遊戲　⌄</summary><div style="position:absolute;top:calc(100% + 8px);left:0;z-index:30;min-width:230px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 8px 24px #0002;display:grid;gap:8px"><a href="teaching.html" style="display:block;text-align:center;padding:6px 12px;color:var(--ink);background:var(--chip);font:inherit;font-size:.82rem;text-decoration:none;border:1px solid var(--line);border-radius:999px;cursor:pointer">危險地點教學</a><a href="quiz.html" style="display:block;text-align:center;padding:6px 12px;color:var(--ink);background:var(--chip);font:inherit;font-size:.82rem;text-decoration:none;border:1px solid var(--line);border-radius:999px;cursor:pointer">危險地點測驗</a><button id="bDrone" aria-pressed="false" style="display:block;text-align:center;padding:6px 12px;color:var(--ink);background:var(--chip);font:inherit;font-size:.82rem;text-decoration:none;border:1px solid var(--line);border-radius:999px;cursor:pointer;font-family:inherit" onclick="this.closest('details').open=false">無人機模擬遊戲</button></div></details>
       <button id="bQuiz" hidden aria-pressed="false" aria-controls="qpanel">校園危險地點測驗</button>
-      <button id="bReset">重設視角</button>
-      <button id="bTop">俯視</button>
-      <button id="bCtrl" aria-pressed="true">地圖操作</button>
+      
+      
+      
       <button id="bLbl" aria-pressed="false">建築名稱</button>
       <button id="bPts" aria-pressed="false">危險角落</button>
       <button id="bEditTop" hidden aria-pressed="false" aria-controls="editpanel">設施編輯</button>
