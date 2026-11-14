@@ -53,7 +53,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 #acclist{top:auto;bottom:12px;left:12px;right:auto;width:270px;border-color:#2f6fb5;box-shadow:0 8px 28px rgba(20,50,90,.22)}
 #acclist .dhead{color:#2f6fb5}
 .accrow{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:8px;width:100%;text-align:left;margin:3px 0;padding:5px 8px;border-radius:10px}
-.accrow img{width:26px;height:26px}.iconsz{display:flex;align-items:center;gap:4px;flex-wrap:wrap}.iconsz input{flex:1;min-width:70px}.iconsz button{padding:3px 8px;min-width:28px}.iconsz output{min-width:34px;font-size:.8rem;font-variant-numeric:tabular-nums}.iconsz .iconsz-l{font-size:.8rem;color:var(--muted)}.iconsz.accsz{margin:2px 0 6px}
+.accrow img{width:26px;height:26px}.accfl{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 6px 6px;padding-left:8px;border-left:3px solid #ff5a1f55}.accfl .accfl-l{font-size:.75rem;color:var(--muted);width:100%}.accfl button{font-size:.75rem;padding:3px 8px;border-radius:999px}.accfl button small{margin-left:4px;opacity:.7}.accfl button[aria-pressed="true"]{background:#ff5a1f;color:#fff;border-color:#ff5a1f}.iconsz{display:flex;align-items:center;gap:4px;flex-wrap:wrap}.iconsz input{flex:1;min-width:70px}.iconsz button{padding:3px 8px;min-width:28px}.iconsz output{min-width:34px;font-size:.8rem;font-variant-numeric:tabular-nums}.iconsz .iconsz-l{font-size:.8rem;color:var(--muted)}.iconsz.accsz{margin:2px 0 6px}
 .accrow .n{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .accline{display:flex;align-items:center;gap:4px}.accline .accrow{flex:1;min-width:0}.accline.off .accrow{opacity:.45}.accrow[aria-pressed="true"]{outline:3px solid #ff5a1f;outline-offset:-1px}.acceye{flex:none;width:34px;padding:5px 0;border-radius:9px;font-size:.9rem;line-height:1}.acceye[aria-pressed="false"]{opacity:.4;text-decoration:line-through}.acchl{margin:6px 0;padding:6px 8px;border-radius:9px;background:#fff1e8;border:1px solid #ff5a1f;color:#7a2e0b;font-size:.8rem;display:flex;flex-wrap:wrap;gap:6px;align-items:center}.acchl button{font-size:.75rem;padding:2px 8px}
 .accroute i{display:block;width:26px;height:6px;border-radius:3px;background:#1d6fe0;box-shadow:0 0 0 2px #fff,0 0 0 3px #9bb7dc}
@@ -2136,7 +2136,7 @@ function makeRoute(pts){const g=new THREE.Group();g.userData={isRoute:true,pts:p
 ACC_ROUTES.forEach(makeRoute);
 const acclist=document.getElementById('acclist'),accbody=document.getElementById('accbody'),bAcc=document.getElementById('bAcc');
 {const cnt={};ACC.icons.forEach(i=>cnt[i[0]]=(cnt[i[0]]||0)+1);
- accbody.innerHTML=`<div class="row" style="display:flex;gap:6px;margin:4px 0 6px"><button id="accAllOn">全部顯示</button><button id="accAllOff">全部隱藏</button><button id="accSpin" aria-pressed="true">圖示旋轉：開</button></div><div class="iconsz accsz"><span class="iconsz-l">圖示大小</span><button type="button" data-isz="-1" aria-label="圖示縮小">－</button><input type="range" min="0.5" max="2.5" step="0.1" value="1" aria-label="圖示大小"><button type="button" data-isz="1" aria-label="圖示放大">＋</button><output>×1.0</output><button type="button" data-isz="0" class="iconsz-r">重設</button></div>`+Object.keys(ACC_NAME).map(t=>`<div class="accline"><button class="accrow" data-t="${t}" aria-pressed="false" title="切到俯視並標示所有${ACC_NAME[t]}"><img src="${ACC.img[t]}" alt=""><span>${ACC_NAME[t]}</span><span class="n">${cnt[t]||0} 處</span></button><button class="acceye" data-eye="${t}" aria-pressed="true" title="顯示／隱藏${ACC_NAME[t]}" aria-label="顯示／隱藏${ACC_NAME[t]}">👁</button></div>`).join('')
+ accbody.innerHTML=`<div class="row" style="display:flex;gap:6px;margin:4px 0 6px"><button id="accAllOn">全部顯示</button><button id="accAllOff">全部隱藏</button><button id="accSpin" aria-pressed="true">圖示旋轉：開</button></div><div class="iconsz accsz"><span class="iconsz-l">圖示大小</span><button type="button" data-isz="-1" aria-label="圖示縮小">－</button><input type="range" min="0.5" max="2.5" step="0.1" value="1" aria-label="圖示大小"><button type="button" data-isz="1" aria-label="圖示放大">＋</button><output>×1.0</output><button type="button" data-isz="0" class="iconsz-r">重設</button></div>`+Object.keys(ACC_NAME).map(t=>`<div class="accline"><button class="accrow" data-t="${t}" aria-pressed="false" title="切到俯視並標示所有${ACC_NAME[t]}"><img src="${ACC.img[t]}" alt=""><span>${ACC_NAME[t]}</span><span class="n">${cnt[t]||0} 處</span></button><button class="acceye" data-eye="${t}" aria-pressed="true" title="顯示／隱藏${ACC_NAME[t]}" aria-label="顯示／隱藏${ACC_NAME[t]}">👁</button></div>${t==='wc'?'<div class="accfl" id="accWcFloors" role="group" aria-label="無障礙廁所依樓層顯示"></div>':''}`).join('')
   +`<div class="accline"><button class="accrow accroute" data-t="route" aria-pressed="false" title="切到俯視並標示無障礙通路路線"><i></i><span>無障礙通路路線</span><span class="n">${accRouteObjs.length} 條</span></button><button class="acceye" data-eye="route" aria-pressed="true" title="顯示／隱藏無障礙通路路線" aria-label="顯示／隱藏無障礙通路路線">👁</button></div>`
   +`<div class="acchl" id="accHLNote" hidden></div>`
   +`<div class="accsel" id="accsel" hidden></div>`
@@ -2186,12 +2186,18 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
  document.getElementById('accSpin').addEventListener('click',e=>{spinOn=!spinOn;e.currentTarget.textContent=spinOn?'圖示旋轉：開':'圖示旋轉：關';e.currentTarget.setAttribute('aria-pressed',spinOn);});
  accbody.addEventListener('click',e=>{const all=e.target.closest('#accAllOn,#accAllOff');
    if(all){const on=all.id==='accAllOn';Object.keys(ACC_NAME).forEach(t=>{if(accOn[t]!==on){const r=accbody.querySelector(`.acceye[data-eye="${t}"]`);r&&r.click();}});return;}
+   const fb=e.target.closest('.accfl button');
+   if(fb){const fl=fb.dataset.fl;if(accHL==='wc'&&accHLFloor===fl){accHLSet(null);return;}
+     if(!accOn.wc){const ey=accbody.querySelector('.acceye[data-eye="wc"]');if(ey)ey.click();}
+     const[bk,fk]=fl.split(':');const sg=q=>{const b=document.querySelector(q);if(b)b.click();};
+     if(bk==='teach'){sg('#seg [data-m="'+fk+'"]');sg('#aseg [data-m="ext"]');}else if(bk==='admin'){sg('#aseg [data-m="'+fk+'"]');sg('#seg [data-m="ext"]');}else{sg('#seg [data-m="ext"]');sg('#aseg [data-m="ext"]');}
+     document.getElementById('bTop').click();accHLAll=false;accHLSet('wc',fl);return;}
    const eye=e.target.closest('.acceye');
    if(eye){const t=eye.dataset.eye,line=eye.closest('.accline');
      if(t==='route'){accRoutes.visible=!accRoutes.visible;eye.setAttribute('aria-pressed',accRoutes.visible);line.classList.toggle('off',!accRoutes.visible);if(!accRoutes.visible&&accHL==='route')accHLSet(null);return;}
      accOn[t]=!accOn[t];eye.setAttribute('aria-pressed',accOn[t]);line.classList.toggle('off',!accOn[t]);accItems.concat(accRamps).forEach(g=>{if(g.userData.accT===t)g.visible=accOn[t];});if(!accOn[t]&&accHL===t)accHLSet(null);return;}
    const r=e.target.closest('.accrow');if(!r)return;const t=r.dataset.t;
-   if(accHL===t){if(accHLAll){accHLSet(null);return;}accHLAll=true;document.getElementById('bTop').click();accHLNoteUpd();return;} // 只顯示所選樓層時再點：改回全部樓層
+   if(accHL===t&&accHLFloor==null){if(accHLAll){accHLSet(null);return;}accHLAll=true;document.getElementById('bTop').click();accHLNoteUpd();return;} // 只顯示所選樓層時再點：改回全部樓層
    const on=t==='route'?accRoutes.visible:accOn[t];if(!on){const ey=accbody.querySelector(`.acceye[data-eye="${t}"]`);if(ey)ey.click();}
    document.getElementById('bTop').click();accHLAll=true;accHLSet(t);});
  /* 在「樓層清單」點某一層：標示只留該樓層（不補其他樓層）；再點清單項目又會顯示全部樓層 */
@@ -2200,13 +2206,15 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
  let accHL=null,accHLAll=true;const accHLMarks=[],accHLProxies=[],accHLPos=new THREE.Vector3();const accHLGroup=new THREE.Group();accGroup.add(accHLGroup);
  const accHLRing=(r0,r1,op)=>{const m=new THREE.Mesh(new THREE.RingGeometry(r0,r1,48),new THREE.MeshBasicMaterial({color:0xff5a1f,transparent:true,opacity:op,depthTest:false,depthWrite:false,side:THREE.DoubleSide}));m.rotation.x=-Math.PI/2;m.renderOrder=60;return m;};
  const accVisDeep=o=>{for(let x=o;x;x=x.parent)if(!x.visible)return false;return true;};
- function accHLSet(t){accHL=t;accHLMarks.length=0;while(accHLGroup.children.length)accHLGroup.remove(accHLGroup.children[0]);
-   accbody.querySelectorAll('.accrow').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));
+ let accHLFloor=null; // 只標示某一層（樓層標記，'' 代表戶外與一般）
+ function accHLSet(t,fl){accHL=t;accHLFloor=(t&&fl!=null)?fl:null;accHLMarks.length=0;while(accHLGroup.children.length)accHLGroup.remove(accHLGroup.children[0]);
+   accbody.querySelectorAll('.accrow').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t&&accHLFloor==null));
+   accbody.querySelectorAll('.accfl button').forEach(b=>b.setAttribute('aria-pressed',t==='wc'&&accHLFloor===b.dataset.fl));
    accHLProxies.forEach(px=>{const q=spinners.find(q=>q.o===px.sp);if(q)q.o.parent&&q.o.parent.remove(q.o);});accHLProxies.length=0;
-   [...new Set(accItems.concat(accRamps,accFloorIcons))].forEach(g=>{if(!g.userData.sp)g.userData.sp=g.children.find(c=>c.userData&&c.userData.kind==='acc');const on=!t||g.userData.accT===t,sp=g.userData.sp;
+   [...new Set(accItems.concat(accRamps,accFloorIcons))].forEach(g=>{if(!g.userData.sp)g.userData.sp=g.children.find(c=>c.userData&&c.userData.kind==='acc');const on=!t||(g.userData.accT===t&&(accHLFloor==null||(g.userData.floor||'')===accHLFloor)),sp=g.userData.sp;
      if(sp)(Array.isArray(sp.material)?sp.material:[sp.material]).forEach(m=>{if(m.userData.op0==null)m.userData.op0=m.opacity;m.opacity=on?m.userData.op0:m.userData.op0*.18;});
      const q=sp&&spinners.find(q=>q.o===sp);if(q)q.hl=(t&&on)?1.8:1;
-     if(t&&g.userData.accT===t){const mk=new THREE.Group();const inner=accHLRing(.3,.42,.95),outer=accHLRing(.5,.6,.8);mk.add(inner,outer);mk.userData={g,outer};accHLGroup.add(mk);accHLMarks.push(mk);}});
+     if(t&&on){const mk=new THREE.Group();const inner=accHLRing(.3,.42,.95),outer=accHLRing(.5,.6,.8);mk.add(inner,outer);mk.userData={g,outer};accHLGroup.add(mk);accHLMarks.push(mk);}});
    /* 不在目前樓層（看不到）的同類圖示：在屋頂上方補一個圖示＋樓層標籤，同一位置的各樓層合併 */
    if(t&&t!=='route'){const groups={};accHLMarks.forEach(mk=>{const g=mk.userData.g,src=g.userData.sp||g;src.getWorldPosition(accHLPos);const key=Math.round(accHLPos.x*4)+','+Math.round(accHLPos.z*4);(groups[key]=groups[key]||{x:accHLPos.x,z:accHLPos.z,marks:[]}).marks.push(mk);});
      Object.values(groups).forEach(gr=>{const px=new THREE.Group(),sp=iconBox(ACC.img[t],1,.05,{depthTest:false,transparent:true});sp.renderOrder=62;sp.scale.setScalar(ACC_ICON_SIZE);sp.position.y=.55;sp.userData={kind:'acc',t,where:''};px.add(sp);spinners.push({o:sp,icon:1,ph:0,hl:1.8});
@@ -2215,9 +2223,17 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
        px.visible=false;accHLGroup.add(px);accHLProxies.push({px,sp,outer,lx,lt,x:gr.x,z:gr.z,marks:gr.marks,txt:'',yKey:'',y:0});});}
    accHLNoteUpd();}
  function accHLNoteUpd(){const t=accHL,note=document.getElementById('accHLNote');
-   if(t){const rn=accbody.querySelector(`.accrow[data-t="${t}"] .n`),cntTxt=rn?rn.textContent:'';note.hidden=false;note.innerHTML=`<b>目前標示：${t==='route'?'無障礙通路路線':ACC_NAME[t]}</b>（${cntTxt}${t==='route'?'，路線以外的圖示變淡':'，橘色閃爍圈'}${t!=='route'?(accHLAll?'・全部樓層':'・只顯示所選樓層'):''}）<button id="accHLOff">取消標示</button>`;document.getElementById('accHLOff').onclick=()=>accHLSet(null);}
+   if(t){const rn=accbody.querySelector(`.accrow[data-t="${t}"] .n`),cntTxt=rn?rn.textContent:'';note.hidden=false;const flb=accHLFloor!=null?accbody.querySelector(`.accfl button[data-fl="${accHLFloor}"]`):null;note.innerHTML=`<b>目前標示：${t==='route'?'無障礙通路路線':ACC_NAME[t]}${flb?'・'+flb.dataset.name:''}</b>（${flb?flb.dataset.n+' 處':cntTxt}${t==='route'?'，路線以外的圖示變淡':'，橘色閃爍圈'}${t!=='route'&&!flb?(accHLAll?'・全部樓層':'・只顯示所選樓層'):''}）<button id="accHLOff">取消標示</button>`;document.getElementById('accHLOff').onclick=()=>accHLSet(null);}
    else note.hidden=true;}
  
+ /* 無障礙廁所依樓層分類的按鈕（數量以不重複的位置計算） */
+ {const box=document.getElementById('accWcFloors'),grp={},wp=new THREE.Vector3();
+  [...new Set(accItems.concat(accFloorIcons))].forEach(g=>{if(g.userData.accT!=='wc')return;const fl=g.userData.floor||'';if(!fl&&(g.userData.bld==='admin'||g.userData.bid==='admin'))return; // 行政大樓外側廁所不顯示
+    (g.userData.sp||g).getWorldPosition(wp);const k=Math.round(wp.x*8)+','+Math.round(wp.z*8);(grp[fl]=grp[fl]||new Set()).add(k);});
+  {const tot=Object.values(grp).reduce((a,st)=>a+st.size,0);const rn=accbody.querySelector('.accrow[data-t="wc"] .n');if(rn)rn.textContent=tot+' 處';} // 各樓層相加（不同樓層同位置算不同間）
+  const name=fl=>{if(!fl)return'戶外與一般';const[b,f]=fl.split(':');return(b==='teach'?'教學大樓':b==='admin'?'行政大樓':b)+' '+f+'F';};
+  const order=fl=>!fl?0:(fl.startsWith('teach')?100:200)+(+fl.split(':')[1]||0);
+  if(box)box.innerHTML='<span class="accfl-l">依樓層：</span>'+Object.keys(grp).sort((a,b)=>order(a)-order(b)).map(fl=>`<button type="button" data-fl="${fl}" data-name="${name(fl)}" data-n="${grp[fl].size}" aria-pressed="false">${name(fl)}<small>${grp[fl].size}</small></button>`).join('');}
  accHLTick=now=>{if(!accHL||!accGroup.visible){accHLGroup.visible=false;return;}accHLGroup.visible=true;const k=(now/700)%1;
    accHLMarks.forEach(mk=>{const g=mk.userData.g,src=g.userData.sp||g;mk.visible=accVisDeep(g);if(!mk.visible)return;src.getWorldPosition(accHLPos);accGroup.worldToLocal(accHLPos);mk.position.copy(accHLPos);
      mk.userData.outer.scale.setScalar(1+k*1.6);mk.userData.outer.material.opacity=.85*(1-k);});
@@ -2495,7 +2511,7 @@ stageEl.addEventListener('pointerdown',e=>{if(!editing||!accGroup.visible||e.tar
  const row=t=>`<div class="lgrow"><img src="${ACC.img[t]}" alt="">${t==='entrance'?'出入口':t==='parking'?'停車空間':ACC_NAME[t]}</div>`;
  body.innerHTML='<h4>無障礙主要出入口</h4>'+row('entrance')
   +'<h4>無障礙通路路線</h4><div class="lgrow"><span class="lgroute"><i></i></span><span style="margin-left:8px">無障礙通路路線</span></div>'
-  +'<h4>無障礙設施設備項目</h4>'+['ramp','elevator','wc','male','female','friendly','parking'].map(row).join('');
+  +'<h4>無障礙設施設備項目</h4>'+['ramp','elevator','wc','friendly','parking'].map(row).join('');
  {let saved=null;try{saved=localStorage.getItem('campus3d-acclegend-min');if(saved===null&&innerWidth<700)localStorage.setItem('campus3d-acclegend-min','1');}catch(e){}
   floatResizable(lg,'campus3d-acclegend-size',180,120);floatCollapsible(lg,document.getElementById('lgMin'),'campus3d-acclegend-min');
   if(saved===null&&innerWidth<700){lg.classList.add('fmin');document.getElementById('lgMin').textContent='展開';}}

@@ -75,6 +75,8 @@
 
 - 公開的圖示大小（`iconUserScale`、`setIconScale`、`.iconsz`）：所有訪客都能在「地圖操作」與「無障礙設施」面板用 －／＋／滑桿調整 3D 圖示大小（0.5–2.5 倍，無障礙圖示與防災圖例一起），存在各自瀏覽器 localStorage `campus3d-icon-scale`。
 
+- 無障礙廁所依樓層（`#accWcFloors`、`accHLSet('wc',樓層標記)`）：清單「無障礙廁所」下方有依樓層的按鈕（戶外與一般、教學大樓 1F–3F、行政大樓 1F–3F，數量以不重複位置計算，列上總數為各樓層相加）；點按鈕會切到該樓層＋俯視，只標示那層的無障礙廁所。圖例面板不列男廁、女廁。
+
 ## 頁面結構
 - `index.html`：入口頁（連到各頁、防災地圖外部連結）。
 - `map.html`：校園 3D 地圖（原 index.html）。`quiz.html` 連到 `map.html?quiz-map=1`。
