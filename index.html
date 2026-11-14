@@ -96,13 +96,13 @@ body.acc-editing #c{cursor:move}
 .access-dialog p,.access-dialog li{font-size:.9rem;line-height:1.7}
 .access-dialog ul{padding-left:1.4em;margin:10px 0}
 .access-dialog .access-close{display:flex;justify-content:flex-end;margin-top:16px}
-.compass{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);width:88px;height:88px;border:3px solid #514c47;border-radius:50%;z-index:5;pointer-events:none;color:#514c47}
+.compass{position:absolute;left:0;top:0;width:88px;height:88px;transform:translate(-50%,-50%) scale(.6);transform-origin:50% 50%;border:3px solid #514c47;border-radius:50%;z-index:5;pointer-events:none;color:#514c47}
 .compass-n{position:absolute;left:50%;top:-43px;transform:translateX(-50%);font-size:30px;font-weight:700;line-height:1}
 .compass-pointer{position:absolute;inset:0;transform-origin:50% 50%}
 .compass-needle-north,.compass-needle-south{position:absolute;left:50%;width:0;height:0;transform:translateX(-50%)}
 .compass-needle-north{top:10px;border-left:17px solid transparent;border-right:17px solid transparent;border-bottom:34px solid #514c47}
 .compass-needle-south{top:42px;border-left:15px solid transparent;border-right:15px solid transparent;border-top:34px solid #fff}
-@media(max-width:700px){.compass{bottom:14px;width:72px;height:72px}.compass-n{top:-34px;font-size:26px}.compass-needle-north{top:8px;border-left-width:14px;border-right-width:14px;border-bottom-width:29px}.compass-needle-south{top:35px;border-left-width:13px;border-right-width:13px;border-top-width:28px}}
+@media(max-width:700px){.compass{transform:translate(-50%,-50%) scale(.5)}.compass-n{top:-34px;font-size:26px}.compass-needle-north{top:8px;border-left-width:14px;border-right-width:14px;border-bottom-width:29px}.compass-needle-south{top:35px;border-left-width:13px;border-right-width:13px;border-top-width:28px}}
 .aseg{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0}.aseg button{font:inherit;font-size:.85rem;padding:5px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}.aseg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
 #apanel{left:auto;right:48px;top:48px;bottom:auto;width:230px;z-index:2}
 .fmin{height:auto!important}
@@ -2416,6 +2416,10 @@ const accessDialog=document.getElementById('accessDialog'),bAccess=document.getE
 bAccess.onclick=()=>{accessDialog.showModal();bAccess.setAttribute('aria-expanded','true');};
 document.getElementById('accessClose').onclick=()=>accessDialog.close();
 accessDialog.addEventListener('close',()=>bAccess.setAttribute('aria-expanded','false'));
+/* 指北針固定在長和路二段 140 巷標示的位置（地圖上），隨地圖平移、縮放 */
+const COMPASS_AT=P(8.3,10.25);const compassEl=document.querySelector('.compass');
+function placeCompass(){const st=compassEl.parentElement;const w=st.clientWidth,h=st.clientHeight;const q=new THREE.Vector3(COMPASS_AT[0],0.05,COMPASS_AT[1]).project(camera);
+  if(q.z>1){compassEl.style.display='none';return;}compassEl.style.display='';compassEl.style.left=((q.x+1)/2*w)+'px';compassEl.style.top=((1-q.y)/2*h)+'px';}
 const compassPointer=document.getElementById('compassPointer'),northVector=new THREE.Vector3(1,0,0),compassOrigin=new THREE.Vector3(),compassTip=new THREE.Vector3(); // 校園北端在世界座標 +X
 function updateCompass(){
   camera.updateMatrixWorld(true);
@@ -2711,7 +2715,7 @@ function loop(now){
   accSyncFloors();accPulse(now);
   {const tt=now/1000,f=accFlat();spinners=spinners.filter(q=>q.o.parent);spinners.forEach(q=>{const on=spinOn&&!reduce;const spin=on?q.ph+tt*(2*Math.PI/SPIN_PERIOD):q.ph;
     if(q.icon){if(q.base==null)q.base=q.o.scale.x;q.o.scale.setScalar(q.base*(1+0.6*f));q.o.rotation.x=-Math.PI/2*f;q.o.rotation.y=spin*(1-f);}else q.o.rotation.y=spin;});}
-  updateCompass();renderer.render(scene,camera);placeLabels();
+  updateCompass();placeCompass();renderer.render(scene,camera);placeLabels();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
