@@ -385,7 +385,7 @@ function loop(now){
   controls.update();
   if(!matchMedia('(prefers-reduced-motion: reduce)').matches) routeMat.dashOffset -= dt*2.2;
   {const tt=now/1000,f=accFlat();const on=!matchMedia('(prefers-reduced-motion: reduce)').matches;spinners=spinners.filter(q=>q.o.parent);spinners.forEach(q=>{const spin=on?q.ph+tt*(2*Math.PI/SPIN_PERIOD):q.ph;
-    if(q.icon){q.o.rotation.x=-Math.PI/2*f;q.o.rotation.y=spin*(1-f);}else q.o.rotation.y=spin;});}
+    if(q.icon){q.o.rotation.x=-Math.PI/2*f;q.o.rotation.y=spin*(1-f);q.o.rotation.z=Math.PI/2*f;}else q.o.rotation.y=spin;});}
   renderer.render(scene,camera);
   if(!labelsEl.hidden){ const w=innerWidth,h=innerHeight;
     buildings.forEach(g=>{ v.copy(g.userData.anchor).project(camera); const el=g.userData.label;

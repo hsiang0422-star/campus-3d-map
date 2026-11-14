@@ -2714,7 +2714,7 @@ function loop(now){
   if(accGroup.visible&&accRoutes.visible&&!reduce)accFlowTex.offset.x-=0.012;
   accSyncFloors();accPulse(now);
   {const tt=now/1000,f=accFlat();spinners=spinners.filter(q=>q.o.parent);spinners.forEach(q=>{const on=spinOn&&!reduce;const spin=on?q.ph+tt*(2*Math.PI/SPIN_PERIOD):q.ph;
-    if(q.icon){if(q.base==null)q.base=q.o.scale.x;q.o.scale.setScalar(q.base*(1+0.6*f));q.o.rotation.x=-Math.PI/2*f;q.o.rotation.y=spin*(1-f);}else q.o.rotation.y=spin;});}
+    if(q.icon){if(q.base==null)q.base=q.o.scale.x;q.o.scale.setScalar(q.base*(1+0.6*f));q.o.rotation.x=-Math.PI/2*f;q.o.rotation.y=spin*(1-f);q.o.rotation.z=Math.PI/2*f;}else q.o.rotation.y=spin;});}
   updateCompass();placeCompass();renderer.render(scene,camera);placeLabels();
   requestAnimationFrame(loop);
 }
