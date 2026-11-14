@@ -340,7 +340,7 @@ camera.position.copy(HOME.pos); controls.target.copy(HOME.target);
 /* 工具列 */
 let topView=false;
 const tog=(id,fn)=>{const b=document.getElementById(id);b.onclick=()=>{const v=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',v);fn(v);};};
-tog('bView',v=>{topView=v; if(v) flyTo(new THREE.Vector3(10,0,0),0,new THREE.Vector3(10,330,1)); else resetView();});
+tog('bView',v=>{topView=v; /* 俯視：宿舍方向（北）在畫面上方；北向量由宿舍與校園中心算出 */ if(v){const nx=-0.39,nz=0.92,r=330,sn=Math.sin(0.02);flyTo(new THREE.Vector3(10,0,0),0,new THREE.Vector3(10+nx*r*sn,r*Math.cos(0.02),nz*r*sn));} else resetView();});
 document.getElementById('bReset').onclick=resetView;
 tog('bSpin',v=>{controls.autoRotate=v;controls.autoRotateSpeed=0.8;});
 tog('bRoute',v=>{routeGroup.visible=v;});
