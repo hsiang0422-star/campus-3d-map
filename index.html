@@ -2085,7 +2085,10 @@ function accSyncFloors(){ // 外觀：屋頂圖示；選樓層／分層：該棟
   const floorOn=tag=>{const[bk,fk]=String(tag).split(':');const m=bk==='teach'?(typeof mode==='undefined'?'ext':mode):(typeof admMode==='undefined'?'ext':admMode);return m==='exp'||m===fk;};
   accItems.forEach(g=>{if(g.userData.floor){g.visible=accGroup.visible&&accOn[g.userData.accT]&&floorOn(g.userData.floor);return;}
     if(g.userData.accT==='wc'&&(g.userData.bld==='admin'||g.userData.bid==='admin')){g.visible=false;return;} // 行政大樓廁所：只在各樓層顯示
-    const b=g.userData.bld;if(b in extOf)g.visible=accOn[g.userData.accT]&&(extOf[b]||g.userData.accT==='elevator');});
+    const b=g.userData.bld;if(b in extOf)g.visible=accOn[g.userData.accT]&&(extOf[b]||g.userData.accT==='elevator');
+    // 2F／3F 視角：隱藏該棟外側的一樓標示（電梯保留）
+    if(g.visible&&g.userData.accT!=='elevator'){for(const[bk,m]of[['teach',typeof mode==='undefined'?'ext':mode],['admin',typeof admMode==='undefined'?'ext':admMode]]){
+      if((m==='2'||m==='3')&&bMeta[bk]&&bMeta[bk].group){const c=bMeta[bk].group.localToWorld(bMeta[bk].center.clone());const[wx,wz]=accWorldXZ(g);if(Math.hypot(wx-c.x,wz-c.z)<3.2){g.visible=false;break;}}}}});
   accFloorIcons.forEach(g=>{g.visible=accGroup.visible&&accOn[g.userData.accT]&&floorOn(g.userData.floor);});} // 只有所選樓層的 inner 會顯示
 /* 無障礙通路：白邊藍色帶狀路線＋流動箭頭；穿過建築的部分以淡色透出 */
 const ROUTE_Y=.2,ROUTE_W=.11,ROUTE_EDGE=.17;
