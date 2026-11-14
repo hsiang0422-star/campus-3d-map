@@ -2184,11 +2184,13 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
      if(t==='route'){accRoutes.visible=!accRoutes.visible;eye.setAttribute('aria-pressed',accRoutes.visible);line.classList.toggle('off',!accRoutes.visible);if(!accRoutes.visible&&accHL==='route')accHLSet(null);return;}
      accOn[t]=!accOn[t];eye.setAttribute('aria-pressed',accOn[t]);line.classList.toggle('off',!accOn[t]);accItems.concat(accRamps).forEach(g=>{if(g.userData.accT===t)g.visible=accOn[t];});if(!accOn[t]&&accHL===t)accHLSet(null);return;}
    const r=e.target.closest('.accrow');if(!r)return;const t=r.dataset.t;
-   if(accHL===t){accHLSet(null);return;}
+   if(accHL===t){if(accHLAll){accHLSet(null);return;}accHLAll=true;document.getElementById('bTop').click();accHLNoteUpd();return;} // 只顯示所選樓層時再點：改回全部樓層
    const on=t==='route'?accRoutes.visible:accOn[t];if(!on){const ey=accbody.querySelector(`.acceye[data-eye="${t}"]`);if(ey)ey.click();}
-   document.getElementById('bTop').click();accHLSet(t);});
+   document.getElementById('bTop').click();accHLAll=true;accHLSet(t);});
+ /* 在「樓層清單」點某一層：標示只留該樓層（不補其他樓層）；再點清單項目又會顯示全部樓層 */
+ ['seg','aseg'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('click',e=>{if(!e.target.closest('button'))return;accHLAll=false;accHLNoteUpd();});});
  /* 點清單項目：切到俯視，該項目所有位置加上橘色閃爍圈並放大圖示，其他圖示變淡 */
- let accHL=null;const accHLMarks=[],accHLProxies=[],accHLPos=new THREE.Vector3();const accHLGroup=new THREE.Group();accGroup.add(accHLGroup);
+ let accHL=null,accHLAll=true;const accHLMarks=[],accHLProxies=[],accHLPos=new THREE.Vector3();const accHLGroup=new THREE.Group();accGroup.add(accHLGroup);
  const accHLRing=(r0,r1,op)=>{const m=new THREE.Mesh(new THREE.RingGeometry(r0,r1,48),new THREE.MeshBasicMaterial({color:0xff5a1f,transparent:true,opacity:op,depthTest:false,depthWrite:false,side:THREE.DoubleSide}));m.rotation.x=-Math.PI/2;m.renderOrder=60;return m;};
  const accVisDeep=o=>{for(let x=o;x;x=x.parent)if(!x.visible)return false;return true;};
  function accHLSet(t){accHL=t;accHLMarks.length=0;while(accHLGroup.children.length)accHLGroup.remove(accHLGroup.children[0]);
@@ -2204,15 +2206,16 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
        const inner=accHLRing(.3,.42,.95),outer=accHLRing(.5,.6,.8);inner.position.y=outer.position.y=.55;px.add(inner,outer);
        const lc=document.createElement('canvas');lc.width=256;lc.height=64;const lx=lc.getContext('2d'),lt=new THREE.CanvasTexture(lc),lab=new THREE.Sprite(new THREE.SpriteMaterial({map:lt,depthTest:false,transparent:true}));lab.renderOrder=63;lab.scale.set(1.8,.45,1);lab.center.set(.5,1.6);lab.position.y=.55;px.add(lab);
        px.visible=false;accHLGroup.add(px);accHLProxies.push({px,sp,outer,lx,lt,x:gr.x,z:gr.z,marks:gr.marks,txt:'',yKey:'',y:0});});}
-   const note=document.getElementById('accHLNote');
-   if(t){const rn=accbody.querySelector(`.accrow[data-t="${t}"] .n`),cntTxt=rn?rn.textContent:'';note.hidden=false;note.innerHTML=`<b>目前標示：${t==='route'?'無障礙通路路線':ACC_NAME[t]}</b>（${cntTxt}${t==='route'?'，路線以外的圖示變淡':'，橘色閃爍圈'}）<button id="accHLOff">取消標示</button>`;document.getElementById('accHLOff').onclick=()=>accHLSet(null);}
+   accHLNoteUpd();}
+ function accHLNoteUpd(){const t=accHL,note=document.getElementById('accHLNote');
+   if(t){const rn=accbody.querySelector(`.accrow[data-t="${t}"] .n`),cntTxt=rn?rn.textContent:'';note.hidden=false;note.innerHTML=`<b>目前標示：${t==='route'?'無障礙通路路線':ACC_NAME[t]}</b>（${cntTxt}${t==='route'?'，路線以外的圖示變淡':'，橘色閃爍圈'}${t!=='route'?(accHLAll?'・全部樓層':'・只顯示所選樓層'):''}）<button id="accHLOff">取消標示</button>`;document.getElementById('accHLOff').onclick=()=>accHLSet(null);}
    else note.hidden=true;}
  
  accHLTick=now=>{if(!accHL||!accGroup.visible){accHLGroup.visible=false;return;}accHLGroup.visible=true;const k=(now/700)%1;
    accHLMarks.forEach(mk=>{const g=mk.userData.g,src=g.userData.sp||g;mk.visible=accVisDeep(g);if(!mk.visible)return;src.getWorldPosition(accHLPos);accGroup.worldToLocal(accHLPos);mk.position.copy(accHLPos);
      mk.userData.outer.scale.setScalar(1+k*1.6);mk.userData.outer.material.opacity=.85*(1-k);});
    const yKey=(typeof mode==='undefined'?'':mode)+'|'+(typeof admMode==='undefined'?'':admMode);
-   accHLProxies.forEach(pr=>{const hid=pr.marks.filter(mk=>!mk.visible);pr.px.visible=hid.length>0;if(!pr.px.visible)return;
+   accHLProxies.forEach(pr=>{const hid=pr.marks.filter(mk=>!mk.visible);pr.px.visible=accHLAll&&hid.length>0;if(!pr.px.visible)return;
      const fl=[...new Set(hid.map(mk=>{const f=String(mk.userData.g.userData.floor||'');const m=f.match(/:(\d+)/);return m?m[1]+'F':'';}).filter(Boolean))].sort();const txt=fl.join('・')||'樓內';
      if(txt!==pr.txt){pr.txt=txt;const x=pr.lx;x.clearRect(0,0,256,64);x.font='bold 40px sans-serif';const w=Math.min(250,x.measureText(txt).width+28);x.fillStyle='#ff5a1f';x.beginPath();x.roundRect?x.roundRect(128-w/2,6,w,52,14):x.rect(128-w/2,6,w,52);x.fill();x.fillStyle='#fff';x.textAlign='center';x.textBaseline='middle';x.fillText(txt,128,33);pr.lt.needsUpdate=true;}
      if(pr.yKey!==yKey){pr.yKey=yKey;pr.y=accGroundY(pr.x,pr.z);}accHLPos.set(pr.x,pr.y,pr.z);accGroup.worldToLocal(accHLPos);pr.px.position.copy(accHLPos);
