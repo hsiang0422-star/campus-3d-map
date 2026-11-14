@@ -73,6 +73,8 @@
 
 - 無障礙清單標示（`accHLSet`、`accHLTick`）：點清單項目（`.accrow`）會切到俯視，該項目所有位置加橘色閃爍圈、圖示放大 1.8 倍（`spinners` 的 `q.hl`），其他圖示變淡；再點一次或「取消標示」取消。顯示／隱藏改由每列右側的 👁 按鈕（`.acceye`）。不在目前樓層（看不到）的同類圖示（`accFloorIcons`、樓層專用 `ACC.icons`）會在屋頂上方補一個代理圖示（`accHLProxies`），同一位置的各樓層合併，並加「1F・2F」橘色標籤。在「樓層清單」（`#seg`、`#aseg`）點某一層時 `accHLAll=false`，只標示該樓層、不補其他樓層；再點清單項目恢復全部樓層。
 
+- 公開的圖示大小（`iconUserScale`、`setIconScale`、`.iconsz`）：所有訪客都能在「地圖操作」與「無障礙設施」面板用 －／＋／滑桿調整 3D 圖示大小（0.5–2.5 倍，無障礙圖示與防災圖例一起），存在各自瀏覽器 localStorage `campus3d-icon-scale`。
+
 ## 頁面結構
 - `index.html`：入口頁（連到各頁、防災地圖外部連結）。
 - `map.html`：校園 3D 地圖（原 index.html）。`quiz.html` 連到 `map.html?quiz-map=1`。
