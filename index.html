@@ -1979,7 +1979,7 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
        <div class="row"><button data-rp="len" data-v="0.1">加長</button><button data-rp="len" data-v="-0.1">縮短</button><button data-rp="w" data-v="0.03">加寬</button><button data-rp="w" data-v="-0.03">變窄</button></div>
      </div>
      <h4>無障礙通路路線</h4>
-     <p>點一下藍色路線即可選取，路線上會出現控制點：拖曳控制點改變路線；點選控制點後可刪除或在它後面加點。箭頭在路線終點。</p>
+     <p>點一下藍色路線即可選取，路線上會出現控制點：拖曳控制點改變路線；按住路線中間的線條可整條拖曳移動；點選控制點後可刪除或在它後面加點。箭頭在路線終點。選取圖示、斜坡道或路線後，按 Backspace 或 Delete 鍵即可刪除。</p>
      <div class="row"><button id="rtNew">＋ 新增路線</button></div>
      <div id="rtTools" hidden style="display:grid;gap:4px">
        <div class="row"><button id="rtAdd">＋ 在選取點後加點</button><button id="rtDelPt">刪除選取的點</button></div>
@@ -2125,7 +2125,9 @@ let accPulse=()=>{};
    const rtObjs=accRoutes.visible?accRouteObjs.map(g=>g.userData.main).filter(Boolean):[];
    const h=rc.intersectObjects(objs.concat(rtObjs),false)[0];if(!h)return;
    e.stopPropagation();e.preventDefault();
-   if(h.object.userData.routeG){selectRoute(h.object.userData.routeG,-1);return;}
+   if(h.object.userData.routeG){const rg=h.object.userData.routeG;selectRoute(rg,-1);plane.constant=0;rc.ray.intersectPlane(plane,hit);
+     drag={id:e.pointerId,route:true,sx:hit.x,sz:hit.z,orig:rg.userData.pts.map(p=>p.slice())};controls.enabled=false;
+     try{canvas.setPointerCapture(e.pointerId);}catch(err){}return;}
    const g=h.object.userData.g;setSel(g);
    const wp=g.getWorldPosition(new THREE.Vector3());plane.constant=g.userData.floor?-wp.y:0;
    rc.ray.intersectPlane(plane,hit);drag={id:e.pointerId,dx:wp.x-hit.x,dz:wp.z-hit.z};controls.enabled=false;
@@ -2133,11 +2135,18 @@ let accPulse=()=>{};
  canvas.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;setM(e);if(!rc.ray.intersectPlane(plane,hit))return;
    const x=Math.max(-14,Math.min(14,hit.x+drag.dx)),z=Math.max(-8,Math.min(8,hit.z+drag.dz));
    if(drag.vtx){selRt.userData.pts[selV]=toP(x,z);rebuild();return;}
+   if(drag.route){const dx=hit.x-drag.sx,dz=hit.z-drag.sz;drag.moved=drag.moved||Math.hypot(dx,dz)>.02;
+     selRt.userData.pts=drag.orig.map(([px,pz])=>[r2(px+dx),r2(pz+dz)]);rebuild();return;}
    if(sel.userData.isRamp){const[px,pz]=toP(x,z);sel.userData.r.x=px;sel.userData.r.z=pz;buildRampMesh(sel);hl(sel,true);}
    else if(sel.userData.floor){const lp=sel.parent.worldToLocal(new THREE.Vector3(x,0,z));sel.position.set(lp.x,.32,lp.z);}
    else sel.position.set(x,sel.userData.accT==='elevator'?accRoofNear(x,z,.9).y:accGroundY(x,z),z);
    setSel(sel);});
- const end=e=>{if(!drag||e.pointerId!==drag.id)return;drag=null;controls.enabled=true;save();};
+ const end=e=>{if(!drag||e.pointerId!==drag.id)return;const changed=!drag.route||drag.moved;drag=null;controls.enabled=true;if(changed)save();};
+ // 調整模式：按 Backspace 或 Delete 刪除選取的圖示、斜坡道或路線
+ document.addEventListener('keydown',e=>{if(!editing||(e.key!=='Delete'&&e.key!=='Backspace'))return;
+   const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;
+   if(selRt){e.preventDefault();document.getElementById('rtDel').click();}
+   else if(sel){e.preventDefault();delBtn.click();}});
  canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
 }
 /* ---------- 無障礙地圖圖例（開啟無障礙設施時顯示） ---------- */
