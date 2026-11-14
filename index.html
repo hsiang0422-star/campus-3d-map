@@ -278,7 +278,17 @@ body.view-danger header{display:none!important}
 
 <div class="app">
   <header>
-    <h1>臺南特教校園 3D 地圖<small>拖曳旋轉・Shift＋拖曳平移・滾輪縮放・雙指可平移</small><span class="hdr-btns"><button id="bReset">重設視角</button><button id="bTop">俯視</button><button id="bCtrl" aria-pressed="true">地圖操作</button></span></h1>
+    <h1>臺南特教校園 3D 地圖<small>拖曳旋轉・Shift＋拖曳平移・滾輪縮放・雙指可平移</small><span class="hdr-btns"><button id="bReset">重設視角</button><button id="bTop">俯視</button><button id="bCtrl" aria-pressed="true">地圖操作</button>
+        <button id="bSpin" aria-pressed="false">自動旋轉</button>
+      <button id="bPanel" aria-expanded="true" aria-controls="panel">樓層清單 <span class="car" aria-hidden="true">▾</span></button>
+      <div class="bwrap" id="bwrap">
+        <button id="bBld" aria-expanded="false" aria-controls="chips">各建築場域 <span class="car" aria-hidden="true">▾</span></button>
+        <div class="blist" id="blist" hidden>
+          <div class="phead" id="bhead" title="拖曳移動，雙擊回到按鈕下方"><span class="grip" aria-hidden="true"></span>各建築場域・拖曳移動<button class="collapse" id="bClose">收合</button></div>
+          <nav class="bitems" id="chips" aria-label="各建築場域"></nav>
+          <div class="presize" id="bsize" title="拖曳調整大小"></div>
+        </div>
+      </div></span></h1>
     <div class="tools">
       <details id="quizGameDrop" style="position:relative"><summary style="list-style:none;cursor:pointer;display:inline-block;border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--chip);font:inherit;font-size:.82rem;color:var(--ink)">測驗與遊戲　⌄</summary><div style="position:absolute;top:calc(100% + 8px);left:0;z-index:30;min-width:230px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 8px 24px #0002;display:grid;gap:8px"><a href="teaching.html" style="display:block;text-align:center;padding:6px 12px;color:var(--ink);background:var(--chip);font:inherit;font-size:.82rem;text-decoration:none;border:1px solid var(--line);border-radius:999px;cursor:pointer">危險地點教學</a><a href="quiz.html" style="display:block;text-align:center;padding:6px 12px;color:var(--ink);background:var(--chip);font:inherit;font-size:.82rem;text-decoration:none;border:1px solid var(--line);border-radius:999px;cursor:pointer">危險地點測驗</a><button id="bDrone" aria-pressed="false" style="display:block;text-align:center;padding:6px 12px;color:var(--ink);background:var(--chip);font:inherit;font-size:.82rem;text-decoration:none;border:1px solid var(--line);border-radius:999px;cursor:pointer;font-family:inherit" onclick="this.closest('details').open=false">無人機模擬遊戲</button></div></details>
       <button id="bQuiz" hidden aria-pressed="false" aria-controls="qpanel">校園危險地點測驗</button>
@@ -291,16 +301,7 @@ body.view-danger header{display:none!important}
       <button id="bAcc" aria-pressed="false" aria-controls="acclist">無障礙設施</button>
       <button id="bOvDisaster" aria-haspopup="dialog" aria-controls="ovLayer" data-ov="https://hsiang0422-star.github.io/disaster-visit/evacuation-3d-view.html?v=20261020-committee-list">防災地圖頁</button>
       <button id="bAccess" aria-haspopup="dialog" aria-expanded="false" aria-controls="accessDialog">校園無障礙地圖指引</button>
-      <button id="bSpin" aria-pressed="false">自動旋轉</button>
-      <button id="bPanel" aria-expanded="true" aria-controls="panel">樓層清單 <span class="car" aria-hidden="true">▾</span></button>
-      <div class="bwrap" id="bwrap">
-        <button id="bBld" aria-expanded="false" aria-controls="chips">各建築場域 <span class="car" aria-hidden="true">▾</span></button>
-        <div class="blist" id="blist" hidden>
-          <div class="phead" id="bhead" title="拖曳移動，雙擊回到按鈕下方"><span class="grip" aria-hidden="true"></span>各建築場域・拖曳移動<button class="collapse" id="bClose">收合</button></div>
-          <nav class="bitems" id="chips" aria-label="各建築場域"></nav>
-          <div class="presize" id="bsize" title="拖曳調整大小"></div>
-        </div>
-      </div>
+
     </div>
   </header>
   <div class="stage">
