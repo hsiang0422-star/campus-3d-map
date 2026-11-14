@@ -677,15 +677,20 @@ BUILDINGS.forEach(b=>{
 let COMPASS_AT=P(8.3,10.25);
 const TREE_ORIG=TREES.map(([x,z,s],i)=>({x,z,s,c:(i%7===0?0xe9d44a:(i%2?0x3f8f3c:0x6fb043)),hidden:false}));
 let treeList=TREE_ORIG.map(t=>({...t}));
+const preTrees=[]; // 預先建好的樹：街道樹、榕樹、棕櫚（位置也可在編輯模式移動）
 const treeGroup=new THREE.Group();scene.add(treeGroup);
 const treeCrowns=[];
 function buildTrees(){
-  while(treeGroup.children.length)treeGroup.remove(treeGroup.children[0]);treeCrowns.length=0;
+  while(treeGroup.children.length)treeGroup.remove(treeGroup.children[0]);treeCrowns.length=0;preTrees.forEach(t=>treeCrowns.push(t.crown));
   treeList.forEach(t=>{if(t.hidden){t.obj=null;t.crown=null;return;}
     const[a,b]=P(t.x,t.z),sc=t.s||1;const g=new THREE.Group();g.position.set(a,0,b);
     const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.05*sc,0.07*sc,0.7*sc,8),felt(0x7a5236));tr.position.y=0.35*sc;tr.castShadow=true;
     const cr=new THREE.Mesh(new THREE.SphereGeometry(0.42*sc,18,14),felt(t.c));cr.position.y=0.85*sc;cr.scale.y=1.15;cr.castShadow=true;
-    g.add(tr,cr);treeGroup.add(g);cr.userData={tree:t};treeCrowns.push(cr);t.obj=g;t.crown=cr;});}
+    g.add(tr,cr);treeGroup.add(g);cr.userData={tree:t};treeCrowns.push(cr);t.obj=g;t.crown=cr;});placePreTrees();}
+function placePreTrees(){preTrees.forEach(t=>{const[a,b]=P(t.x,t.z);t.obj.position.set(a,0,b);t.obj.visible=!t.hidden;});}
+/* 登記預先建好的樹，讓它們也能選取、移動、刪除（x,z 為地圖座標） */
+function regPreTree(g,x,z,kind,pr,py){const pick=new THREE.Mesh(new THREE.SphereGeometry(pr,10,8),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));pick.position.y=py;g.add(pick);
+  const rec={x,z,s:1,c:0,hidden:false,kind,pre:true,obj:g,crown:pick};pick.userData={tree:rec};preTrees.push(rec);treeCrowns.push(pick);return rec;}
 buildTrees();
 
 /* ---------- school gate (from street photo) ---------- */
@@ -770,13 +775,13 @@ buildTrees();
     for(let i=0;i<7;i++){const fr=new THREE.Mesh(new THREE.ConeGeometry(0.07,0.6,4),felt(i%2?0x4f8f43:0x6aa856));
       const holder=new THREE.Group();holder.rotation.y=i/7*Math.PI*2+k;holder.position.y=h;
       fr.scale.set(1,1,0.3);fr.position.set(0.26,-0.05-(i%3)*0.05,0);fr.rotation.z=-1.85-(i%3)*0.18;holder.add(fr);g.add(holder);}
-    add(g);});
+    add(g);regPreTree(g,x,z,'palm',0.45,h*0.6);});
   // big banyan trees behind the fence: wide dense canopies over hanging roots
   [[23.45,4.55,1.0],[23.5,5.75,0.9],[22.5,6.2,0.75]].forEach(([x,z,s])=>{const g=new THREE.Group();g.position.copy(at(x,z));
     for(let i=0;i<5;i++){const r=new THREE.Mesh(new THREE.CylinderGeometry(0.02*s,0.03*s,0.6*s,6),felt(0x6e5a48));r.position.set(Math.cos(i*1.3)*0.18*s,0.3*s,Math.sin(i*1.3)*0.18*s);g.add(r);}
     [[0,0.85,0,0.45],[0.32,0.8,0.1,0.34],[-0.3,0.8,-0.08,0.36],[0.08,0.95,0.3,0.32],[-0.05,0.92,-0.3,0.33]].forEach(([cx,cy,cz,cr],i)=>{
       const c=new THREE.Mesh(new THREE.SphereGeometry(cr*s,16,12),felt(i%2?0x3e7d3a:0x4f8f45));c.position.set(cx*s,cy*s,cz*s);c.scale.y=0.75;g.add(c);});
-    add(g);});
+    add(g);regPreTree(g,x,z,'banyan',0.55*s,0.7*s);});
   // cream utility pedestals along the fence
   [[23.45,3.75],[23.7,4.85],[23.95,5.95]].forEach(([x,z])=>{const b=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.18,0.12),felt(0xefe9dc));
     const p=at(x+0.12,z);b.position.set(p.x,0.09,p.z);b.rotation.y=-1.35;add(b);});
@@ -899,7 +904,7 @@ buildTrees();
   for(let t=0.08;t<0.95;t+=0.11){const x=A[0]+dx*t+nx*0.55, z=A[1]+dz*t+nz*0.55;const[px,pz]=P(x,z);const g=new THREE.Group();g.position.set(px,0,pz);const h=1.1+((t*53)%3)*0.12;
     const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.05,h*0.6,8),felt(0x7a5236));tr.position.y=h*0.3;g.add(tr);
     const cr=new THREE.Mesh(new THREE.SphereGeometry(0.34,16,12),felt((t*7)%1<.2?0x6fa048:0x4f8f45));cr.position.y=h*0.72;cr.scale.y=1.1;g.add(cr);
-    g.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(g);}
+    g.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(g);regPreTree(g,x,z,'street',0.42,h*0.72);}
   // kerbside parking bays + a few cars on the lane side of the fence
   const carCols=[0x8a8f94,0xb23b32,0xdedad5,0x55606a,0xf2f2ee];
   for(let k=0;k<7;k++){const t=0.16+k*0.1;const bx=A[0]+dx*t-nx*0.5, bz=A[1]+dz*t-nz*0.5;const[px,pz]=P(bx,bz);
@@ -2217,9 +2222,9 @@ let accPulse=()=>{};
    if(g.userData.isRamp){const r=g.userData.r;if(typeof syncSliders==='function')syncSliders();selEl.textContent=`${r.kind==='podium'?'司令台（含斜坡道）':'斜坡道'}（座標 ${r2(r.x)}, ${r2(r.z)}，方向 ${Math.round(r.ang)}°，大小 ×${(+(r.s||1)).toFixed(2)}）`;}
    else{const[wx,wz]=accWorldXZ(g);const[x,z]=toP(wx,wz);const fl=g.userData.floor?`・${ACC_FLOOR_BLD[g.userData.floor.split(':')[0]]} ${g.userData.floor.split(':')[1]}F 專用`:'';selEl.textContent=`${ACC_NAME[g.userData.accT]}${fl}（座標 ${x}, ${z}）`;}};
  /* 樹木與指北針：選取、拖曳、刪除、存檔 */
- const treeSnap=()=>treeList.map(t=>[t.x,t.z,t.s,t.hidden?1:0,t.c]);
+ const treeSnap=()=>[...treeList.map(t=>[t.x,t.z,t.s,t.hidden?1:0,t.c,'']),...preTrees.map(t=>[t.x,t.z,1,t.hidden?1:0,0,t.kind])];
  const compassRaw=()=>toP(COMPASS_AT[0],COMPASS_AT[1]);
- const applyTrees=list=>{if(!Array.isArray(list))return;treeList=list.map(([x,z,sc,h,c])=>({x,z,s:sc||1,c:c||0x6fb043,hidden:!!h}));buildTrees();selectTree(null);};
+ const applyTrees=list=>{if(!Array.isArray(list))return;const proc=list.filter(e=>!e[5]),pre=list.filter(e=>e[5]);treeList=proc.map(([x,z,sc,h,c])=>({x,z,s:sc||1,c:c||0x6fb043,hidden:!!h}));preTrees.forEach((t,i)=>{const e=pre[i];if(e){t.x=e[0];t.z=e[1];t.hidden=!!e[3];}});buildTrees();selectTree(null);};
  const applyCompass=c=>{if(!Array.isArray(c))return;COMPASS_AT=P(c[0],c[1]);placeCompass();};
  const origTrees=treeSnap(),origCompass=[8.3,10.25];
  function selectTree(t){if(t&&sel)setSel(null);selTree=t;
@@ -2327,7 +2332,7 @@ let accPulse=()=>{};
      +'\n無障礙路線 '+accRouteObjs.length+' 條（每條為依行進方向排列的點 [x, z]）\n'+JSON.stringify(currentRt())
      +'\n一般 3D 模型 '+accDecor.length+' 個（類型, x, z, 方向, 大小）\n'+JSON.stringify(currentD())
      +'\n危險角落 '+POINTS.length+' 個（編號, x, z, 顯示 1／隱藏 0）\n'+JSON.stringify(ptSnap())
-     +'\n樹木 '+treeList.filter(t=>!t.hidden).length+' 棵（x, z, 大小, 隱藏 1／顯示 0）\n'+JSON.stringify(treeSnap().map(r=>r.slice(0,4)))
+     +'\n樹木 '+treeSnap().filter(r=>!r[3]).length+' 棵（x, z, 大小, 隱藏 1／顯示 0, 種類）\n'+JSON.stringify(treeSnap().map(r=>r[5]?[r[0],r[1],r[2],r[3],r[5]]:r.slice(0,4)))
      +'\n指北針位置（x, z）\n'+JSON.stringify(compassRaw());
    outBox.hidden=false;outTx.focus();outTx.select();};
  document.getElementById('accEdCopy').onclick=()=>{const ok=()=>{const c=document.getElementById('accEdCopied');c.hidden=false;setTimeout(()=>c.hidden=true,1800);};
