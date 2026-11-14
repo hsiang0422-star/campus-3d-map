@@ -2030,8 +2030,8 @@ function accSurfaceY(a,b){ // 斜坡道底部：找下方最高的地面（草�
 function makeRamp(x,z,ang,len,w,rev,kind,sc,h){const g=new THREE.Group();g.userData={isRamp:true,accT:'ramp',r:{x,z,ang,len,w,rev:rev?1:0,kind:kind||'',s:sc||1,h:h||(kind==='podium'?.24:.11)}};
   buildRampMesh(g);g.visible=accOn.ramp;accGroup.add(g);accRamps.push(g);return g;}
 /* ---------- 一般 3D 模型：籃球架、樹木、男女廁／滅火器／AED 標誌；可新增、移動、旋轉、調整大小、刪除 ---------- */
-const DECOR_NAME={"hoop":"籃球架","tree":"樹木","male":"男廁標誌","female":"女廁標誌","indoor":"室內避難處所","shelter":"室外避難處所","firstaid":"急救站","fire":"滅火器","hydrant":"消防栓","command":"指揮中心","supplies":"物資儲備點","rescue":"救援器材放置點","comms":"通訊設備放置點","aed":"AED","pickup":"災時家長接送區","security":"警衛室","waitrescue":"等待救援點"};
-const DECOR_SCALE={"hoop":1.6,"tree":1,"male":2.2,"female":2.2,"indoor":2.2,"shelter":2.2,"firstaid":2.2,"fire":2.2,"hydrant":2.2,"command":2.2,"supplies":2.2,"rescue":2.2,"comms":2.2,"aed":2.2,"pickup":2.2,"security":2.2,"waitrescue":2.2};
+const DECOR_NAME={"hoop":"籃球架","tree":"樹木","playground":"兒童遊樂設施","male":"男廁標誌","female":"女廁標誌","indoor":"室內避難處所","shelter":"室外避難處所","firstaid":"急救站","fire":"滅火器","hydrant":"消防栓","command":"指揮中心","supplies":"物資儲備點","rescue":"救援器材放置點","comms":"通訊設備放置點","aed":"AED","pickup":"災時家長接送區","security":"警衛室","waitrescue":"等待救援點"};
+const DECOR_SCALE={"hoop":1.6,"tree":1,"male":2.2,"female":2.2,"indoor":2.2,"shelter":2.2,"firstaid":2.2,"fire":2.2,"hydrant":2.2,"command":2.2,"supplies":2.2,"rescue":2.2,"comms":2.2,"aed":2.2,"pickup":2.2,"security":2.2,"waitrescue":2.2,"playground":2};
 const DECOR_SIGN={male:['男廁','#2a6fb3'],female:['女廁','#d4578a'],fire:['滅火器','#c0392b'],aed:['AED','#1e8a4c']};
 const decorTexCache={};
 function decorSignTex(kind){if(decorTexCache[kind])return decorTexCache[kind];const[txt,bg]=DECOR_SIGN[kind];
@@ -2053,6 +2053,33 @@ function decorImg(key){return g=>{const d=DECOR_IMG[key];
   g.add(post,plate);};}
 const DECOR_BUILD={
   indoor:decorImg('indoor'),shelter:decorImg('shelter'),firstaid:decorImg('firstaid'),fire:decorImg('fire'),hydrant:decorImg('hydrant'),command:decorImg('command'),supplies:decorImg('supplies'),rescue:decorImg('rescue'),comms:decorImg('comms'),aed:decorImg('aed'),pickup:decorImg('pickup'),security:decorImg('security'),waitrescue:decorImg('waitrescue'),
+  playground:g=>{ // 兒童遊樂設施：兩座塔（尖頂）、樓梯、隧道橋、兩條溜滑梯（以基本幾何自行建模）
+    const C={post:0x169e8c,roof:0xf7c300,step:0xf2b705,rail:0x2f8fd8,tube:0x2a8ee0,green:0x4fb52a,pink:0xe8457f,deck:0xffe27a,base:0xb8a98a};
+    const mc={},felt=c=>mc[c]||(mc[c]=new THREE.MeshStandardMaterial({color:c,roughness:.55,metalness:0}));
+    const box=(w,h,d,c,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),felt(c));m.position.set(x,y,z);g.add(m);return m;};
+    const cyl=(r,h,c,x,y,z)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,10),felt(c));m.position.set(x,y,z);g.add(m);return m;};
+    const tower=(x,z,h,rc)=>{const s=.065;[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>cyl(.009,h+.06,C.post,x+a*s,(h+.06)/2,z+b*s));
+      box(.15,.018,.15,C.deck,x,h,z); // 平台
+      [[0,-1],[-1,0]].forEach(([a,b])=>box(a?.006:.13,.05,b?.006:.13,rc,x+a*s,h+.035,z+b*s)); // 兩側欄杆
+      const roof=new THREE.Mesh(new THREE.ConeGeometry(.115,.085,4),felt(C.roof));roof.rotation.y=Math.PI/4;roof.position.set(x,h+.06+.045,z);g.add(roof);};
+    const slide=(x0,y0,z0,x1,z1,w,c)=>{const dx=x1-x0,dz=z1-z0,L=Math.hypot(dx,dz),grp=new THREE.Group();grp.position.set(x0,0,z0);grp.rotation.y=Math.atan2(dx,dz);g.add(grp);
+      const run=.06,ang=Math.atan2(y0-.03,L-run),len=Math.hypot(L-run,y0-.03),add=(w2,h2,d2,px,py,pz,rx)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w2,h2,d2),felt(c));m.position.set(px,py,pz);m.rotation.x=rx||0;grp.add(m);};
+      add(w,.012,len,0,(y0+.03)/2,(L-run)/2,ang);[-1,1].forEach(sd=>add(.008,.03,len,sd*w/2,(y0+.03)/2+.012,(L-run)/2,ang));
+      add(w,.012,run,0,.03,L-run/2);[-1,1].forEach(sd=>add(.008,.03,run,sd*w/2,.042,L-run/2));};
+    box(.62,.012,.42,C.base,0,.006,0); // 底座
+    const A=[-.13,.04],B=[.12,-.08],hA=.17,hB=.23;
+    tower(A[0],A[1],hA,C.rail);tower(B[0],B[1],hB,C.pink);
+    // 隧道橋（藍色圓筒）
+    {const a=new THREE.Vector3(A[0]+.06,hA+.03,A[1]-.03),b=new THREE.Vector3(B[0]-.06,hB+.03,B[1]+.03),len=a.distanceTo(b);
+      const t=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,len,16,1,true),felt(C.tube));t.material=new THREE.MeshStandardMaterial({color:C.tube,roughness:.55,side:THREE.DoubleSide});
+      t.position.copy(a).add(b).multiplyScalar(.5);t.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());g.add(t);}
+    // 樓梯（黃色台階＋藍色扶手），從 A 塔往 -x 下降
+    {const n=6,x0=A[0]-.075,run=.035;for(let i=0;i<n;i++){const h=hA*(n-i)/n;box(run,h,.08,C.step,x0-run*(i+.5),h/2,A[1]);}
+      [-.045,.045].forEach(dz=>{const a=new THREE.Vector3(x0,hA+.06,A[1]+dz),b=new THREE.Vector3(x0-run*n,.06,A[1]+dz),len=a.distanceTo(b);
+        const r=new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,len,6),felt(C.rail));r.position.copy(a).add(b).multiplyScalar(.5);r.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());g.add(r);});}
+    slide(A[0],hA,A[1]+.075,A[0]+.02,A[1]+.36,.07,C.green);   // 綠色溜滑梯
+    slide(B[0]+.075,hB,B[1]+.02,B[0]+.36,B[1]+.22,.07,C.pink); // 粉紅溜滑梯
+  },
   hoop:g=>{const mt=c=>new THREE.MeshStandardMaterial({color:c,roughness:.6});
     const pole=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.34,8),mt(0x8a9096));pole.position.y=.17;
     const base=new THREE.Mesh(new THREE.BoxGeometry(.12,.02,.12),mt(0x6b6f75));base.position.y=.01;
@@ -2068,7 +2095,7 @@ const accDecor=[];
 function makeDecor(dt,x,z,ang,sc){if(!DECOR_BUILD[dt])return null;const[a,b]=P(x,z);
   const g=new THREE.Group();g.userData={isDecor:true,accT:'decor',dt,r:{x,z,ang:+ang||0,s:+sc||DECOR_SCALE[dt]||1}};
   const inner=new THREE.Group();g.add(inner);DECOR_BUILD[dt](inner);
-  if(dt!=='hoop'&&dt!=='tree')spinners.push({o:inner,ph:Math.random()*Math.PI*2});
+  if(dt!=='hoop'&&dt!=='tree'&&dt!=='playground')spinners.push({o:inner,ph:Math.random()*Math.PI*2});
   const pick=new THREE.Mesh(new THREE.CylinderGeometry(.24,.24,.8,10),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));pick.position.y=.4;
   pick.userData={kind:'decor',dt,g};g.add(pick);pickables.push(pick);g.userData.pick=pick;
   g.position.set(a,accSurfaceY(a,b),b);g.rotation.y=g.userData.r.ang*Math.PI/180;g.scale.setScalar(g.userData.r.s);
@@ -2163,7 +2190,7 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
        <div class="row"><button id="rtRev">反轉方向</button><button id="rtDel">刪除這條路線</button></div>
      </div>
      <h4>一般 3D 模型</h4>
-     <p>籃球架、樹木與防災圖例（避難處所、急救站、滅火器、消防栓、AED 等）。按下方按鈕會在畫面中央新增，新增後可拖曳，選取後用下方滑桿調整方向與大小；按 Backspace 或「刪除選取的項目」即可移除。</p>
+     <p>籃球架、樹木、兒童遊樂設施與防災圖例（避難處所、急救站、滅火器、消防栓、AED 等）。按下方按鈕會在畫面中央新增，新增後可拖曳，選取後用下方滑桿調整方向與大小；按 Backspace 或「刪除選取的項目」即可移除。</p>
      <div class="row" id="decAdd"></div>
      <div id="decTools" hidden style="display:grid;gap:4px">
        <div class="rpsl"><label for="decAng">方向</label><input type="range" id="decAng" min="0" max="359" step="1"><output id="decAngV"></output></div>
@@ -2361,7 +2388,7 @@ let accPulse=()=>{};
  const currentD=()=>accDecor.map(g=>{const r=g.userData.r;return[g.userData.dt,r2(r.x),r2(r.z),Math.round(r.ang),r2(r.s)];});
  const loadDecor=list=>{accDecor.slice().forEach(removeObj);(list||[]).forEach(([dt,x,z,ang,sc])=>makeDecor(dt,x,z,ang,sc));};
  const decAdd=document.getElementById('decAdd');
- decAdd.innerHTML=Object.keys(DECOR_NAME).filter(t=>t!=='male'&&t!=='female').map(t=>`<button class="addt" data-dt="${t}" title="新增${DECOR_NAME[t]}">${DECOR_IMG[t]?`<img src="${DECOR_IMG[t].src}" alt="">`:`<span class="addemo" aria-hidden="true">${{hoop:'🏀',tree:'🌳'}[t]||'＋'}</span>`} ${DECOR_NAME[t]}</button>`).join('');
+ decAdd.innerHTML=Object.keys(DECOR_NAME).filter(t=>t!=='male'&&t!=='female').map(t=>`<button class="addt" data-dt="${t}" title="新增${DECOR_NAME[t]}">${DECOR_IMG[t]?`<img src="${DECOR_IMG[t].src}" alt="">`:`<span class="addemo" aria-hidden="true">${{hoop:'🏀',tree:'🌳',playground:'🛝'}[t]||'＋'}</span>`} ${DECOR_NAME[t]}</button>`).join('');
  decAdd.addEventListener('click',e=>{const b=e.target.closest('[data-dt]');if(!b)return;const dt=b.dataset.dt;
    const[x,z]=openSpot(center());const g=makeDecor(dt,x,z,0,DECOR_SCALE[dt]);if(!g)return;setSel(g);focusOn(g);save();});
  const decAng=document.getElementById('decAng'),decS=document.getElementById('decS');
