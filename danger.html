@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>校園危險角落</title>
+<style>
+:root{--bg:#f4efe6;--fg:#2d2620;--muted:#7a6f63;--line:#e2d8c6;--card:#fffdf8;--accent:#b8322a}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#171b17;--fg:#eef1ea;--muted:#a7b0a2;--line:#3a4238;--card:#232823;--accent:#e8786e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171b17;--fg:#eef1ea;--muted:#a7b0a2;--line:#3a4238;--card:#232823;--accent:#e8786e;color-scheme:dark}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:system-ui,"Noto Sans TC","PingFang TC",sans-serif;display:flex;flex-direction:column}
+header{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:10px max(12px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+header h1{font-size:1.05rem;margin:0 auto 0 0}
+header p{margin:0;color:var(--muted);font-size:.85rem;width:100%}
+a.btn{font-size:.85rem;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 11px;text-decoration:none}
+a.btn.editor{color:#7a4a12;border:1px dashed #c9a46a}
+iframe{flex:1;border:0;width:100%;min-height:0}
+</style>
+</head>
+<body>
+<header>
+  <a class="btn" href="index.html">← 入口頁</a>
+  <h1>校園危險角落</h1>
+  <a class="btn editor" href="EDMIN/">編輯者模式</a>
+  <p>紅色標記為危險角落。點標記或清單可查看照片與說明；需要更多資訊可到「危險地點教學」或「危險地點測驗」。</p>
+</header>
+<iframe src="map.html?view=danger" title="校園危險角落地圖"></iframe>
+</body>
+</html>

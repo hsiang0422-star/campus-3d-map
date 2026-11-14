@@ -265,6 +265,8 @@ body.drone-on #panel,body.drone-on #apanel,body.drone-on #qpanel,body.drone-on #
 #vcount{position:fixed;right:max(8px,env(safe-area-inset-right,0px));bottom:max(6px,env(safe-area-inset-bottom,0px));z-index:3;pointer-events:none;line-height:0;opacity:.9}
 #vcount img{height:20px;width:auto}
 body.drone-on #vcount{display:none}
+body.view-danger #acclist,body.view-danger #acclegend,body.view-danger #editpanel,body.view-danger #ctrl,body.view-danger #panel,body.view-danger #blist,body.view-danger #qpanel,body.view-danger #teachQuizDrop,body.view-danger #bAcc,body.view-danger #bCtrl,body.view-danger #bPanel,body.view-danger #bBld,body.view-danger #bSpin,body.view-danger #bDrone,body.view-danger #bQuiz,body.view-danger #bAccess,body.view-danger #bEditTop,body.view-danger #accEditRow,body.view-danger #bReset,body.view-danger #bTop,body.view-danger #bLbl,body.view-danger .compass{display:none!important}
+body.view-danger header{display:none!important}
 </style>
 
 <div class="app">
@@ -2766,5 +2768,7 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+/* 危險角落專用頁：?view=danger 只顯示危險角落與清單 */
+if(new URLSearchParams(location.search).get('view')==='danger'){document.body.classList.add('view-danger');if(!show.pts)bPts.click();plist.hidden=false;}
 })();
 </script>
