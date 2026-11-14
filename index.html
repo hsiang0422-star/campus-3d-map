@@ -80,6 +80,7 @@ body.acc-editing #c{cursor:move}
 #accUnlock{position:fixed;inset:0;z-index:900;display:grid;place-items:center;background:rgba(30,25,20,.35)}
 #accUnlock form{background:var(--panel);color:var(--ink);border-radius:14px;padding:18px;width:min(320px,calc(100vw - 32px));display:grid;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
 #accUnlock h3{margin:0;font-size:1rem}#accUnlock p{margin:0;font-size:.8rem;color:var(--muted)}
+#accUnlock input.masked{-webkit-text-security:disc;text-security:disc}
 #accUnlock input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
 #accUnlock .row{display:flex;gap:8px;justify-content:flex-end}
 .rpsl{display:grid;grid-template-columns:4.6em 1fr 4.2em;align-items:center;gap:6px;font-size:.75rem}
@@ -2126,16 +2127,17 @@ let accPulse=()=>{};
  document.getElementById('rtRev').onclick=()=>{if(!selRt)return;selRt.userData.pts.reverse();if(selV>=0)selV=selRt.userData.pts.length-1-selV;rebuild();save();};
  document.getElementById('rtDel').onclick=()=>{if(!selRt)return;accRoutes.remove(selRt);accRouteObjs.splice(accRouteObjs.indexOf(selRt),1);selectRoute(null);setSel(null);save();};
  /* 只有解鎖過的裝置才看得到調整功能：網址加 #edit 輸入密碼（頁面只存密碼的 SHA-256 指紋） */
- const EDITOR_KEY='campus3d-acc-editor',EDITOR_HASH='50e261b5d86cd8d62dbee72111d9eaaf1d2a9a44f331aae6c275f02b3db7b0a5';
+ const EDITOR_KEY='campus3d-acc-editor',EDITOR_HASH='428e9f391aa4c2e0cfd74000b8957e0a05c8fc17dd95d4b060a87d7c6b4bd7c8';
  const isEditor=()=>{try{return localStorage.getItem(EDITOR_KEY)===EDITOR_HASH;}catch(e){return false;}};
  const showEditor=on=>{document.getElementById('accEditRow').hidden=!on;if(!on&&editing)edBtn.click();};
  const sha=async t=>{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');};
  const askUnlock=()=>{if(document.getElementById('accUnlock'))return;const d=document.createElement('div');d.id='accUnlock';
-   d.innerHTML='<form><h3>開啟調整功能</h3><p>輸入密碼後，這台裝置會記住，之後打開「無障礙設施」就會出現「調整位置」。</p><input id="accPw" type="password" autocomplete="current-password" aria-label="密碼" placeholder="密碼"><p id="accPwMsg" role="alert"></p><div class="row"><button type="button" id="accPwCancel">取消</button><button type="submit">解鎖</button></div></form>';
+   d.innerHTML='<form><h3>開啟調整功能</h3><p>輸入密碼後，這台裝置會記住，之後打開「無障礙設施」就會出現「調整位置」。</p><input id="accPw" class="masked" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="密碼" placeholder="密碼"><label style="display:flex;gap:6px;align-items:center;font-size:.8rem"><input type="checkbox" id="accPwShow">顯示密碼</label><p>不分大小寫，全形字也可以。</p><p id="accPwMsg" role="alert"></p><div class="row"><button type="button" id="accPwCancel">取消</button><button type="submit">解鎖</button></div></form>';
    document.body.appendChild(d);const f=d.querySelector('form'),inp=d.querySelector('#accPw'),msg=d.querySelector('#accPwMsg');inp.focus();
+   d.querySelector('#accPwShow').addEventListener('change',ev=>{inp.classList.toggle('masked',!ev.target.checked);inp.focus();});
    const close=()=>{d.remove();try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}};
    d.querySelector('#accPwCancel').onclick=close;
-   f.addEventListener('submit',async ev=>{ev.preventDefault();let h='';try{h=await sha('campus3d-acc:'+inp.value);}catch(e){msg.textContent='這個瀏覽器無法驗證密碼，請改用 https 網址開啟。';return;}
+   f.addEventListener('submit',async ev=>{ev.preventDefault();let h='';try{h=await sha('campus3d-acc:'+inp.value.normalize('NFKC').replace(/\s+/g,'').toLowerCase());}catch(e){msg.textContent='這個瀏覽器無法驗證密碼，請改用 https 網址開啟。';return;}
      if(h!==EDITOR_HASH){msg.textContent='密碼不正確，請再試一次。';inp.select();return;}
      try{localStorage.setItem(EDITOR_KEY,EDITOR_HASH);}catch(e){}showEditor(true);close();
      if(acclist.hidden)bAcc.click();});};

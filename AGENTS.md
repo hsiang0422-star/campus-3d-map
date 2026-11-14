@@ -19,7 +19,7 @@
 | `P(x,z)` | 座標轉換：世界座標 = (x-13, z-8) |
 | `const ACC=` | 無障礙設施圖層：`icons` 為 `[類型, x, z, 所屬建築id, 是否在樓內]`，`routes` 為無障礙通路折線；`img` 為圖示 base64。由 `access-plan/` 的學校無障礙平面圖以相似轉換（縮放約 0.0977、旋轉約 -88.3°）換算而來 |
 | `調整模式` / `campus3d-acc-draft` | 無障礙設施面板的「調整位置」：使用者拖曳、新增、刪除圖示後按「完成並產生文字」，得到 `[["類型",x,z],...]`（x、z 為 P 座標）。收到這段文字時，用它取代 `ACC.icons`（每筆補上所屬建築 id 與是否在樓內），草稿暫存在 localStorage `campus3d-acc-draft` |
-| `EDITOR_HASH` / `#edit` / `admin/` | 調整模式只給解鎖過的裝置：開 `/admin`（`admin/index.html` 會轉到 `../#edit`）或網址加 `#edit` 輸入密碼，頁面比對 `SHA-256("campus3d-acc:"+密碼)` 與 `EDITOR_HASH`，成功後存在 localStorage `campus3d-acc-editor`；「鎖定編輯」可取消。密碼本身不在程式碼裡，要換密碼就換 `EDITOR_HASH`。這只是隱藏介面，不是真正的權限控管（調整結果本來就只產生文字，不會直接改網站） |
+| `EDITOR_HASH` / `#edit` / `admin/` | 調整模式只給解鎖過的裝置：開 `/admin`（`admin/index.html` 會轉到 `../#edit`）或網址加 `#edit` 輸入密碼，頁面比對 `SHA-256("campus3d-acc:"+密碼)`（密碼先做 NFKC 全形轉半形、去掉空白、轉小寫）與 `EDITOR_HASH`，成功後存在 localStorage `campus3d-acc-editor`；「鎖定編輯」可取消。密碼本身不在程式碼裡，要換密碼就換 `EDITOR_HASH`。這只是隱藏介面，不是真正的權限控管（調整結果本來就只產生文字，不會直接改網站） |
 | `const ACC_RAMPS` / `makeRamp` | 斜坡道 3D 模型：每座 `[x, z, 角度(度), 長, 寬, 高低對調(0/1)]`（P 座標，預設長 0.6、寬 0.2）。調整模式按「＋ 新增斜坡道」放置、拖曳、旋轉、改長寬；產生的文字第二段就是這個陣列，直接取代 `ACC_RAMPS` 即可。底部高度由 `accSurfaceY` 依地面自動決定 |
 | 司令台模型（`buildPodium`） | `ACC_RAMPS` 每座為 `[x,z,角度,長,寬,高低對調,種類,大小倍率,高度]`（舊的 6 欄格式也可讀）；第 7 欄為 `"podium"` 時畫成「司令台＋斜坡道」：平台約 1.1×0.7、高 0.24，斜坡接在平台側邊（長、寬用第 4、5 欄，`高低對調` 換到另一側），有扶手。調整模式按「＋ 新增司令台（含斜坡道）」放置，刪除方式同斜坡道 |
 | `accFloorIcons` / `accSyncFloors` | 教學大樓與行政大樓：外觀模式時，樓內的 `ACC.icons` 顯示在屋頂；選樓層或分層展開時，該棟只保留電梯（永遠顯示在屋頂）＋所選樓層 `FLOORS`／`ADMIN_PLAN` 中 `acc` 房間的無障礙廁所圖示。電梯一律放屋頂（`accRoofNear`）並畫在最上層。`ACC.icons` 第 5 欄 `-1` 代表依位置自動判斷 |
