@@ -1830,6 +1830,7 @@ function select(id){
     ${near.length&&show.pts?`<p>鄰近危險角落：${[...new Set(near)].join('、')}</p>`:''}`;
   focusB(id,true);
   document.querySelectorAll('#chips button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.id===id));
+  if(id==='teach'&&mode==='ext'){setMode('exp');return;}   // 點教學大樓直接顯示各樓層 3D（分層展開）
   const c=b.center.clone();c.y=0;
   const dir=camera.position.clone().sub(controls.target).normalize();
   flyTo(c.clone().add(dir.multiplyScalar(9)).setY(Math.max(5,b.top+5)),c,reduce?1:900);
