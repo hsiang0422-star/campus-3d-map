@@ -61,7 +61,7 @@
 - `DECOR_BUILD`：籃球架 `hoop`、樹木 `tree`、男廁／女廁／滅火器／AED 標誌 `male` `female` `fire` `aed`（標誌為 canvas 貼圖）。`makeDecor(dt,x,z,角度,大小)` 建立，`accDecor` 管理，編輯時可拖曳、用方向與大小滑桿調整、Backspace／Delete 或「刪除選取的項目」移除。
 - 存入草稿與匯出為獨立的第四段：`[類型, x, z, 方向, 大小]`；`loadDecor` 讀回。預設大小在 `DECOR_SCALE`。
 - 防災圖例：`DECOR_IMG` 內嵌五張圖（家長接送區 `pickup`、物資儲備點 `supplies`、戶外避難點 `shelter`、急救站 `firstaid`、指揮中心 `command`），白底已轉透明，以無光照材質顯示。之後新增圖例：把圖縮成約 256px 的 PNG 轉 base64，加入 `DECOR_IMG`，並在 `DECOR_NAME`、`DECOR_SCALE`、`DECOR_BUILD` 各加一項（`decorImg(key)`）。
-- 防災圖例（依 `IMG_2363` 圖例逐格裁切，白底轉透明）：`DECOR_IMG` 目前 13 個 key，名稱與 `DECOR_NAME` 一致（室內避難處所 `indoor`、室外避難處所 `shelter`、急救站 `firstaid`、滅火器 `fire`、消防栓 `hydrant`、指揮中心 `command`、物資儲備點 `supplies`、救援器材放置點 `rescue`、通訊設備放置點 `comms`、AED `aed`、災時家長接送區 `pickup`、警衛室 `security`、等待救援點 `waitrescue`）。建築內／外路線箭頭是線段，未列入模型。
+- 防災圖例（13 張已換成學校雲端硬碟「12_1_防災地圖範例版型」資料夾內的官方範例原圖：裁邊、外圍白底轉透明、縮成 256px PNG）：`DECOR_IMG` 目前 13 個 key，名稱與 `DECOR_NAME` 一致（室內避難處所 `indoor`、室外避難處所 `shelter`、急救站 `firstaid`、滅火器 `fire`、消防栓 `hydrant`、指揮中心 `command`、物資儲備點 `supplies`、救援器材放置點 `rescue`、通訊設備放置點 `comms`、AED `aed`、災時家長接送區 `pickup`、警衛室 `security`、等待救援點 `waitrescue`）。建築內／外路線箭頭是線段，未列入模型。
 - 男廁／女廁是無障礙設施的一種（`ACC_NAME` 的 `male`、`female`，圖來自 `ACC.img`，已補成正方形）。調整模式的「無障礙設施」新增按鈕與面板會自動出現。
 - `accessibility.html` 的 `DATA.icons` 已同步成主地圖目前的一般圖示：把 `ACC.icons` 用原始 SVG→地圖的轉換反推回 SVG 座標（x,y）。之後主地圖位置有改，要再同步一次。
 - 編輯只在主地圖做（`index.html` 的 `#edit` 或 `/admin`）。`accessibility.html` 只顯示：圖示同樣是會旋轉的 3D 薄片（`iconBox`），頂列有「編輯者模式」連結到 `admin/`。資料仍需手動同步（見上）。
