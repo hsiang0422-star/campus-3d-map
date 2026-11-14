@@ -1860,7 +1860,7 @@ function makeAcc(t,x,z,bid,inside,floor){const[a,b]=P(x,z);
   const g=new THREE.Group();g.position.set(a,y,b);g.userData={accT:t,bld:inside?hitB.id:'',bid:bid||''};g.visible=accOn[t];
   const PH=t==='elevator'?1.15:.42; // 電梯導引線較長
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,PH,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=PH/2;g.add(pole);
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:t!=='elevator'}));if(t==='elevator')sp.renderOrder=40;sp.scale.set(.46,.46,1);sp.position.y=PH+.2;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:false}));sp.renderOrder=t==='elevator'?40:36; // 圖示一律畫在最上層，不被建築擋住sp.scale.set(.46,.46,1);sp.position.y=PH+.2;
   const where=bid&&bMeta[bid]?bMeta[bid].name+(inside?'':'旁'):'戶外';
   sp.userData={kind:'acc',t,where,bid,g};g.add(sp);pickables.push(sp);g.userData.sp=sp;
   accGroup.add(g);accItems.push(g);return g;}
