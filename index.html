@@ -84,6 +84,7 @@ body.acc-editing #c{cursor:move}
 #accUnlock input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
 #accUnlock .row{display:flex;gap:8px;justify-content:flex-end}
 #accbody .row button,#edbody .row button{white-space:nowrap}
+.dzchip{min-width:38px;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--chip);color:var(--fg);font:inherit;font-size:.8rem;cursor:pointer}.dzchip.sel{background:var(--accent);color:var(--accent-fg)}.dzchip.off{opacity:.4;text-decoration:line-through}
 .rpsl{display:grid;grid-template-columns:4.6em 1fr 4.2em;align-items:center;gap:6px;font-size:.75rem}
 .rpsl input{width:100%;min-width:0}.rpsl output{font-variant-numeric:tabular-nums;color:var(--muted);text-align:right}
 .plist.dragging{box-shadow:0 14px 40px rgba(80,20,10,.35)}
@@ -277,7 +278,7 @@ body.drone-on #vcount{display:none}
       <button id="bCtrl" aria-pressed="true">地圖操作</button>
       <button id="bLbl" aria-pressed="false">建築名稱</button>
       <button id="bPts" aria-pressed="false">危險角落</button>
-      <button id="bEditTop" hidden aria-pressed="false" aria-controls="editpanel">編輯</button>
+      <button id="bEditTop" hidden aria-pressed="false" aria-controls="editpanel">設施編輯</button>
       <button id="bAcc" aria-pressed="false" aria-controls="acclist">無障礙設施</button>
       <button id="bAccess" aria-haspopup="dialog" aria-expanded="false" aria-controls="accessDialog">校園無障礙地圖指引</button>
       <button id="bSpin" aria-pressed="false">自動旋轉</button>
@@ -373,7 +374,7 @@ body.drone-on #vcount{display:none}
       <div class="plbody" id="accbody"></div>
     </aside>
     <aside class="plist" id="editpanel" hidden aria-label="編輯" style="left:330px;right:auto;width:330px">
-      <div class="phead dhead" id="edhead" title="拖曳移動"><span class="grip" aria-hidden="true"></span>編輯・拖曳移動<button class="collapse" id="edMin">收合</button><button class="collapse" id="edClose">關閉</button></div>
+      <div class="phead dhead" id="edhead" title="拖曳移動"><span class="grip" aria-hidden="true"></span>設施編輯・拖曳移動<button class="collapse" id="edMin">收合</button><button class="collapse" id="edClose">關閉</button></div>
       <div class="plbody" id="edbody"></div>
     </aside>
     <aside class="plist" id="acclegend" hidden aria-label="無障礙地圖圖例">
@@ -1083,9 +1084,25 @@ POINTS.forEach(([n,x,z],k)=>{const[a,b]=P(x,z);const{base,top}=PT_Y[k];const pho
 // floor danger corners only show on their own floor; campus (non-floor) ones only in exterior / split view
 function updateDangerVis(){POINTS.forEach((pt,k)=>{const fl=ptObjs[k].floor;
   // 危險地圖開啟時，外觀視角會顯示全校所有危險地點的燈號（室內地點的燈號位於該建物屋頂）；進入樓層視角時只顯示該樓層的地點
-  const vis=show.pts&&(fl?(mode==='ext'||mode===String(fl)):true);
+  const vis=!ptHidden.has(k)&&show.pts&&(fl?(mode==='ext'||mode===String(fl)):true);
   ptObjs[k].grp.visible=vis;ptLabels[k].pvis=vis;});
   floorZones.forEach(g=>{g.visible=show.pts&&mode===String(g.userData.floor);});}
+/* 危險角落編號：可新增、隱藏（刪除）、還原；供編輯與復原使用 */
+const ptHidden=new Set();
+function ptAdd(n,x,z){const k=POINTS.length;POINTS.push([n,x,z]);
+  const[a,b]=P(x,z);const base=ptBase(n,x,z),top=base+1.25;PT_Y.push({base,top});
+  const L=addLabel(n,'pt',new THREE.Vector3(a,top,b),'pts');L.bottom=true;ptLabels.push(L);
+  L.el.style.pointerEvents='auto';L.el.style.cursor='pointer';L.el.title='校園危險角落 '+n;L.el.addEventListener('click',()=>showPoint(n,k));
+  const grp=new THREE.Group();pinGroup.add(grp);
+  const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a,base,b),new THREE.Vector3(a,top,b)]),ptLeadMat);ln.computeLineDistances();grp.add(ln);
+  const dot=new THREE.Mesh(new THREE.SphereGeometry(0.075,14,12),new THREE.MeshBasicMaterial({color:0xe8352a}));dot.position.set(a,base+0.02,b);grp.add(dot);
+  const dsk=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.26,0.02,28),new THREE.MeshBasicMaterial({color:0xf08a3c,transparent:true,opacity:.85}));dsk.position.set(a,base+0.006,b);dsk.userData={kind:'pt',n,k};grp.add(dsk);pickables.push(dsk);
+  const pad=new THREE.Mesh(new THREE.CircleGeometry(0.42,24),new THREE.MeshBasicMaterial({visible:false}));pad.rotation.x=-Math.PI/2;pad.position.set(a,base+0.004,b);pad.userData={kind:'pt',n,k};grp.add(pad);pickables.push(pad);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(0.3,0.44,32),new THREE.MeshBasicMaterial({color:0xf26a1e,transparent:true,side:THREE.DoubleSide,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.set(a,base+0.012,b);ring.userData={kind:'pt',n,k};grp.add(ring);pickables.push(ring);ptRings.push(ring);
+  ptObjs.push({grp,floor:null});return k;}
+const ptSnap=()=>POINTS.map((p,k)=>[p[0],p[1],p[2],ptHidden.has(k)?0:1]);
+function applyPts(list){list=list||[];for(let k=POINTS.length;k<list.length;k++)ptAdd(list[k][0],list[k][1],list[k][2]);
+  POINTS.forEach((p,k)=>{const q=list[k];if(!q||!q[3])ptHidden.add(k);else ptHidden.delete(k);});updateDangerVis();}
 
 
 /* ---------- danger-corner details: photo cards and highlighted zones ---------- */
@@ -1869,9 +1886,8 @@ function discTex(src){if(discCache[src])return discCache[src];
   const paint=()=>{x.clearRect(0,0,256,256);
     const g=x.createRadialGradient(110,100,20,128,128,128);g.addColorStop(0,'#fffdf7');g.addColorStop(1,'#f1e4c8');
     x.beginPath();x.arc(128,128,127,0,Math.PI*2);x.fillStyle=g;x.fill();
-    x.beginPath();x.arc(128,128,118,0,Math.PI*2);x.lineWidth=7;x.strokeStyle='#c9a46a';x.stroke();
-    x.beginPath();x.arc(128,128,106,0,Math.PI*2);x.lineWidth=2;x.strokeStyle='#e6d3a6';x.stroke();
-    if(img.complete&&img.naturalWidth){const k=Math.min(168/img.naturalWidth,168/img.naturalHeight);const w=img.naturalWidth*k,h=img.naturalHeight*k;x.drawImage(img,128-w/2,128-h/2,w,h);}
+    x.beginPath();x.arc(128,128,118,0,Math.PI*2);x.lineWidth=3;x.strokeStyle='#c9a46a';x.stroke();
+        if(img.complete&&img.naturalWidth){const k=Math.min(200/img.naturalWidth,200/img.naturalHeight);const w=img.naturalWidth*k,h=img.naturalHeight*k;x.drawImage(img,128-w/2,128-h/2,w,h);}
     t.needsUpdate=true;};
   img.onload=paint;img.src=src;paint();return t;}
 function iconBox(src,D,T,o){o=o||{};const op=(o.opacity!=null)?o.opacity:1,dt=o.depthTest!==false;
@@ -1879,7 +1895,7 @@ function iconBox(src,D,T,o){o=o||{};const op=(o.opacity!=null)?o.opacity:1,dt=o.
   const side=new THREE.MeshStandardMaterial({color:0xc9a46a,roughness:.4,metalness:.3,transparent:true,opacity:op,depthTest:dt,depthWrite:false});
   const geo=new THREE.CylinderGeometry(D/2,D/2,T,64,1,false);geo.rotateX(Math.PI/2);
   return new THREE.Mesh(geo,[side,cap,cap]);}
-const ACC_ICON_SIZE=.34,ACC_ICON_OPACITY=.85; // 無障礙圖示大小與透明度（原本 .46、不透明）
+const ACC_ICON_SIZE=.42,ACC_ICON_OPACITY=.85; // 無障礙圖示大小與透明度（原本 .46、不透明）
 const accPoleGhostMat=new THREE.MeshBasicMaterial({color:0x222222,transparent:true,opacity:.22,depthTest:false,depthWrite:false});
 function accGhostPole(g,pole){const gp=new THREE.Mesh(pole.geometry,accPoleGhostMat);gp.position.copy(pole.position);gp.renderOrder=30;g.add(gp);} // 被建築擋住時，導引線淡淡透出
 const ACC_FLOOR_BLD={teach:'教學大樓',admin:'行政大樓'};
@@ -1890,7 +1906,7 @@ function makeAcc(t,x,z,bid,inside,floor){const[a,b]=P(x,z);
     const g=new THREE.Group();const lp=fp.worldToLocal(new THREE.Vector3(a,0,b));g.position.set(lp.x,.32,lp.z);
     g.userData={accT:t,floor,bld:bk};
     const pole=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.3,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=.15;g.add(pole);accGhostPole(g,pole);
-    const sp=iconBox(ACC.img[t],1,.16,{depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY});sp.renderOrder=23;sp.scale.setScalar(ACC_ICON_SIZE);sp.position.y=.5;
+    const sp=iconBox(ACC.img[t],1,.05,{depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY});sp.renderOrder=23;sp.scale.setScalar(ACC_ICON_SIZE);sp.position.y=.5;
     sp.userData={kind:'acc',t,where:`${ACC_FLOOR_BLD[bk]} ${fk}F`,bid:bk,g};g.add(sp);pickables.push(sp);spinners.push({o:sp,ph:Math.random()*Math.PI*2});g.userData.sp=sp;
     fp.add(g);accItems.push(g);return g;}
   const hitB=t==='elevator'?accRoofNear(a,b,.9):accHit(a,b);const y=(inside||t==='elevator')?hitB.y:0;if(inside===-1||t==='elevator')inside=y>0.01?1:0;
@@ -1898,7 +1914,7 @@ function makeAcc(t,x,z,bid,inside,floor){const[a,b]=P(x,z);
   const g=new THREE.Group();g.position.set(a,y,b);g.userData={accT:t,bld:inside?hitB.id:'',bid:bid||''};g.visible=accOn[t];
   const PH=t==='elevator'?1.15:.42; // 電梯導引線較長
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,PH,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=PH/2;g.add(pole);accGhostPole(g,pole);
-  const sp=iconBox(ACC.img[t],1,.16,{depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY});sp.renderOrder=t==='elevator'?40:36;sp.scale.setScalar(ACC_ICON_SIZE);sp.position.y=PH+.2; // 圖示一律畫在最上層，不被建築擋住
+  const sp=iconBox(ACC.img[t],1,.05,{depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY});sp.renderOrder=t==='elevator'?40:36;sp.scale.setScalar(ACC_ICON_SIZE);sp.position.y=PH+.2; // 圖示一律畫在最上層，不被建築擋住
   const where=bid&&bMeta[bid]?bMeta[bid].name+(inside?'':'旁'):'戶外';
   sp.userData={kind:'acc',t,where,bid,g};g.add(sp);pickables.push(sp);spinners.push({o:sp,ph:Math.random()*Math.PI*2});g.userData.sp=sp;
   accGroup.add(g);accItems.push(g);return g;}
@@ -1991,7 +2007,7 @@ const DECOR_IMG={"indoor":{"src":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
 function decorImg(key){return g=>{const d=DECOR_IMG[key];
   const post=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.36,8),new THREE.MeshStandardMaterial({color:0x6b6f75,roughness:.6}));post.position.y=.18;
   
-  const W=.26,H=W/d.a;const plate=iconBox(d.src,W,.05,{});plate.position.y=.36+W/2;
+  const W=.26,H=W/d.a;const plate=iconBox(d.src,W,.03,{});plate.position.y=.36+W/2;
   g.add(post,plate);};}
 const DECOR_BUILD={
   indoor:decorImg('indoor'),shelter:decorImg('shelter'),firstaid:decorImg('firstaid'),fire:decorImg('fire'),hydrant:decorImg('hydrant'),command:decorImg('command'),supplies:decorImg('supplies'),rescue:decorImg('rescue'),comms:decorImg('comms'),aed:decorImg('aed'),pickup:decorImg('pickup'),security:decorImg('security'),waitrescue:decorImg('waitrescue'),
@@ -2023,7 +2039,7 @@ const accFloorIcons=[];
 function accFloorIcon(parent,cx,cz,t,where,tag){
   const g=new THREE.Group();g.position.set(cx,0.32,cz);
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.3,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=.15;g.add(pole);accGhostPole(g,pole);
-  const sp=iconBox(ACC.img[t],1,.16,{depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY});sp.renderOrder=22;sp.scale.setScalar(ACC_ICON_SIZE*.9);sp.position.y=.48;
+  const sp=iconBox(ACC.img[t],1,.05,{depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY});sp.renderOrder=22;sp.scale.setScalar(ACC_ICON_SIZE*.9);sp.position.y=.48;
   sp.userData={kind:'acc',t,where};g.add(sp);pickables.push(sp);spinners.push({o:sp,ph:Math.random()*Math.PI*2});
   g.userData={accT:t,floor:tag};g.visible=false;parent.add(g);accFloorIcons.push(g);}
 Object.keys(FLOORS).forEach(fk=>{const o=floorObjs[+fk];if(!o)return;
@@ -2158,7 +2174,10 @@ let accPulse=()=>{};
  const load=(list,ramps)=>{accItems.slice().forEach(removeObj);accRamps.slice().forEach(removeObj);
    list.filter(i=>ACC_NAME[i[0]]).forEach(([t,x,z,fl])=>{const[a,b]=P(x,z);makeAcc(t,x,z,'',accGroundY(a,b)>0.01?1:0,fl);});
    (ramps||[]).forEach(r=>makeRamp(...r));};
- const save=()=>{note.hidden=false;try{localStorage.setItem(DRAFT,JSON.stringify({icons:current(),ramps:currentR(),routes:typeof currentRt==='function'?currentRt():undefined,decor:typeof currentD==='function'?currentD():undefined}));}catch(e){}};
+ let undoStack=[],lastSnap=null,restoring=false;
+ const editSnap=()=>JSON.stringify({icons:current(),ramps:currentR(),routes:currentRt(),decor:currentD(),pts:ptSnap()});
+ const save=()=>{note.hidden=false;const cur=editSnap();if(!restoring&&lastSnap!==null&&cur!==lastSnap){undoStack.push(lastSnap);if(undoStack.length>100)undoStack.shift();}
+   if(!restoring)lastSnap=cur;try{localStorage.setItem(DRAFT,cur);}catch(e){}};
  const selRing=new THREE.Mesh(new THREE.RingGeometry(.3,.4,40),new THREE.MeshBasicMaterial({color:0xff7a1a,transparent:true,opacity:.9,depthTest:false,side:THREE.DoubleSide}));
  selRing.rotation.x=-Math.PI/2;selRing.renderOrder=30;selRing.visible=false;scene.add(selRing);
  const placeRing=()=>{if(!sel||!editing||!accGroup.visible||!visDeep(sel)){selRing.visible=false;return;}
@@ -2239,7 +2258,7 @@ let accPulse=()=>{};
  [decAng,decS].forEach(el=>el.addEventListener('change',()=>{if(sel&&sel.userData.isDecor)save();}));
  if(isEditor())try{const d=JSON.parse(localStorage.getItem(DRAFT)||'null');
    if(Array.isArray(d)&&d.length){load(d,origR);note.hidden=false;}
-   else if(d&&Array.isArray(d.icons)){load(d.icons,d.ramps);if(Array.isArray(d.routes))loadRoutes(d.routes);if(Array.isArray(d.decor))loadDecor(d.decor);note.hidden=false;}}catch(e){}
+   else if(d&&Array.isArray(d.icons)){load(d.icons,d.ramps);if(Array.isArray(d.routes))loadRoutes(d.routes);if(Array.isArray(d.decor))loadDecor(d.decor);if(Array.isArray(d.pts))applyPts(d.pts);note.hidden=false;}}catch(e){}
  const resetAll=()=>{try{localStorage.removeItem(DRAFT);}catch(e){}load(orig,origR);loadRoutes(origRt);loadDecor([]);note.hidden=true;setSel(null);outBox.hidden=true;};
  document.getElementById('accDiscard').onclick=resetAll;
  document.getElementById('accEdReset').onclick=resetAll;
@@ -2275,16 +2294,34 @@ let accPulse=()=>{};
    outTx.value='【主地圖無障礙設施位置調整】\n共 '+list.length+' 個設施（類型, x, z, 樓層）\n'+JSON.stringify(list)
      +'\n斜坡道 '+ramps.length+' 座（x, z, 角度, 長, 寬, 高低對調, 種類, 大小倍率, 高度）\n'+JSON.stringify(ramps)
      +'\n無障礙路線 '+accRouteObjs.length+' 條（每條為依行進方向排列的點 [x, z]）\n'+JSON.stringify(currentRt())
-     +'\n一般 3D 模型 '+accDecor.length+' 個（類型, x, z, 方向, 大小）\n'+JSON.stringify(currentD());
+     +'\n一般 3D 模型 '+accDecor.length+' 個（類型, x, z, 方向, 大小）\n'+JSON.stringify(currentD())
+     +'\n危險角落 '+POINTS.length+' 個（編號, x, z, 顯示 1／隱藏 0）\n'+JSON.stringify(ptSnap());
    outBox.hidden=false;outTx.focus();outTx.select();};
  document.getElementById('accEdCopy').onclick=()=>{const ok=()=>{const c=document.getElementById('accEdCopied');c.hidden=false;setTimeout(()=>c.hidden=true,1800);};
    const fb=()=>{outTx.select();try{document.execCommand('copy');}catch(e){}ok();};
    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(outTx.value).then(ok,fb);else fb();};
  edBtn.onclick=()=>{editing=!editing;edBtn.setAttribute('aria-pressed',editing);edBtn.textContent=editing?'結束調整':'調整位置';box.hidden=!editing;document.body.classList.toggle('acc-editing',editing);if(!editing){setSel(null);selectRoute(null);controls.enabled=true;}placeRing();};
- document.getElementById('edbody').appendChild(box);
+ const edbody=document.getElementById('edbody');
+ edbody.appendChild(document.getElementById('accEditRow'));edbody.appendChild(document.getElementById('accDraftNote'));edbody.appendChild(box);
+ const dzBox=document.createElement('div');dzBox.className='accedit';
+ dzBox.innerHTML='<h4>危險角落編號</h4><p>點編號可選取；「刪除選取的編號」會把它隱藏，灰色的編號點一下即可還原。「＋ 新增危險角落」會在畫面中央加一個新編號。</p><div class="row" id="dzChips" style="flex-wrap:wrap"></div><div class="row"><button id="dzAdd">＋ 新增危險角落</button><button id="dzDel" disabled>刪除選取的編號</button></div>';
+ edbody.appendChild(dzBox);
+ let dzSel=null;
+ const renderDz=()=>{document.getElementById('dzChips').innerHTML=POINTS.map((p,k)=>`<button class="dzchip${ptHidden.has(k)?' off':''}${dzSel===k?' sel':''}" data-k="${k}">${p[0]}</button>`).join('');
+   document.getElementById('dzDel').disabled=dzSel===null||ptHidden.has(dzSel);};
+ document.getElementById('dzChips').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=+b.dataset.k;
+   if(ptHidden.has(k)){ptHidden.delete(k);dzSel=k;save();}else dzSel=(dzSel===k?null:k);updateDangerVis();renderDz();});
+ document.getElementById('dzDel').onclick=()=>{if(dzSel===null)return;ptHidden.add(dzSel);dzSel=null;updateDangerVis();renderDz();save();};
+ document.getElementById('dzAdd').onclick=()=>{const[x,z]=openSpot(center());const n=Math.max(0,...POINTS.map(p=>p[0]))+1;dzSel=ptAdd(n,x,z);if(!show.pts)bPts.click();updateDangerVis();renderDz();save();};
+ renderDz();
+ const undo=()=>{if(!undoStack.length)return;const prev=undoStack.pop();restoring=true;
+   try{const st=JSON.parse(prev);load(st.icons,st.ramps);loadRoutes(st.routes);loadDecor(st.decor);applyPts(st.pts);}finally{restoring=false;}
+   lastSnap=prev;try{localStorage.setItem(DRAFT,prev);}catch(e){}setSel(null);renderDz();};
+ document.addEventListener('keydown',e=>{if(!editing||!(e.ctrlKey||e.metaKey)||e.shiftKey||e.key.toLowerCase()!=='z')return;
+   const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;e.preventDefault();undo();});
  const editpanel=document.getElementById('editpanel'),bEditTop=document.getElementById('bEditTop');
  const closeEdit=()=>{editpanel.hidden=true;bEditTop.setAttribute('aria-pressed','false');if(editing)edBtn.click();};
- bEditTop.onclick=()=>{if(editpanel.hidden){editpanel.hidden=false;bEditTop.setAttribute('aria-pressed','true');if(!accGroup.visible)bAcc.click();if(!editing)edBtn.click();}else closeEdit();};
+ bEditTop.onclick=()=>{if(editpanel.hidden){editpanel.hidden=false;bEditTop.setAttribute('aria-pressed','true');if(!accGroup.visible)bAcc.click();if(!editing)edBtn.click();if(lastSnap===null)lastSnap=editSnap();}else closeEdit();};
  document.getElementById('edClose').onclick=closeEdit;
  floatResizable(editpanel,'campus3d-editpanel-size',260,160);floatCollapsible(editpanel,document.getElementById('edMin'),'campus3d-editpanel-min');
  {const KEY='campus3d-editpanel-pos',head=document.getElementById('edhead'),stage=editpanel.parentElement;let st=null;
