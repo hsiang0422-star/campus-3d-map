@@ -87,6 +87,7 @@ body.acc-editing #c{cursor:move}
 .dzchip{min-width:38px;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--chip);color:var(--fg);font:inherit;font-size:.8rem;cursor:pointer}.dzchip.sel{background:var(--accent);color:var(--accent-fg)}.dzchip.off{opacity:.4;text-decoration:line-through}
 .rpsl{display:grid;grid-template-columns:4.6em 1fr 4.2em;align-items:center;gap:6px;font-size:.75rem}
 .rpsl input{width:100%;min-width:0}.rpsl output{font-variant-numeric:tabular-nums;color:var(--muted);text-align:right}
+body.acc-editing .compass{pointer-events:auto;cursor:move}
 .plist.dragging{box-shadow:0 14px 40px rgba(80,20,10,.35)}
 .plist .plbody{overflow:auto;min-height:0;flex:1}
 .access-dialog{width:min(560px,calc(100% - 24px));max-height:min(82vh,720px);margin:auto;padding:0;border:2px solid var(--line);border-radius:16px;background:var(--panel);color:var(--ink);box-shadow:0 18px 60px rgba(0,0,0,.28)}
@@ -672,10 +673,20 @@ BUILDINGS.forEach(b=>{
   scene.add(im);})();
 
 /* ---------- trees ---------- */
-TREES.forEach(([x,z,s])=>{const[a,b]=P(x,z);
-  const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.05*s,0.07*s,0.7*s,8),felt(0x7a5236));tr.position.set(a,0.35*s,b);tr.castShadow=true;scene.add(tr);
-  const cr=new THREE.Mesh(new THREE.SphereGeometry(0.42*s,18,14),felt(Math.random()<.15?0xe9d44a:(Math.random()<.5?0x3f8f3c:0x6fb043)));
-  cr.position.set(a,0.85*s,b);cr.scale.y=1.15;cr.castShadow=true;scene.add(cr);});
+/* ---------- 樹木：可在編輯模式選取、拖曳移動、刪除、新增 ---------- */
+let COMPASS_AT=P(8.3,10.25);
+const TREE_ORIG=TREES.map(([x,z,s],i)=>({x,z,s,c:(i%7===0?0xe9d44a:(i%2?0x3f8f3c:0x6fb043)),hidden:false}));
+let treeList=TREE_ORIG.map(t=>({...t}));
+const treeGroup=new THREE.Group();scene.add(treeGroup);
+const treeCrowns=[];
+function buildTrees(){
+  while(treeGroup.children.length)treeGroup.remove(treeGroup.children[0]);treeCrowns.length=0;
+  treeList.forEach(t=>{if(t.hidden){t.obj=null;t.crown=null;return;}
+    const[a,b]=P(t.x,t.z),sc=t.s||1;const g=new THREE.Group();g.position.set(a,0,b);
+    const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.05*sc,0.07*sc,0.7*sc,8),felt(0x7a5236));tr.position.y=0.35*sc;tr.castShadow=true;
+    const cr=new THREE.Mesh(new THREE.SphereGeometry(0.42*sc,18,14),felt(t.c));cr.position.y=0.85*sc;cr.scale.y=1.15;cr.castShadow=true;
+    g.add(tr,cr);treeGroup.add(g);cr.userData={tree:t};treeCrowns.push(cr);t.obj=g;t.crown=cr;});}
+buildTrees();
 
 /* ---------- school gate (from street photo) ---------- */
 (function(){
@@ -2172,7 +2183,7 @@ let accPulse=()=>{};
  const edBtn=document.getElementById('accEdit'),box=document.getElementById('accEditBox'),selEl=document.getElementById('accEdSel'),
    delBtn=document.getElementById('accEdDel'),outBox=document.getElementById('accEdOut'),outTx=document.getElementById('accEdText'),note=document.getElementById('accDraftNote'),
    rampTools=document.getElementById('accRampTools');
- let editing=false,sel=null,drag=null;
+ let editing=false,sel=null,drag=null,selTree=null,compDrag=false;
  const r2=v=>+v.toFixed(2);
  const toP=(a,b)=>[r2(a+CX),r2(b+CZ)];
  const current=()=>accItems.map(g=>{const[wx,wz]=accWorldXZ(g);const[x,z]=toP(wx,wz);return[g.userData.accT,x,z,g.userData.floor||'',r2(g.userData.ph||0)];});
@@ -2183,7 +2194,7 @@ let accPulse=()=>{};
    list.filter(i=>ACC_NAME[i[0]]).forEach(([t,x,z,fl,ph])=>{const[a,b]=P(x,z);makeAcc(t,x,z,'',accGroundY(a,b)>0.01?1:0,fl||'',ph||undefined);});
    (ramps||[]).forEach(r=>makeRamp(...r));};
  let undoStack=[],lastSnap=null,restoring=false;
- const editSnap=()=>JSON.stringify({icons:current(),ramps:currentR(),routes:currentRt(),decor:currentD(),pts:ptSnap()});
+ const editSnap=()=>JSON.stringify({icons:current(),ramps:currentR(),routes:currentRt(),decor:currentD(),pts:ptSnap(),trees:treeSnap(),compass:compassRaw()});
  const save=()=>{note.hidden=false;const cur=editSnap();if(!restoring&&lastSnap!==null&&cur!==lastSnap){undoStack.push(lastSnap);if(undoStack.length>100)undoStack.shift();}
    if(!restoring)lastSnap=cur;try{localStorage.setItem(DRAFT,cur);}catch(e){}};
  const selRing=new THREE.Mesh(new THREE.RingGeometry(.3,.4,40),new THREE.MeshBasicMaterial({color:0xff7a1a,transparent:true,opacity:.9,depthTest:false,side:THREE.DoubleSide}));
@@ -2191,7 +2202,7 @@ let accPulse=()=>{};
  const placeRing=()=>{if(!sel||!editing||!accGroup.visible||!visDeep(sel)){selRing.visible=false;return;}
    const r=sel.userData.isRamp?Math.max(sel.userData.r.len,sel.userData.r.w)*0.75+.15:.35;selRing.userData.r=r;
    const wp=sel.getWorldPosition(new THREE.Vector3());selRing.position.set(wp.x,(sel.userData.isRamp||sel.userData.floor||sel.userData.isDecor?wp.y:0)+.2,wp.z);selRing.visible=true;};
- accPulse=now=>{if(!sel){selRing.visible=false;return;}placeRing();if(!selRing.visible)return;placeRing();const k=1+.18*Math.sin(now/180);selRing.scale.setScalar(selRing.userData.r/.35*k);};
+ accPulse=now=>{if(selTree){if(selRing.visible&&selTree.crown){const wp=selTree.crown.getWorldPosition(new THREE.Vector3());selRing.position.set(wp.x,.05,wp.z);selRing.scale.setScalar(selRing.userData.r/.35*(1+.18*Math.sin(now/180)));}return;}if(!sel){selRing.visible=false;return;}placeRing();if(!selRing.visible)return;placeRing();const k=1+.18*Math.sin(now/180);selRing.scale.setScalar(selRing.userData.r/.35*k);};
  const openSpot=([x,z])=>{ // 若中心在建築上，往外螺旋找最近的空地
    for(let rad=0;rad<=6;rad+=.25){const n=rad?Math.ceil(rad*12):1;
      for(let k=0;k<n;k++){const t=k/n*Math.PI*2,px=x+rad*Math.cos(t),pz=z+rad*Math.sin(t);const[a,b]=P(px,pz);
@@ -2200,12 +2211,24 @@ let accPulse=()=>{};
  const focusOn=g=>{const t=g.getWorldPosition(new THREE.Vector3());const dir=camera.position.clone().sub(controls.target);dir.y=0;
    if(dir.lengthSq()<1e-6)dir.set(0,0,1);dir.normalize();flyTo(t.clone().add(dir.multiplyScalar(3.2)).setY(t.y+3.6),t,reduce?1:800);};
  const hl=(g,on)=>{if(!g)return;if(g.userData.isDecor){g.traverse(o=>{if(o.isMesh&&o.material&&o.material.emissive)o.material.emissive.setHex(on?0x553300:0);});return;}if(g.userData.isRamp)g.userData.deck.material.emissive.setHex(on?0x7a4a00:0x000000);else g.userData.sp.scale.setScalar(on?ACC_ICON_SIZE*1.4:ACC_ICON_SIZE);};
- const setSel=g=>{hl(sel,false);sel=g;if(g&&typeof selectRoute==='function'&&selRt)selectRoute(null);hl(g,true);placeRing();rampTools.hidden=!(g&&g.userData.isRamp);document.getElementById('poleTools').hidden=!(g&&g.userData.pole);if(g&&g.userData.pole){document.getElementById('poleLen').value=g.userData.ph;document.getElementById('poleLenV').textContent=(+g.userData.ph).toFixed(2);}document.getElementById('decTools').hidden=!(g&&g.userData.isDecor);delBtn.disabled=!g;
+ const setSel=g=>{if(g&&selTree)selectTree(null);hl(sel,false);sel=g;if(g&&typeof selectRoute==='function'&&selRt)selectRoute(null);hl(g,true);placeRing();rampTools.hidden=!(g&&g.userData.isRamp);document.getElementById('poleTools').hidden=!(g&&g.userData.pole);if(g&&g.userData.pole){document.getElementById('poleLen').value=g.userData.ph;document.getElementById('poleLenV').textContent=(+g.userData.ph).toFixed(2);}document.getElementById('decTools').hidden=!(g&&g.userData.isDecor);delBtn.disabled=!g;
    if(!g){selEl.textContent='尚未選取，點一下圖示或斜坡道即可選取。';return;}
    if(g.userData.isDecor){const r=g.userData.r;document.getElementById('decAng').value=r.ang;document.getElementById('decS').value=r.s;document.getElementById('decAngV').textContent=Math.round(r.ang)+'°';document.getElementById('decSV').textContent='×'+(+r.s).toFixed(2);selEl.textContent=`${DECOR_NAME[g.userData.dt]}（座標 ${r2(r.x)}, ${r2(r.z)}，方向 ${Math.round(r.ang)}°，大小 ×${(+r.s).toFixed(2)}）`;return;}
    if(g.userData.isRamp){const r=g.userData.r;if(typeof syncSliders==='function')syncSliders();selEl.textContent=`${r.kind==='podium'?'司令台（含斜坡道）':'斜坡道'}（座標 ${r2(r.x)}, ${r2(r.z)}，方向 ${Math.round(r.ang)}°，大小 ×${(+(r.s||1)).toFixed(2)}）`;}
    else{const[wx,wz]=accWorldXZ(g);const[x,z]=toP(wx,wz);const fl=g.userData.floor?`・${ACC_FLOOR_BLD[g.userData.floor.split(':')[0]]} ${g.userData.floor.split(':')[1]}F 專用`:'';selEl.textContent=`${ACC_NAME[g.userData.accT]}${fl}（座標 ${x}, ${z}）`;}};
- /* 路線編輯 */
+ /* 樹木與指北針：選取、拖曳、刪除、存檔 */
+ const treeSnap=()=>treeList.map(t=>[t.x,t.z,t.s,t.hidden?1:0,t.c]);
+ const compassRaw=()=>toP(COMPASS_AT[0],COMPASS_AT[1]);
+ const applyTrees=list=>{if(!Array.isArray(list))return;treeList=list.map(([x,z,sc,h,c])=>({x,z,s:sc||1,c:c||0x6fb043,hidden:!!h}));buildTrees();selectTree(null);};
+ const applyCompass=c=>{if(!Array.isArray(c))return;COMPASS_AT=P(c[0],c[1]);placeCompass();};
+ const origTrees=treeSnap(),origCompass=[8.3,10.25];
+ function selectTree(t){if(t&&sel)setSel(null);selTree=t;
+   const td=document.getElementById('tkDel');if(td)td.disabled=!t;
+   if(!t){selRing.visible=false;return;}
+   selRing.userData.r=.6;selRing.visible=true;
+   selEl.textContent=`樹木（座標 ${r2(t.x)}, ${r2(t.z)}）`;}
+ function deleteTree(){if(!selTree)return;selTree.hidden=true;selectTree(null);buildTrees();save();}
+/* 路線編輯 */
  const origRt=accRouteObjs.map(g=>g.userData.pts.map(p=>p.slice()));
  let selRt=null,selV=-1;const rtTools=document.getElementById('rtTools');
  const hdlGroup=new THREE.Group();scene.add(hdlGroup);
@@ -2266,8 +2289,8 @@ let accPulse=()=>{};
  [decAng,decS].forEach(el=>el.addEventListener('change',()=>{if(sel&&sel.userData.isDecor)save();}));
  if(isEditor())try{const d=JSON.parse(localStorage.getItem(DRAFT)||'null');
    if(Array.isArray(d)&&d.length){load(d,origR);note.hidden=false;}
-   else if(d&&Array.isArray(d.icons)){load(d.icons,d.ramps);if(Array.isArray(d.routes))loadRoutes(d.routes);if(Array.isArray(d.decor))loadDecor(d.decor);if(Array.isArray(d.pts))applyPts(d.pts);note.hidden=false;}}catch(e){}
- const resetAll=()=>{try{localStorage.removeItem(DRAFT);}catch(e){}load(orig,origR);loadRoutes(origRt);loadDecor([]);note.hidden=true;setSel(null);outBox.hidden=true;};
+   else if(d&&Array.isArray(d.icons)){load(d.icons,d.ramps);if(Array.isArray(d.routes))loadRoutes(d.routes);if(Array.isArray(d.decor))loadDecor(d.decor);if(Array.isArray(d.pts))applyPts(d.pts);if(Array.isArray(d.trees))applyTrees(d.trees);if(Array.isArray(d.compass))applyCompass(d.compass);note.hidden=false;}}catch(e){}
+ const resetAll=()=>{try{localStorage.removeItem(DRAFT);}catch(e){}load(orig,origR);loadRoutes(origRt);loadDecor([]);applyTrees(origTrees);applyCompass(origCompass);note.hidden=true;setSel(null);outBox.hidden=true;};
  document.getElementById('accDiscard').onclick=resetAll;
  document.getElementById('accEdReset').onclick=resetAll;
  const center=()=>toP(controls.target.x,controls.target.z);
@@ -2303,12 +2326,14 @@ let accPulse=()=>{};
      +'\n斜坡道 '+ramps.length+' 座（x, z, 角度, 長, 寬, 高低對調, 種類, 大小倍率, 高度）\n'+JSON.stringify(ramps)
      +'\n無障礙路線 '+accRouteObjs.length+' 條（每條為依行進方向排列的點 [x, z]）\n'+JSON.stringify(currentRt())
      +'\n一般 3D 模型 '+accDecor.length+' 個（類型, x, z, 方向, 大小）\n'+JSON.stringify(currentD())
-     +'\n危險角落 '+POINTS.length+' 個（編號, x, z, 顯示 1／隱藏 0）\n'+JSON.stringify(ptSnap());
+     +'\n危險角落 '+POINTS.length+' 個（編號, x, z, 顯示 1／隱藏 0）\n'+JSON.stringify(ptSnap())
+     +'\n樹木 '+treeList.filter(t=>!t.hidden).length+' 棵（x, z, 大小, 隱藏 1／顯示 0）\n'+JSON.stringify(treeSnap().map(r=>r.slice(0,4)))
+     +'\n指北針位置（x, z）\n'+JSON.stringify(compassRaw());
    outBox.hidden=false;outTx.focus();outTx.select();};
  document.getElementById('accEdCopy').onclick=()=>{const ok=()=>{const c=document.getElementById('accEdCopied');c.hidden=false;setTimeout(()=>c.hidden=true,1800);};
    const fb=()=>{outTx.select();try{document.execCommand('copy');}catch(e){}ok();};
    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(outTx.value).then(ok,fb);else fb();};
- edBtn.onclick=()=>{editing=!editing;edBtn.setAttribute('aria-pressed',editing);edBtn.textContent=editing?'結束調整':'調整位置';box.hidden=!editing;document.body.classList.toggle('acc-editing',editing);if(!editing){setSel(null);selectRoute(null);controls.enabled=true;}placeRing();};
+ edBtn.onclick=()=>{editing=!editing;edBtn.setAttribute('aria-pressed',editing);edBtn.textContent=editing?'結束調整':'調整位置';box.hidden=!editing;document.body.classList.toggle('acc-editing',editing);if(!editing){setSel(null);selectRoute(null);selectTree(null);controls.enabled=true;}placeRing();};
  const edbody=document.getElementById('edbody');
  edbody.appendChild(document.getElementById('accEditRow'));edbody.appendChild(document.getElementById('accDraftNote'));edbody.appendChild(box);
  const dzBox=document.createElement('div');dzBox.className='accedit';
@@ -2317,6 +2342,12 @@ let accPulse=()=>{};
  const poleBox=document.createElement('div');poleBox.className='accedit';poleBox.id='poleTools';poleBox.hidden=true;
  poleBox.innerHTML='<h4>導引線長度</h4><p>選取設施後可調整它的導引線；下方「全部設施」會一起改所有圖示的導引線。</p><div class="rpsl"><label for="poleLen">此設施</label><input type="range" id="poleLen" min="0.1" max="2.5" step="0.05"><output id="poleLenV"></output></div><div class="rpsl"><label for="poleAll">全部設施</label><input type="range" id="poleAll" min="0.1" max="2.5" step="0.05" value="0.42"><output id="poleAllV"></output></div>';
  edbody.appendChild(poleBox);
+ const treeBox2=document.createElement('div');treeBox2.className='accedit';
+ treeBox2.innerHTML='<h4>樹木與指北針</h4><p>點一下樹木可選取，拖曳即可移動；選取後按 Backspace 或「刪除選取的樹」可刪除。「＋ 新增樹木」會在畫面中央加一棵。指北針：編輯模式下直接拖曳地圖上的指北針即可移動。</p><div class="row"><button id="tkAdd">＋ 新增樹木</button><button id="tkDel" disabled>刪除選取的樹</button><button id="cpReset">指北針回到原位</button></div>';
+ edbody.appendChild(treeBox2);
+ document.getElementById('tkAdd').onclick=()=>{const[x,z]=openSpot(center());const t={x,z,s:1,c:0x6fb043,hidden:false};treeList.push(t);buildTrees();selectTree(t);focusOn(t.obj);save();};
+ document.getElementById('tkDel').onclick=deleteTree;
+ document.getElementById('cpReset').onclick=()=>{COMPASS_AT=P(8.3,10.25);placeCompass();save();};
  const pl=document.getElementById('poleLen'),pa=document.getElementById('poleAll');
  pl.addEventListener('input',()=>{if(!sel||!sel.userData.pole)return;accSetPole(sel,+pl.value);document.getElementById('poleLenV').textContent=(+sel.userData.ph).toFixed(2);});
  pl.addEventListener('change',()=>{if(sel&&sel.userData.pole)save();});
@@ -2331,7 +2362,7 @@ let accPulse=()=>{};
  document.getElementById('dzAdd').onclick=()=>{const[x,z]=openSpot(center());const n=Math.max(0,...POINTS.map(p=>p[0]))+1;dzSel=ptAdd(n,x,z);if(!show.pts)bPts.click();updateDangerVis();renderDz();save();};
  renderDz();
  const undo=()=>{if(!undoStack.length)return;const prev=undoStack.pop();restoring=true;
-   try{const st=JSON.parse(prev);load(st.icons,st.ramps);loadRoutes(st.routes);loadDecor(st.decor);applyPts(st.pts);}finally{restoring=false;}
+   try{const st=JSON.parse(prev);load(st.icons,st.ramps);loadRoutes(st.routes);loadDecor(st.decor);applyPts(st.pts);if(st.trees)applyTrees(st.trees);if(st.compass)applyCompass(st.compass);}finally{restoring=false;}
    lastSnap=prev;try{localStorage.setItem(DRAFT,prev);}catch(e){}setSel(null);renderDz();};
  document.addEventListener('keydown',e=>{if(!editing||!(e.ctrlKey||e.metaKey)||e.shiftKey||e.key.toLowerCase()!=='z')return;
    const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;e.preventDefault();undo();});
@@ -2348,7 +2379,17 @@ let accPulse=()=>{};
   head.addEventListener('pointerup',end);head.addEventListener('pointercancel',end);}
  const stageEl=canvas.parentElement,rc=new THREE.Raycaster(),m=new THREE.Vector2(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0),hit=new THREE.Vector3();
  const setM=e=>{const r=canvas.getBoundingClientRect();m.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);rc.setFromCamera(m,camera);};
- stageEl.addEventListener('pointerdown',e=>{if(!editing||!accGroup.visible||e.target!==canvas)return;setM(e);
+ stageEl.addEventListener('pointerdown',e=>{if(!editing||e.target!==canvas)return;setM(e);
+   const th=rc.intersectObjects(treeCrowns,false)[0];if(!th)return;
+   e.stopPropagation();e.preventDefault();const t=th.object.userData.tree;selectTree(t);
+   const[ax,az]=P(t.x,t.z);plane.constant=0;rc.ray.intersectPlane(plane,hit);
+   drag={id:e.pointerId,tree:t,dx:ax-hit.x,dz:az-hit.z};controls.enabled=false;
+   try{canvas.setPointerCapture(e.pointerId);}catch(err){}},true);
+ const compassEl=document.querySelector('.compass');
+ compassEl.addEventListener('pointerdown',e=>{if(!editing)return;e.stopPropagation();e.preventDefault();compDrag=true;try{compassEl.setPointerCapture(e.pointerId);}catch(err){}});
+ compassEl.addEventListener('pointermove',e=>{if(!compDrag)return;setM(e);plane.constant=0;if(rc.ray.intersectPlane(plane,hit)){COMPASS_AT=[hit.x,hit.z];placeCompass();}});
+ const compEnd=()=>{if(compDrag){compDrag=false;save();}};compassEl.addEventListener('pointerup',compEnd);compassEl.addEventListener('pointercancel',compEnd);
+stageEl.addEventListener('pointerdown',e=>{if(!editing||!accGroup.visible||e.target!==canvas)return;setM(e);
    const hh=hdlGroup.children.length?rc.intersectObjects(hdlGroup.children.filter(o=>o.userData.vi!=null),false)[0]:null;
    if(hh){e.stopPropagation();e.preventDefault();selV=hh.object.userData.vi;drawHandles();rtText();plane.constant=0;
      rc.ray.intersectPlane(plane,hit);const[a,b]=P(...selRt.userData.pts[selV]);drag={id:e.pointerId,dx:a-hit.x,dz:b-hit.z,vtx:true};controls.enabled=false;
@@ -2366,6 +2407,7 @@ let accPulse=()=>{};
    try{canvas.setPointerCapture(e.pointerId);}catch(err){}},true);
  canvas.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;setM(e);if(!rc.ray.intersectPlane(plane,hit))return;
    const x=Math.max(-14,Math.min(14,hit.x+drag.dx)),z=Math.max(-8,Math.min(8,hit.z+drag.dz));
+   if(drag.tree){const rx=Math.max(-14,Math.min(14,hit.x+drag.dx)),rz=Math.max(-8,Math.min(8,hit.z+drag.dz));const[px,pz]=toP(rx,rz);drag.tree.x=px;drag.tree.z=pz;buildTrees();selectTree(drag.tree);return;}
    if(drag.vtx){selRt.userData.pts[selV]=toP(x,z);rebuild();return;}
    if(drag.route){const dx=hit.x-drag.sx,dz=hit.z-drag.sz;drag.moved=drag.moved||Math.hypot(dx,dz)>.02;
      selRt.userData.pts=drag.orig.map(([px,pz])=>[r2(px+dx),r2(pz+dz)]);rebuild();return;}
@@ -2378,7 +2420,7 @@ let accPulse=()=>{};
  // 調整模式：按 Backspace 或 Delete 刪除選取的圖示、斜坡道或路線
  document.addEventListener('keydown',e=>{if(!editing||(e.key!=='Delete'&&e.key!=='Backspace'))return;
    const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;
-   if(selRt){e.preventDefault();document.getElementById('rtDel').click();}
+   if(selRt){e.preventDefault();document.getElementById('rtDel').click();}else if(selTree){e.preventDefault();deleteTree();}
    else if(sel){e.preventDefault();delBtn.click();}});
  canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
 }
@@ -2417,8 +2459,7 @@ bAccess.onclick=()=>{accessDialog.showModal();bAccess.setAttribute('aria-expande
 document.getElementById('accessClose').onclick=()=>accessDialog.close();
 accessDialog.addEventListener('close',()=>bAccess.setAttribute('aria-expanded','false'));
 /* 指北針固定在長和路二段 140 巷標示的位置（地圖上），隨地圖平移、縮放 */
-const COMPASS_AT=P(8.3,10.25);const compassEl=document.querySelector('.compass');
-function placeCompass(){const st=compassEl.parentElement;const w=st.clientWidth,h=st.clientHeight;const q=new THREE.Vector3(COMPASS_AT[0],0.05,COMPASS_AT[1]).project(camera);
+function placeCompass(){const compassEl=document.querySelector('.compass');const st=compassEl.parentElement;const w=st.clientWidth,h=st.clientHeight;const q=new THREE.Vector3(COMPASS_AT[0],0.05,COMPASS_AT[1]).project(camera);
   if(q.z>1){compassEl.style.display='none';return;}compassEl.style.display='';compassEl.style.left=((q.x+1)/2*w)+'px';compassEl.style.top=((1-q.y)/2*h)+'px';}
 const compassPointer=document.getElementById('compassPointer'),northVector=new THREE.Vector3(1,0,0),compassOrigin=new THREE.Vector3(),compassTip=new THREE.Vector3(); // 校園北端在世界座標 +X
 function updateCompass(){
