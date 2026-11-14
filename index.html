@@ -96,13 +96,13 @@ body.acc-editing #c{cursor:move}
 .access-dialog p,.access-dialog li{font-size:.9rem;line-height:1.7}
 .access-dialog ul{padding-left:1.4em;margin:10px 0}
 .access-dialog .access-close{display:flex;justify-content:flex-end;margin-top:16px}
-.compass{position:absolute;left:28px;top:46px;width:88px;height:88px;border:3px solid #514c47;border-radius:50%;z-index:5;pointer-events:none;color:#514c47}
+.compass{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);width:88px;height:88px;border:3px solid #514c47;border-radius:50%;z-index:5;pointer-events:none;color:#514c47}
 .compass-n{position:absolute;left:50%;top:-43px;transform:translateX(-50%);font-size:30px;font-weight:700;line-height:1}
 .compass-pointer{position:absolute;inset:0;transform-origin:50% 50%}
 .compass-needle-north,.compass-needle-south{position:absolute;left:50%;width:0;height:0;transform:translateX(-50%)}
 .compass-needle-north{top:10px;border-left:17px solid transparent;border-right:17px solid transparent;border-bottom:34px solid #514c47}
 .compass-needle-south{top:42px;border-left:15px solid transparent;border-right:15px solid transparent;border-top:34px solid #fff}
-@media(max-width:700px){.compass{left:16px;top:44px;width:72px;height:72px}.compass-n{top:-34px;font-size:26px}.compass-needle-north{top:8px;border-left-width:14px;border-right-width:14px;border-bottom-width:29px}.compass-needle-south{top:35px;border-left-width:13px;border-right-width:13px;border-top-width:28px}}
+@media(max-width:700px){.compass{bottom:14px;width:72px;height:72px}.compass-n{top:-34px;font-size:26px}.compass-needle-north{top:8px;border-left-width:14px;border-right-width:14px;border-bottom-width:29px}.compass-needle-south{top:35px;border-left-width:13px;border-right-width:13px;border-top-width:28px}}
 .aseg{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0}.aseg button{font:inherit;font-size:.85rem;padding:5px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}.aseg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
 #apanel{left:auto;right:48px;top:48px;bottom:auto;width:230px;z-index:2}
 .fmin{height:auto!important}
