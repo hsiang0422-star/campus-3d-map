@@ -1853,6 +1853,12 @@ function accGroundY(x,z){ // 從上往下找建築屋頂或地面高度
   const objs=pickables.filter(o=>o.userData&&o.userData.kind==='b'&&visDeep(o));
   const h=rc.intersectObjects(objs,false)[0];return h?h.point.y:0;}
 const accItems=[];
+/* 3D 圖示：圖案貼在薄片的兩面，周圍有灰色邊，會慢速自動旋轉 */
+let spinners=[],spinOn=true;const SPIN_PERIOD=12;
+function iconBox(tex,W,H,D,o){o=o||{};const op=(o.opacity!=null)?o.opacity:1,dt=o.depthTest!==false;
+  const face=new THREE.MeshBasicMaterial({map:tex,transparent:true,alphaTest:.05,opacity:op,depthTest:dt,depthWrite:false,side:THREE.DoubleSide});
+  const edge=new THREE.MeshBasicMaterial({color:0x9aa0a6,transparent:true,opacity:op,depthTest:dt,depthWrite:false});
+  return new THREE.Mesh(new THREE.BoxGeometry(W,H,D),[edge,edge,edge,edge,face,face]);}
 const ACC_ICON_SIZE=.34,ACC_ICON_OPACITY=.85; // 無障礙圖示大小與透明度（原本 .46、不透明）
 const accPoleGhostMat=new THREE.MeshBasicMaterial({color:0x222222,transparent:true,opacity:.22,depthTest:false,depthWrite:false});
 function accGhostPole(g,pole){const gp=new THREE.Mesh(pole.geometry,accPoleGhostMat);gp.position.copy(pole.position);gp.renderOrder=30;g.add(gp);} // 被建築擋住時，導引線淡淡透出
@@ -1864,17 +1870,17 @@ function makeAcc(t,x,z,bid,inside,floor){const[a,b]=P(x,z);
     const g=new THREE.Group();const lp=fp.worldToLocal(new THREE.Vector3(a,0,b));g.position.set(lp.x,.32,lp.z);
     g.userData={accT:t,floor,bld:bk};
     const pole=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.3,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=.15;g.add(pole);accGhostPole(g,pole);
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY}));sp.renderOrder=23;sp.scale.setScalar(ACC_ICON_SIZE);sp.position.y=.5;
-    sp.userData={kind:'acc',t,where:`${ACC_FLOOR_BLD[bk]} ${fk}F`,bid:bk,g};g.add(sp);pickables.push(sp);g.userData.sp=sp;
+    const sp=iconBox(accTex[t],1,1,.06,{depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY});sp.renderOrder=23;sp.scale.setScalar(ACC_ICON_SIZE);sp.position.y=.5;
+    sp.userData={kind:'acc',t,where:`${ACC_FLOOR_BLD[bk]} ${fk}F`,bid:bk,g};g.add(sp);pickables.push(sp);spinners.push({o:sp,ph:Math.random()*Math.PI*2});g.userData.sp=sp;
     fp.add(g);accItems.push(g);return g;}
   const hitB=t==='elevator'?accRoofNear(a,b,.9):accHit(a,b);const y=(inside||t==='elevator')?hitB.y:0;if(inside===-1||t==='elevator')inside=y>0.01?1:0;
   if(!bid&&inside)bid=hitB.id;
   const g=new THREE.Group();g.position.set(a,y,b);g.userData={accT:t,bld:inside?hitB.id:'',bid:bid||''};g.visible=accOn[t];
   const PH=t==='elevator'?1.15:.42; // 電梯導引線較長
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,PH,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=PH/2;g.add(pole);accGhostPole(g,pole);
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY}));sp.renderOrder=t==='elevator'?40:36;sp.scale.setScalar(ACC_ICON_SIZE);sp.position.y=PH+.2; // 圖示一律畫在最上層，不被建築擋住
+  const sp=iconBox(accTex[t],1,1,.06,{depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY});sp.renderOrder=t==='elevator'?40:36;sp.scale.setScalar(ACC_ICON_SIZE);sp.position.y=PH+.2; // 圖示一律畫在最上層，不被建築擋住
   const where=bid&&bMeta[bid]?bMeta[bid].name+(inside?'':'旁'):'戶外';
-  sp.userData={kind:'acc',t,where,bid,g};g.add(sp);pickables.push(sp);g.userData.sp=sp;
+  sp.userData={kind:'acc',t,where,bid,g};g.add(sp);pickables.push(sp);spinners.push({o:sp,ph:Math.random()*Math.PI*2});g.userData.sp=sp;
   accGroup.add(g);accItems.push(g);return g;}
 ACC.icons.forEach(i=>makeAcc(...i));
 const accWorldXZ=g=>{const v=g.getWorldPosition(new THREE.Vector3());return[v.x,v.z];};
@@ -1965,7 +1971,7 @@ const DECOR_IMG={"indoor":{"src":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
 function decorImg(key){return g=>{const d=DECOR_IMG[key];
   const post=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.36,8),new THREE.MeshStandardMaterial({color:0x6b6f75,roughness:.6}));post.position.y=.18;
   const tex=new THREE.TextureLoader().load(d.src);tex.encoding=THREE.sRGBEncoding;
-  const W=.26,H=W/d.a;const plate=new THREE.Mesh(new THREE.PlaneGeometry(W,H),new THREE.MeshBasicMaterial({map:tex,transparent:true,alphaTest:.05,side:THREE.DoubleSide}));plate.position.y=.36+H/2;
+  const W=.26,H=W/d.a;const plate=iconBox(tex,W,H,.02,{});plate.position.y=.36+H/2;
   g.add(post,plate);};}
 const DECOR_BUILD={
   indoor:decorImg('indoor'),shelter:decorImg('shelter'),firstaid:decorImg('firstaid'),fire:decorImg('fire'),hydrant:decorImg('hydrant'),command:decorImg('command'),supplies:decorImg('supplies'),rescue:decorImg('rescue'),comms:decorImg('comms'),aed:decorImg('aed'),pickup:decorImg('pickup'),security:decorImg('security'),waitrescue:decorImg('waitrescue'),
@@ -1983,7 +1989,8 @@ const DECOR_BUILD={
 const accDecor=[];
 function makeDecor(dt,x,z,ang,sc){if(!DECOR_BUILD[dt])return null;const[a,b]=P(x,z);
   const g=new THREE.Group();g.userData={isDecor:true,accT:'decor',dt,r:{x,z,ang:+ang||0,s:+sc||DECOR_SCALE[dt]||1}};
-  DECOR_BUILD[dt](g);
+  const inner=new THREE.Group();g.add(inner);DECOR_BUILD[dt](inner);
+  if(dt!=='hoop'&&dt!=='tree')spinners.push({o:inner,ph:Math.random()*Math.PI*2});
   const pick=new THREE.Mesh(new THREE.CylinderGeometry(.24,.24,.8,10),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));pick.position.y=.4;
   pick.userData={kind:'decor',dt,g};g.add(pick);pickables.push(pick);g.userData.pick=pick;
   g.position.set(a,accSurfaceY(a,b),b);g.rotation.y=g.userData.r.ang*Math.PI/180;g.scale.setScalar(g.userData.r.s);
@@ -1996,8 +2003,8 @@ const accFloorIcons=[];
 function accFloorIcon(parent,cx,cz,t,where,tag){
   const g=new THREE.Group();g.position.set(cx,0.32,cz);
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.3,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=.15;g.add(pole);accGhostPole(g,pole);
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY}));sp.renderOrder=22;sp.scale.setScalar(ACC_ICON_SIZE*.9);sp.position.y=.48;
-  sp.userData={kind:'acc',t,where};g.add(sp);pickables.push(sp);
+  const sp=iconBox(accTex[t],1,1,.06,{depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY});sp.renderOrder=22;sp.scale.setScalar(ACC_ICON_SIZE*.9);sp.position.y=.48;
+  sp.userData={kind:'acc',t,where};g.add(sp);pickables.push(sp);spinners.push({o:sp,ph:Math.random()*Math.PI*2});
   g.userData={accT:t,floor:tag};g.visible=false;parent.add(g);accFloorIcons.push(g);}
 Object.keys(FLOORS).forEach(fk=>{const o=floorObjs[+fk];if(!o)return;
   FLOORS[fk].rooms.forEach(r=>{if(r[4]!=='acc')return;const w=prect(r);accFloorIcon(o.inner,(w.x0+w.x1)/2,(w.z0+w.z1)/2,'wc',`教學大樓 ${fk}F・${r[5]}`,'teach:'+fk);});});
@@ -2048,7 +2055,7 @@ function makeRoute(pts){const g=new THREE.Group();g.userData={isRoute:true,pts:p
 ACC_ROUTES.forEach(makeRoute);
 const acclist=document.getElementById('acclist'),accbody=document.getElementById('accbody'),bAcc=document.getElementById('bAcc');
 {const cnt={};ACC.icons.forEach(i=>cnt[i[0]]=(cnt[i[0]]||0)+1);
- accbody.innerHTML=`<div class="row" style="display:flex;gap:6px;margin:4px 0 6px"><button id="accAllOn">全部顯示</button><button id="accAllOff">全部隱藏</button></div>`+Object.keys(ACC_NAME).map(t=>`<button class="accrow" data-t="${t}" aria-pressed="true"><img src="${ACC.img[t]}" alt=""><span>${ACC_NAME[t]}</span><span class="n">${cnt[t]||0} 處</span></button>`).join('')
+ accbody.innerHTML=`<div class="row" style="display:flex;gap:6px;margin:4px 0 6px"><button id="accAllOn">全部顯示</button><button id="accAllOff">全部隱藏</button><button id="accSpin" aria-pressed="true">圖示旋轉：開</button></div>`+Object.keys(ACC_NAME).map(t=>`<button class="accrow" data-t="${t}" aria-pressed="true"><img src="${ACC.img[t]}" alt=""><span>${ACC_NAME[t]}</span><span class="n">${cnt[t]||0} 處</span></button>`).join('')
   +`<button class="accrow accroute" data-t="route" aria-pressed="true"><i></i><span>無障礙通路路線</span><span class="n">${accRouteObjs.length} 條</span></button>`
   +`<div class="accsel" id="accsel" hidden></div>`
   +`<div class="accwarn" id="accDraftNote" hidden>目前顯示的是尚未送出的位置調整（只存在這台裝置）。<button id="accDiscard" style="font-size:.72rem;padding:2px 8px;margin-left:4px">捨棄調整</button></div>`
@@ -2094,6 +2101,7 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
    </div>`
   +`<p class="accnote">點按項目切換顯示；點 3D 圖示看位置。屋頂上的圖示代表樓內設施。位置由學校無障礙平面圖換算，僅供參考。</p>`
   +`<p class="accnote"><a href="accessibility.html">開啟獨立的校園無障礙 3D 地圖 →</a></p>`;
+ document.getElementById('accSpin').addEventListener('click',e=>{spinOn=!spinOn;e.currentTarget.textContent=spinOn?'圖示旋轉：開':'圖示旋轉：關';e.currentTarget.setAttribute('aria-pressed',spinOn);});
  accbody.addEventListener('click',e=>{const all=e.target.closest('#accAllOn,#accAllOff');
    if(all){const on=all.id==='accAllOn';Object.keys(ACC_NAME).forEach(t=>{if(accOn[t]!==on){const r=accbody.querySelector(`.accrow[data-t="${t}"]`);r&&r.click();}});return;}
    const r=e.target.closest('.accrow');if(!r)return;const t=r.dataset.t;
@@ -2615,6 +2623,7 @@ function loop(now){
   if(pinGroup.visible&&!reduce){const kk=(now/900)%1;ptRings.forEach(r=>{r.scale.setScalar(1+kk*0.9);r.material.opacity=0.75*(1-kk);});}
   if(accGroup.visible&&accRoutes.visible&&!reduce)accFlowTex.offset.x-=0.012;
   accSyncFloors();accPulse(now);
+  if(spinOn&&!reduce){const tt=now/1000;spinners=spinners.filter(q=>q.o.parent);spinners.forEach(q=>{q.o.rotation.y=q.ph+tt*(2*Math.PI/SPIN_PERIOD);});}
   updateCompass();renderer.render(scene,camera);placeLabels();
   requestAnimationFrame(loop);
 }
