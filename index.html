@@ -64,7 +64,7 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-colo
 .accedit p{margin:0;font-size:.75rem;color:var(--muted);line-height:1.5}
 .accedit .row{display:flex;flex-wrap:wrap;gap:4px}
 .accedit .row button{font-size:.75rem;padding:4px 8px}
-.accedit .addt img{width:18px;height:18px;vertical-align:middle}
+.accedit .addt img{width:18px;height:18px;vertical-align:middle;object-fit:contain}.addt .addemo{display:inline-block;width:18px;text-align:center;vertical-align:middle;font-size:14px;line-height:18px}
 .accedit textarea{width:100%;box-sizing:border-box;min-height:90px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;resize:vertical}
 .accwarn{font-size:.75rem;background:#fff3cd;color:#5c4400;border-radius:8px;padding:6px 8px}
 body.acc-editing #c{cursor:move}
@@ -1830,6 +1830,7 @@ function select(id){
     ${near.length&&show.pts?`<p>鄰近危險角落：${[...new Set(near)].join('、')}</p>`:''}`;
   focusB(id,true);
   document.querySelectorAll('#chips button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.id===id));
+  if(id==='teach'&&mode==='ext'){setMode('exp');return;}   // 點教學大樓直接顯示各樓層 3D（分層展開）
   const c=b.center.clone();c.y=0;
   const dir=camera.position.clone().sub(controls.target).normalize();
   flyTo(c.clone().add(dir.multiplyScalar(9)).setY(Math.max(5,b.top+5)),c,reduce?1:900);
@@ -2154,7 +2155,7 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
        <div class="row"><button id="rtRev">反轉方向</button><button id="rtDel">刪除這條路線</button></div>
      </div>
      <h4>一般 3D 模型</h4>
-     <p>籃球架、樹木，以及男廁、女廁、滅火器、AED 標誌。新增後可拖曳，選取後用下方滑桿調整方向與大小；按 Backspace 或「刪除選取的項目」即可移除。</p>
+     <p>籃球架、樹木與防災圖例（避難處所、急救站、滅火器、消防栓、AED 等）。按下方按鈕會在畫面中央新增，新增後可拖曳，選取後用下方滑桿調整方向與大小；按 Backspace 或「刪除選取的項目」即可移除。</p>
      <div class="row" id="decAdd"></div>
      <div id="decTools" hidden style="display:grid;gap:4px">
        <div class="rpsl"><label for="decAng">方向</label><input type="range" id="decAng" min="0" max="359" step="1"><output id="decAngV"></output></div>
@@ -2298,7 +2299,7 @@ let accPulse=()=>{};
  const currentD=()=>accDecor.map(g=>{const r=g.userData.r;return[g.userData.dt,r2(r.x),r2(r.z),Math.round(r.ang),r2(r.s)];});
  const loadDecor=list=>{accDecor.slice().forEach(removeObj);(list||[]).forEach(([dt,x,z,ang,sc])=>makeDecor(dt,x,z,ang,sc));};
  const decAdd=document.getElementById('decAdd');
- decAdd.innerHTML=Object.keys(DECOR_NAME).filter(t=>t!=='male'&&t!=='female').map(t=>`<button class="addt" data-dt="${t}">＋ ${DECOR_NAME[t]}</button>`).join('');
+ decAdd.innerHTML=Object.keys(DECOR_NAME).filter(t=>t!=='male'&&t!=='female').map(t=>`<button class="addt" data-dt="${t}" title="新增${DECOR_NAME[t]}">${DECOR_IMG[t]?`<img src="${DECOR_IMG[t].src}" alt="">`:`<span class="addemo" aria-hidden="true">${{hoop:'🏀',tree:'🌳'}[t]||'＋'}</span>`} ${DECOR_NAME[t]}</button>`).join('');
  decAdd.addEventListener('click',e=>{const b=e.target.closest('[data-dt]');if(!b)return;const dt=b.dataset.dt;
    const[x,z]=openSpot(center());const g=makeDecor(dt,x,z,0,DECOR_SCALE[dt]);if(!g)return;setSel(g);focusOn(g);save();});
  const decAng=document.getElementById('decAng'),decS=document.getElementById('decS');
