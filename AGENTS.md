@@ -1,6 +1,6 @@
 # 給 AI 工具的修改說明（Claude / ChatGPT / Gemini / Copilot 等通用）
 
-臺南特教校園 3D 互動地圖。整個專案就是 `index.html` 一個檔案（Three.js 0.147.0 + OrbitControls，從 CDN 載入，無需建置）。線上版：https://hsiang0422-star.github.io/campus-3d-map/
+臺南特教校園 3D 互動地圖。整個專案就是 `map.html` 一個檔案（Three.js 0.147.0 + OrbitControls，從 CDN 載入，無需建置）。線上版：https://hsiang0422-star.github.io/campus-3d-map/
 
 ## 工作方式
 - 直接編輯 `index.html`，commit 並 push 到 `main`，GitHub Pages 1–2 分鐘後更新。
@@ -71,3 +71,9 @@
 - 導引線長度：每個設施有自己的長度（`userData.ph`，`accSetPole`），在「設施編輯」的「導引線長度」調整，匯出時為每筆第 5 欄。全部設施可用「全部設施」滑桿一起改。
 - 樹木：`treeList`（x,z,大小,隱藏,顏色）由 `buildTrees()` 建立；編輯模式點選樹冠可拖曳，Backspace／刪除會隱藏（可用 Ctrl+Z 還原），「＋ 新增樹木」加一棵。匯出為第四段樹木清單。
 - 指北針：`COMPASS_AT`（地圖座標）；編輯模式直接拖曳指北針移動，「指北針回到原位」還原。匯出為「指北針位置」。
+
+## 頁面結構
+- `index.html`：入口頁（連到各頁、防災地圖外部連結）。
+- `map.html`：校園 3D 地圖（原 index.html）。`quiz.html` 連到 `map.html?quiz-map=1`。
+- `accessibility.html`：無障礙地圖。`teaching.html`、`quiz.html`：危險地點教學與測驗。
+- `EDMIN/`（同 `admin/`）：編輯者入口，導向 `map.html#edit`，各頁都連到這裡。
