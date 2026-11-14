@@ -58,7 +58,7 @@
 - 詳細說明見 `3D地圖重建說明.md` 第 8、9 節。
 
 ## 一般 3D 模型（調整模式）
-- `DECOR_BUILD`：籃球架 `hoop`、樹木 `tree`、男廁／女廁／滅火器／AED 標誌 `male` `female` `fire` `aed`（標誌為 canvas 貼圖）。`makeDecor(dt,x,z,角度,大小)` 建立，`accDecor` 管理，編輯時可拖曳、用方向與大小滑桿調整、Backspace／Delete 或「刪除選取的項目」移除。
+- `DECOR_BUILD`：籃球架 `hoop`、樹木 `tree`、兒童遊樂設施 `playground`（兩座尖頂塔、樓梯、藍色隧道、綠／粉紅溜滑梯，以基本幾何建模，不旋轉）、男廁／女廁／滅火器／AED 標誌 `male` `female` `fire` `aed`（標誌為 canvas 貼圖）。`makeDecor(dt,x,z,角度,大小)` 建立，`accDecor` 管理，編輯時可拖曳、用方向與大小滑桿調整、Backspace／Delete 或「刪除選取的項目」移除。
 - 存入草稿與匯出為獨立的第四段：`[類型, x, z, 方向, 大小]`；`loadDecor` 讀回。預設大小在 `DECOR_SCALE`。
 - 防災圖例：`DECOR_IMG` 內嵌五張圖（家長接送區 `pickup`、物資儲備點 `supplies`、戶外避難點 `shelter`、急救站 `firstaid`、指揮中心 `command`），白底已轉透明，以無光照材質顯示。之後新增圖例：把圖縮成約 256px 的 PNG 轉 base64，加入 `DECOR_IMG`，並在 `DECOR_NAME`、`DECOR_SCALE`、`DECOR_BUILD` 各加一項（`decorImg(key)`）。
 - 防災圖例（13 張已換成學校雲端硬碟「12_1_防災地圖範例版型」資料夾內的官方範例原圖：裁邊、外圍白底轉透明、縮成 256px PNG）：`DECOR_IMG` 目前 13 個 key，名稱與 `DECOR_NAME` 一致（室內避難處所 `indoor`、室外避難處所 `shelter`、急救站 `firstaid`、滅火器 `fire`、消防栓 `hydrant`、指揮中心 `command`、物資儲備點 `supplies`、救援器材放置點 `rescue`、通訊設備放置點 `comms`、AED `aed`、災時家長接送區 `pickup`、警衛室 `security`、等待救援點 `waitrescue`）。建築內／外路線箭頭是線段，未列入模型。
