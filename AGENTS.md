@@ -56,3 +56,7 @@
 - 平面圖資料：`admin-plan/`；參考照片：`admin-photo/`。
 - 程式關鍵字：`ADMIN_PLAN`、`admSetMode`、`admTileMat`、`admExt`。
 - 詳細說明見 `3D地圖重建說明.md` 第 8、9 節。
+
+## 一般 3D 模型（調整模式）
+- `DECOR_BUILD`：籃球架 `hoop`、樹木 `tree`、男廁／女廁／滅火器／AED 標誌 `male` `female` `fire` `aed`（標誌為 canvas 貼圖）。`makeDecor(dt,x,z,角度,大小)` 建立，`accDecor` 管理，編輯時可拖曳、用方向與大小滑桿調整、Backspace／Delete 或「刪除選取的項目」移除。
+- 存入草稿與匯出為獨立的第四段：`[類型, x, z, 方向, 大小]`；`loadDecor` 讀回。預設大小在 `DECOR_SCALE`。
