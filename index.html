@@ -2126,7 +2126,7 @@ let accPulse=()=>{};
  document.getElementById('rtRev').onclick=()=>{if(!selRt)return;selRt.userData.pts.reverse();if(selV>=0)selV=selRt.userData.pts.length-1-selV;rebuild();save();};
  document.getElementById('rtDel').onclick=()=>{if(!selRt)return;accRoutes.remove(selRt);accRouteObjs.splice(accRouteObjs.indexOf(selRt),1);selectRoute(null);setSel(null);save();};
  /* 只有解鎖過的裝置才看得到調整功能：網址加 #edit 輸入密碼（頁面只存密碼的 SHA-256 指紋） */
- const EDITOR_KEY='campus3d-acc-editor',EDITOR_HASH='9976c3a4c497a8888b486095262459894e4794eb6799cfcd6e48b8bca577a13c';
+ const EDITOR_KEY='campus3d-acc-editor',EDITOR_HASH='50e261b5d86cd8d62dbee72111d9eaaf1d2a9a44f331aae6c275f02b3db7b0a5';
  const isEditor=()=>{try{return localStorage.getItem(EDITOR_KEY)===EDITOR_HASH;}catch(e){return false;}};
  const showEditor=on=>{document.getElementById('accEditRow').hidden=!on;if(!on&&editing)edBtn.click();};
  const sha=async t=>{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');};
