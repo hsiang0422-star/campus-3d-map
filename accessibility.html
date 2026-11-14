@@ -75,7 +75,7 @@ button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);bord
 <header>
   <h1>國立臺南特殊教育學校<span>校園無障礙 3D 地圖</span></h1>
   <div class="tools" role="toolbar" aria-label="檢視工具">
-    <a href="index.html" style="font-size:13px;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 11px;text-decoration:none">← 回到校園 3D 地圖</a>
+    <a href="index.html" style="font-size:13px;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 11px;text-decoration:none">← 回到校園 3D 地圖</a><a href="admin/" target="_blank" rel="noopener" style="font-size:13px;color:var(--fg);background:var(--panel);border:1px dashed #c9a46a;border-radius:8px;padding:7px 11px;text-decoration:none" title="編輯者模式（需要密碼），在主地圖上調整設施">編輯者模式 ↗</a>
     <button id="bView" aria-pressed="false">俯視</button>
     <button id="bReset">重設視角</button>
     <button id="bSpin" aria-pressed="false">自動旋轉</button>
@@ -127,6 +127,12 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 stage.appendChild(renderer.domElement);
+/* 3D 圖示：與主地圖相同，圖案貼在薄片兩面、慢速自動旋轉 */
+let spinners=[];const SPIN_PERIOD=12;
+function iconBox(tex,W,H,D,o){o=o||{};const dt=o.depthTest!==false;
+  const face=new THREE.MeshBasicMaterial({map:tex,transparent:true,alphaTest:.05,depthTest:dt,depthWrite:false,side:THREE.DoubleSide});
+  const edge=new THREE.MeshBasicMaterial({color:0x9aa0a6,transparent:true,depthTest:dt,depthWrite:false});
+  return new THREE.Mesh(new THREE.BoxGeometry(W,H,D),[edge,edge,edge,edge,face,face]);}
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(40,1,0.5,2000);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -216,7 +222,7 @@ DATA.icons.forEach((ic,idx)=>{
   stick.position.y = stickH/2; g.add(stick);
   const dot = new THREE.Mesh(new THREE.CircleGeometry(.7,20), new THREE.MeshBasicMaterial({color:0x222222,transparent:true,opacity:.35}));
   dot.rotation.x=-Math.PI/2; dot.position.y=.05; g.add(dot);
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:iconTex[ic.t],depthTest:true}));
+  const sp = iconBox(iconTex[ic.t],1,1,.06,{depthTest:true}); spinners.push({o:sp,ph:Math.random()*Math.PI*2});
   sp.scale.set(4.2,4.2,1); sp.position.y = stickH+2; g.add(sp);
   g.position.set(x,baseH,z);
   const where = owner ? owner.userData.b.name+(owner.userData.b.id==='bus'?'':'（屋頂標示，代表樓內設施）') : (nd<4 && near ? near.userData.b.name+'旁' : '戶外');
@@ -363,6 +369,7 @@ function loop(now){
     camera.position.lerpVectors(anim.fromP,anim.toP,k); controls.target.lerpVectors(anim.fromT,anim.toT,k); if(anim.t>=1)anim=null; }
   controls.update();
   if(!matchMedia('(prefers-reduced-motion: reduce)').matches) routeMat.dashOffset -= dt*2.2;
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches){const tt=now/1000;spinners=spinners.filter(q=>q.o.parent);spinners.forEach(q=>{q.o.rotation.y=q.ph+tt*(2*Math.PI/SPIN_PERIOD);});}
   renderer.render(scene,camera);
   if(!labelsEl.hidden){ const w=innerWidth,h=innerHeight;
     buildings.forEach(g=>{ v.copy(g.userData.anchor).project(camera); const el=g.userData.label;
