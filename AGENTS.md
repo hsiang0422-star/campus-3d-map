@@ -63,8 +63,7 @@
 - 防災圖例：`DECOR_IMG` 內嵌五張圖（家長接送區 `pickup`、物資儲備點 `supplies`、戶外避難點 `shelter`、急救站 `firstaid`、指揮中心 `command`），白底已轉透明，以無光照材質顯示。之後新增圖例：把圖縮成約 256px 的 PNG 轉 base64，加入 `DECOR_IMG`，並在 `DECOR_NAME`、`DECOR_SCALE`、`DECOR_BUILD` 各加一項（`decorImg(key)`）。
 - 防災圖例（13 張已換成學校雲端硬碟「12_1_防災地圖範例版型」資料夾內的官方範例原圖：裁邊、外圍白底轉透明、縮成 256px PNG）：`DECOR_IMG` 目前 13 個 key，名稱與 `DECOR_NAME` 一致（室內避難處所 `indoor`、室外避難處所 `shelter`、急救站 `firstaid`、滅火器 `fire`、消防栓 `hydrant`、指揮中心 `command`、物資儲備點 `supplies`、救援器材放置點 `rescue`、通訊設備放置點 `comms`、AED `aed`、災時家長接送區 `pickup`、警衛室 `security`、等待救援點 `waitrescue`）。建築內／外路線箭頭是線段，未列入模型。
 - 男廁／女廁是無障礙設施的一種（`ACC_NAME` 的 `male`、`female`，圖來自 `ACC.img`，已補成正方形）。調整模式的「無障礙設施」新增按鈕與面板會自動出現。
-- `accessibility.html` 的 `DATA.icons` 已同步成主地圖目前的一般圖示：把 `ACC.icons` 用原始 SVG→地圖的轉換反推回 SVG 座標（x,y）。之後主地圖位置有改，要再同步一次。
-- 編輯只在主地圖做（`index.html` 的 `#edit` 或 `/admin`）。`accessibility.html` 只顯示：圖示同樣是會旋轉的 3D 薄片（`iconBox`），頂列有「編輯者模式」連結到 `admin/`。資料仍需手動同步（見上）。
+- `accessibility.html` 只是轉址頁：轉到主地圖 `./?view=acc`，由 `index.html` 自動開啟「無障礙設施」圖層、清單與圖例。無障礙資料只有主地圖一份，不需要再同步。舊的獨立版本在 git 歷史中（commit 11b4208 之前）。
 - 編輯者模式：解鎖後頂列多一個「編輯」按鈕，打開獨立的「編輯」面板（調整位置、新增、斜坡道、路線、一般 3D 模型、存檔／匯出）。「無障礙設施」面板只剩鎖定編輯。
 - 圖示為圓餅立體：`iconBox(src,直徑,厚度)` 用 `discTex(src)` 把圖畫在奶油色圓面、金色外緣上，圓柱體旋轉慢速轉圈（`spinners`、`SPIN_PERIOD`）。無障礙頁面同樣使用。
 - 危險角落編號可在「設施編輯」面板新增（`ptAdd`）、隱藏（`ptHidden`，等於刪除，點灰色編號可還原）。Ctrl+Z 復原：每次存檔前把 `editSnap()`（圖示、斜坡道、路線、3D 模型、危險角落）放進 `undoStack`，復原時用 `applyPts` 等函式還原。
@@ -75,5 +74,5 @@
 ## 頁面結構
 - `index.html`：入口頁（連到各頁、防災地圖外部連結）。
 - `map.html`：校園 3D 地圖（原 index.html）。`quiz.html` 連到 `map.html?quiz-map=1`。
-- `accessibility.html`：無障礙地圖。`teaching.html`、`quiz.html`：危險地點教學與測驗。
+- `accessibility.html`：無障礙地圖入口（轉到 `./?view=acc`）。`teaching.html`、`quiz.html`：危險地點教學與測驗。
 - `EDMIN/`（同 `admin/`）：編輯者入口，導向 `map.html#edit`，各頁都連到這裡。

@@ -317,7 +317,6 @@ body.view-danger header{display:none!important}
         <p>按工具列的「無障礙設施」可在 3D 模型上顯示學校無障礙地圖（2025-11-21 版）標示的出入口、坡道、電梯、廁所、停車位與無障礙通路。</p>
         <ul>
           <li>教學大樓樓層資料標示電梯、樓梯與無障礙廁所。</li>
-          <li>另有獨立的<a href="accessibility.html">校園無障礙 3D 地圖</a>，以原始平面圖為底圖。</li>
           <li>可使用「樓層清單」切換教學大樓與行政大樓樓層。</li>
           <li>可用「各建築場域」清單定位校園建築。</li>
         </ul>
@@ -2174,7 +2173,7 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
        <div class="row"><button id="accEdCopy">複製文字</button><span id="accEdCopied" class="accnote" hidden>已複製</span></div></div>
    </div>`
   +`<p class="accnote">點按項目切換顯示；點 3D 圖示看位置。屋頂上的圖示代表樓內設施。位置由學校無障礙平面圖換算，僅供參考。</p>`
-  +`<p class="accnote"><a href="accessibility.html">開啟獨立的校園無障礙 3D 地圖 →</a></p>`;
+;
  document.getElementById('accSpin').addEventListener('click',e=>{spinOn=!spinOn;e.currentTarget.textContent=spinOn?'圖示旋轉：開':'圖示旋轉：關';e.currentTarget.setAttribute('aria-pressed',spinOn);});
  accbody.addEventListener('click',e=>{const all=e.target.closest('#accAllOn,#accAllOff');
    if(all){const on=all.id==='accAllOn';Object.keys(ACC_NAME).forEach(t=>{if(accOn[t]!==on){const r=accbody.querySelector(`.accrow[data-t="${t}"]`);r&&r.click();}});return;}
@@ -2782,6 +2781,8 @@ function loop(now){
 requestAnimationFrame(loop);
 /* 危險角落專用頁：?view=danger 只顯示危險角落與清單 */
 if(new URLSearchParams(location.search).get('view')==='danger'){document.body.classList.add('view-danger');if(!show.pts)bPts.click();plist.hidden=false;}
+/* 無障礙地圖：?view=acc（accessibility.html 會轉到這裡）＝主地圖＋自動開啟「無障礙設施」圖層、清單與圖例，其餘設定完全相同 */
+if(new URLSearchParams(location.search).get('view')==='acc'){if(acclist.hidden)bAcc.click();document.title='臺南特教無障礙 3D 地圖';}
 })();
 </script>
 <div id="ovLayer" hidden role="dialog" aria-modal="true" aria-labelledby="ovTitle">
