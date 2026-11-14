@@ -127,12 +127,26 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 stage.appendChild(renderer.domElement);
-/* 3D 圖示：與主地圖相同，圖案貼在薄片兩面、慢速自動旋轉 */
+/* 3D 圓餅圖示：與主地圖相同（奶油色圓面、金色外緣），慢速自動旋轉 */
 let spinners=[];const SPIN_PERIOD=12;
-function iconBox(tex,W,H,D,o){o=o||{};const dt=o.depthTest!==false;
-  const face=new THREE.MeshBasicMaterial({map:tex,transparent:true,alphaTest:.05,depthTest:dt,depthWrite:false,side:THREE.DoubleSide});
-  const edge=new THREE.MeshBasicMaterial({color:0x9aa0a6,transparent:true,depthTest:dt,depthWrite:false});
-  return new THREE.Mesh(new THREE.BoxGeometry(W,H,D),[edge,edge,edge,edge,face,face]);}
+const discCache={};
+function discTex(src){if(discCache[src])return discCache[src];
+  const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;discCache[src]=t;
+  const img=new Image();
+  const paint=()=>{x.clearRect(0,0,256,256);
+    const g=x.createRadialGradient(110,100,20,128,128,128);g.addColorStop(0,'#fffdf7');g.addColorStop(1,'#f1e4c8');
+    x.beginPath();x.arc(128,128,127,0,Math.PI*2);x.fillStyle=g;x.fill();
+    x.beginPath();x.arc(128,128,118,0,Math.PI*2);x.lineWidth=7;x.strokeStyle='#c9a46a';x.stroke();
+    x.beginPath();x.arc(128,128,106,0,Math.PI*2);x.lineWidth=2;x.strokeStyle='#e6d3a6';x.stroke();
+    if(img.complete&&img.naturalWidth){const k=Math.min(168/img.naturalWidth,168/img.naturalHeight);const w=img.naturalWidth*k,h=img.naturalHeight*k;x.drawImage(img,128-w/2,128-h/2,w,h);}
+    t.needsUpdate=true;};
+  img.onload=paint;img.src=src;paint();return t;}
+function iconBox(src,D,T,o){o=o||{};const dt=o.depthTest!==false;
+  const cap=new THREE.MeshBasicMaterial({map:discTex(src),transparent:true,alphaTest:.05,depthTest:dt,depthWrite:false});
+  const side=new THREE.MeshStandardMaterial({color:0xc9a46a,roughness:.4,metalness:.3,transparent:true,depthTest:dt,depthWrite:false});
+  const geo=new THREE.CylinderGeometry(D/2,D/2,T,64,1,false);geo.rotateX(Math.PI/2);
+  return new THREE.Mesh(geo,[side,cap,cap]);}
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(40,1,0.5,2000);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -222,7 +236,7 @@ DATA.icons.forEach((ic,idx)=>{
   stick.position.y = stickH/2; g.add(stick);
   const dot = new THREE.Mesh(new THREE.CircleGeometry(.7,20), new THREE.MeshBasicMaterial({color:0x222222,transparent:true,opacity:.35}));
   dot.rotation.x=-Math.PI/2; dot.position.y=.05; g.add(dot);
-  const sp = iconBox(iconTex[ic.t],1,1,.06,{depthTest:true}); spinners.push({o:sp,ph:Math.random()*Math.PI*2});
+  const sp = iconBox(DATA.iconImg[ic.t],1,.16,{depthTest:true}); spinners.push({o:sp,ph:Math.random()*Math.PI*2});
   sp.scale.set(4.2,4.2,1); sp.position.y = stickH+2; g.add(sp);
   g.position.set(x,baseH,z);
   const where = owner ? owner.userData.b.name+(owner.userData.b.id==='bus'?'':'（屋頂標示，代表樓內設施）') : (nd<4 && near ? near.userData.b.name+'旁' : '戶外');
