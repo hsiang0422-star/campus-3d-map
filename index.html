@@ -266,7 +266,7 @@ body.drone-on #panel,body.drone-on #apanel,body.drone-on #qpanel,body.drone-on #
 #vcount{position:fixed;right:max(8px,env(safe-area-inset-right,0px));bottom:max(6px,env(safe-area-inset-bottom,0px));z-index:3;pointer-events:none;line-height:0;opacity:.9}
 #vcount img{height:20px;width:auto}
 body.drone-on #vcount{display:none}
-body.view-danger #acclist,body.view-danger #acclegend,body.view-danger #editpanel,body.view-danger #ctrl,body.view-danger #panel,body.view-danger #blist,body.view-danger #qpanel,body.view-danger #quizGameDrop,body.view-danger #bAcc,body.view-danger #bCtrl,body.view-danger #bPanel,body.view-danger #bBld,body.view-danger #bSpin,body.view-danger #bDrone,body.view-danger #bQuiz,body.view-danger #bAccess,body.view-danger #bEditTop,body.view-danger #accEditRow,body.view-danger #bReset,body.view-danger #bTop,body.view-danger #bLbl,body.view-danger .compass{display:none!important}
+body.view-danger #acclist,body.view-danger #acclegend,body.view-danger #editpanel,body.view-danger #ctrl,body.view-danger #panel,body.view-danger #blist,body.view-danger #qpanel,body.view-danger #quizGameDrop,body.view-danger #bAcc,body.view-danger #bCtrl,body.view-danger #bPanel,body.view-danger #bBld,body.view-danger #bSpin,body.view-danger #bDrone,body.view-danger #bQuiz,body.view-danger #bEditTop,body.view-danger #accEditRow,body.view-danger #bReset,body.view-danger #bTop,body.view-danger #bLbl,body.view-danger .compass{display:none!important}
 body.view-danger header{display:none!important}
 #ovLayer{position:fixed;inset:0;z-index:800;display:flex;flex-direction:column;background:var(--bg,#f4efe6)}
 #ovLayer[hidden]{display:none!important}
@@ -300,7 +300,6 @@ body.view-danger header{display:none!important}
       <button id="bEditTop" hidden aria-pressed="false" aria-controls="editpanel">設施編輯</button>
       <button id="bAcc" aria-pressed="false" aria-controls="acclist">無障礙設施</button>
       <button id="bOvDisaster" aria-haspopup="dialog" aria-controls="ovLayer" data-ov="https://hsiang0422-star.github.io/disaster-visit/evacuation-3d-view.html?v=20261020-committee-list">防災地圖頁</button>
-      <button id="bAccess" aria-haspopup="dialog" aria-expanded="false" aria-controls="accessDialog">校園無障礙地圖指引</button>
 
     </div>
   </header>
@@ -311,19 +310,6 @@ body.view-danger header{display:none!important}
       <span class="compass-n" aria-hidden="true">N</span>
       <div class="compass-pointer" id="compassPointer" aria-hidden="true"><span class="compass-needle-north"></span><span class="compass-needle-south"></span></div>
     </div>
-    <dialog class="access-dialog" id="accessDialog" aria-labelledby="accessTitle">
-      <div class="access-dialog-inner">
-        <h2 id="accessTitle">校園無障礙地圖指引</h2>
-        <p>按工具列的「無障礙設施」可在 3D 模型上顯示學校無障礙地圖（2025-11-21 版）標示的出入口、坡道、電梯、廁所、停車位與無障礙通路。</p>
-        <ul>
-          <li>教學大樓樓層資料標示電梯、樓梯與無障礙廁所。</li>
-          <li>可使用「樓層清單」切換教學大樓與行政大樓樓層。</li>
-          <li>可用「各建築場域」清單定位校園建築。</li>
-        </ul>
-        <p>無障礙設施位置由平面圖換算到 3D 模型，可能有約 1 公尺級的偏差；門寬、坡度與路面狀況未經實測。規劃實際動線前，請先向校方確認現況。</p>
-        <div class="access-close"><button id="accessClose" type="button">關閉指引</button></div>
-      </div>
-    </dialog>
     <div class="ctrl" id="ctrl">
       <div class="phead" id="chead" title="拖曳移動，雙擊回到原位"><span class="grip" aria-hidden="true"></span>地圖操作<button class="collapse" id="cMin">收合</button></div>
       <div class="cbody">
@@ -2563,10 +2549,6 @@ function accShow(u){const el=document.getElementById('accsel');el.hidden=false;e
 document.getElementById('bReset').onclick=()=>flyTo(HOME.pos.clone(),HOME.target.clone());
 /* 俯視：以北方（+X）為畫面上方；相機略偏東西方向，避免正上方時方向不定 */
 document.getElementById('bTop').onclick=()=>{const tg=new THREE.Vector3(0.5,0,0.8);flyTo(new THREE.Vector3(tg.x+30*Math.sin(0.02),30*Math.cos(0.02),tg.z),tg);};
-const accessDialog=document.getElementById('accessDialog'),bAccess=document.getElementById('bAccess');
-bAccess.onclick=()=>{accessDialog.showModal();bAccess.setAttribute('aria-expanded','true');};
-document.getElementById('accessClose').onclick=()=>accessDialog.close();
-accessDialog.addEventListener('close',()=>bAccess.setAttribute('aria-expanded','false'));
 /* 指北針固定在長和路二段 140 巷標示的位置（地圖上），隨地圖平移、縮放 */
 function placeCompass(){const compassEl=document.querySelector('.compass');const st=compassEl.parentElement;const w=st.clientWidth,h=st.clientHeight;const q=new THREE.Vector3(COMPASS_AT[0],0.05,COMPASS_AT[1]).project(camera);
   if(q.z>1){compassEl.style.display='none';return;}compassEl.style.display='';compassEl.style.left=((q.x+1)/2*w)+'px';compassEl.style.top=((1-q.y)/2*h)+'px';}
