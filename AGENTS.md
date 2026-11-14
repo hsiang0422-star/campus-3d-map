@@ -71,6 +71,8 @@
 - 樹木：`treeList`（x,z,大小,隱藏,顏色）由 `buildTrees()` 建立；編輯模式點選樹冠可拖曳，Backspace／刪除會隱藏（可用 Ctrl+Z 還原），「＋ 新增樹木」加一棵。匯出為第四段樹木清單。
 - 指北針：`COMPASS_AT`（地圖座標）；編輯模式直接拖曳指北針移動，「指北針回到原位」還原。匯出為「指北針位置」。
 
+- 無障礙清單標示（`accHLSet`、`accHLTick`）：點清單項目（`.accrow`）會切到俯視，該項目所有位置加橘色閃爍圈、圖示放大 1.8 倍（`spinners` 的 `q.hl`），其他圖示變淡；再點一次或「取消標示」取消。顯示／隱藏改由每列右側的 👁 按鈕（`.acceye`）。不在目前樓層（看不到）的同類圖示（`accFloorIcons`、樓層專用 `ACC.icons`）會在屋頂上方補一個代理圖示（`accHLProxies`），同一位置的各樓層合併，並加「1F・2F」橘色標籤。在「樓層清單」（`#seg`、`#aseg`）點某一層時 `accHLAll=false`，只標示該樓層、不補其他樓層；再點清單項目恢復全部樓層。
+
 ## 頁面結構
 - `index.html`：入口頁（連到各頁、防災地圖外部連結）。
 - `map.html`：校園 3D 地圖（原 index.html）。`quiz.html` 連到 `map.html?quiz-map=1`。
