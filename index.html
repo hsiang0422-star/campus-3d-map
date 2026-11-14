@@ -1844,6 +1844,7 @@ function accGroundY(x,z){ // 從上往下找建築屋頂或地面高度
   const objs=pickables.filter(o=>o.userData&&o.userData.kind==='b'&&visDeep(o));
   const h=rc.intersectObjects(objs,false)[0];return h?h.point.y:0;}
 const accItems=[];
+const ACC_ICON_SIZE=.34,ACC_ICON_OPACITY=.85; // 無障礙圖示大小與透明度（原本 .46、不透明）
 const accPoleGhostMat=new THREE.MeshBasicMaterial({color:0x222222,transparent:true,opacity:.22,depthTest:false,depthWrite:false});
 function accGhostPole(g,pole){const gp=new THREE.Mesh(pole.geometry,accPoleGhostMat);gp.position.copy(pole.position);gp.renderOrder=30;g.add(gp);} // 被建築擋住時，導引線淡淡透出
 const ACC_FLOOR_BLD={teach:'教學大樓',admin:'行政大樓'};
@@ -1854,7 +1855,7 @@ function makeAcc(t,x,z,bid,inside,floor){const[a,b]=P(x,z);
     const g=new THREE.Group();const lp=fp.worldToLocal(new THREE.Vector3(a,0,b));g.position.set(lp.x,.32,lp.z);
     g.userData={accT:t,floor,bld:bk};
     const pole=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.3,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=.15;g.add(pole);accGhostPole(g,pole);
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:false}));sp.renderOrder=23;sp.scale.set(.46,.46,1);sp.position.y=.5;
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY}));sp.renderOrder=23;sp.scale.setScalar(ACC_ICON_SIZE);sp.position.y=.5;
     sp.userData={kind:'acc',t,where:`${ACC_FLOOR_BLD[bk]} ${fk}F`,bid:bk,g};g.add(sp);pickables.push(sp);g.userData.sp=sp;
     fp.add(g);accItems.push(g);return g;}
   const hitB=t==='elevator'?accRoofNear(a,b,.9):accHit(a,b);const y=(inside||t==='elevator')?hitB.y:0;if(inside===-1||t==='elevator')inside=y>0.01?1:0;
@@ -1862,7 +1863,7 @@ function makeAcc(t,x,z,bid,inside,floor){const[a,b]=P(x,z);
   const g=new THREE.Group();g.position.set(a,y,b);g.userData={accT:t,bld:inside?hitB.id:'',bid:bid||''};g.visible=accOn[t];
   const PH=t==='elevator'?1.15:.42; // 電梯導引線較長
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,PH,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=PH/2;g.add(pole);accGhostPole(g,pole);
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:false}));sp.renderOrder=t==='elevator'?40:36; // 圖示一律畫在最上層，不被建築擋住sp.scale.set(.46,.46,1);sp.position.y=PH+.2;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY}));sp.renderOrder=t==='elevator'?40:36;sp.scale.setScalar(ACC_ICON_SIZE);sp.position.y=PH+.2; // 圖示一律畫在最上層，不被建築擋住
   const where=bid&&bMeta[bid]?bMeta[bid].name+(inside?'':'旁'):'戶外';
   sp.userData={kind:'acc',t,where,bid,g};g.add(sp);pickables.push(sp);g.userData.sp=sp;
   accGroup.add(g);accItems.push(g);return g;}
@@ -1912,7 +1913,7 @@ const accFloorIcons=[];
 function accFloorIcon(parent,cx,cz,t,where,tag){
   const g=new THREE.Group();g.position.set(cx,0.32,cz);
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.3,6),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.y=.15;g.add(pole);accGhostPole(g,pole);
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:false}));sp.renderOrder=22;sp.scale.set(.4,.4,1);sp.position.y=.48;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:accTex[t],depthTest:false,transparent:true,opacity:ACC_ICON_OPACITY}));sp.renderOrder=22;sp.scale.setScalar(ACC_ICON_SIZE*.9);sp.position.y=.48;
   sp.userData={kind:'acc',t,where};g.add(sp);pickables.push(sp);
   g.userData={accT:t,floor:tag};g.visible=false;parent.add(g);accFloorIcons.push(g);}
 Object.keys(FLOORS).forEach(fk=>{const o=floorObjs[+fk];if(!o)return;
@@ -1964,7 +1965,7 @@ function makeRoute(pts){const g=new THREE.Group();g.userData={isRoute:true,pts:p
 ACC_ROUTES.forEach(makeRoute);
 const acclist=document.getElementById('acclist'),accbody=document.getElementById('accbody'),bAcc=document.getElementById('bAcc');
 {const cnt={};ACC.icons.forEach(i=>cnt[i[0]]=(cnt[i[0]]||0)+1);
- accbody.innerHTML=Object.keys(ACC_NAME).map(t=>`<button class="accrow" data-t="${t}" aria-pressed="true"><img src="${ACC.img[t]}" alt=""><span>${ACC_NAME[t]}</span><span class="n">${cnt[t]||0} 處</span></button>`).join('')
+ accbody.innerHTML=`<div class="row" style="display:flex;gap:6px;margin:4px 0 6px"><button id="accAllOn">全部顯示</button><button id="accAllOff">全部隱藏</button></div>`+Object.keys(ACC_NAME).map(t=>`<button class="accrow" data-t="${t}" aria-pressed="true"><img src="${ACC.img[t]}" alt=""><span>${ACC_NAME[t]}</span><span class="n">${cnt[t]||0} 處</span></button>`).join('')
   +`<button class="accrow accroute" data-t="route" aria-pressed="true"><i></i><span>無障礙通路路線</span><span class="n">${accRouteObjs.length} 條</span></button>`
   +`<div class="accsel" id="accsel" hidden></div>`
   +`<div class="accwarn" id="accDraftNote" hidden>目前顯示的是尚未送出的位置調整（只存在這台裝置）。<button id="accDiscard" style="font-size:.72rem;padding:2px 8px;margin-left:4px">捨棄調整</button></div>`
@@ -1997,7 +1998,9 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
    </div>`
   +`<p class="accnote">點按項目切換顯示；點 3D 圖示看位置。屋頂上的圖示代表樓內設施。位置由學校無障礙平面圖換算，僅供參考。</p>`
   +`<p class="accnote"><a href="accessibility.html">開啟獨立的校園無障礙 3D 地圖 →</a></p>`;
- accbody.addEventListener('click',e=>{const r=e.target.closest('.accrow');if(!r)return;const t=r.dataset.t;
+ accbody.addEventListener('click',e=>{const all=e.target.closest('#accAllOn,#accAllOff');
+   if(all){const on=all.id==='accAllOn';Object.keys(ACC_NAME).forEach(t=>{if(accOn[t]!==on){const r=accbody.querySelector(`.accrow[data-t="${t}"]`);r&&r.click();}});return;}
+   const r=e.target.closest('.accrow');if(!r)return;const t=r.dataset.t;
    if(t==='route'){accRoutes.visible=!accRoutes.visible;r.setAttribute('aria-pressed',accRoutes.visible);return;}
    accOn[t]=!accOn[t];r.setAttribute('aria-pressed',accOn[t]);accItems.concat(accRamps).forEach(g=>{if(g.userData.accT===t)g.visible=accOn[t];});});
  const setAcc=on=>{accGroup.visible=on;acclist.hidden=!on;bAcc.setAttribute('aria-pressed',on);};
@@ -2045,7 +2048,7 @@ let accPulse=()=>{};
    return[x,z];};
  const focusOn=g=>{const t=g.getWorldPosition(new THREE.Vector3());const dir=camera.position.clone().sub(controls.target);dir.y=0;
    if(dir.lengthSq()<1e-6)dir.set(0,0,1);dir.normalize();flyTo(t.clone().add(dir.multiplyScalar(3.2)).setY(t.y+3.6),t,reduce?1:800);};
- const hl=(g,on)=>{if(!g)return;if(g.userData.isRamp)g.userData.deck.material.emissive.setHex(on?0x7a4a00:0x000000);else g.userData.sp.scale.setScalar(on?.66:.46);};
+ const hl=(g,on)=>{if(!g)return;if(g.userData.isRamp)g.userData.deck.material.emissive.setHex(on?0x7a4a00:0x000000);else g.userData.sp.scale.setScalar(on?ACC_ICON_SIZE*1.4:ACC_ICON_SIZE);};
  const setSel=g=>{hl(sel,false);sel=g;if(g&&typeof selectRoute==='function'&&selRt)selectRoute(null);hl(g,true);placeRing();rampTools.hidden=!(g&&g.userData.isRamp);delBtn.disabled=!g;
    if(!g){selEl.textContent='尚未選取，點一下圖示或斜坡道即可選取。';return;}
    if(g.userData.isRamp){const r=g.userData.r;selEl.textContent=`斜坡道（座標 ${r2(r.x)}, ${r2(r.z)}，角度 ${Math.round(r.ang)}°，長 ${r2(r.len)}、寬 ${r2(r.w)}）`;}
