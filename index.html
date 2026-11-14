@@ -1873,8 +1873,37 @@ const accRamps=[];
 const rampDeckMat=new THREE.MeshStandardMaterial({color:0x82988a,roughness:.92,side:THREE.DoubleSide});
 const rampSideMat=new THREE.MeshStandardMaterial({color:0x6f8076,roughness:.95});
 const rampMarkMat=new THREE.LineBasicMaterial({color:0xe8bd55});
+const podTopMat=new THREE.MeshStandardMaterial({color:0xb79b78,roughness:.9}),podWallMat=new THREE.MeshStandardMaterial({color:0xe2ddd2,roughness:.95}),podRailMat=new THREE.MeshStandardMaterial({color:0x8a9096,roughness:.6});
+function buildPodium(g){ // 司令台（含斜坡道）：平台在原點，斜坡沿本地 +X（高低對調時在 -X）接到地面
+  const r=g.userData.r,side=r.rev?-1:1,PW=1.1,PD=0.7,PH=0.24,L=r.len,W=r.w;
+  const th=r.ang*Math.PI/180,cs=Math.cos(th),sn=Math.sin(th);const[ca,cb]=P(r.x,r.z);
+  const gAt=(lx,lz)=>accSurfaceY(ca+lx*cs+lz*sn,cb-lx*sn+lz*cs);
+  const base=Math.max(gAt(0,0),gAt(-PW/2,0),gAt(PW/2,0)),top=base+PH,bot=Math.min(base,gAt(side*(PW/2+L),PD/2-W/2))-.06;
+  // 平台：牆身＋台面
+  const wall=new THREE.Mesh(new THREE.BoxGeometry(PW,top-bot,PD),podWallMat);wall.position.set(0,(top+bot)/2,0);wall.castShadow=wall.receiveShadow=true;
+  const deck=new THREE.Mesh(new THREE.BoxGeometry(PW+.04,.04,PD+.04),podTopMat.clone());deck.position.set(0,top+.02,0);deck.castShadow=deck.receiveShadow=true;
+  g.add(wall,deck);
+  // 斜坡：貼著平台前緣（本地 +Z 側）往外接到地面
+  const zc=PD/2-W/2,x0=side*PW/2,x1=side*(PW/2+L),gLo=gAt(x1,zc),hi=top+.04,lo=gLo+.008,z0=zc-W/2,z1=zc+W/2;
+  const pos=[x0,hi,z0, x0,hi,z1, x1,lo,z1, x1,lo,z0,  x0,bot,z0, x0,bot,z1, x1,bot,z1, x1,bot,z0];
+  const rg=new THREE.BufferGeometry();rg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  rg.setIndex(side>0?[0,1,2,0,2,3, 4,0,3,4,3,7, 5,6,2,5,2,1, 7,3,2,7,2,6]:[0,2,1,0,3,2, 4,3,0,4,7,3, 5,2,6,5,1,2, 7,2,3,7,6,2]);rg.computeVertexNormals();
+  const ramp=new THREE.Mesh(rg,rampDeckMat);ramp.castShadow=ramp.receiveShadow=true;g.add(ramp);
+  const pts=[];[0,.25,.5,.75,1].forEach(t=>{const x=x0+(x1-x0)*t,y=hi+(lo-hi)*t+.006;pts.push(new THREE.Vector3(x,y,z0),new THREE.Vector3(x,y,z1));});
+  g.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),rampMarkMat));
+  // 扶手：斜坡外側與平台三邊
+  const rail=(a,b,h)=>{const d=b.clone().sub(a),len=d.length();const m=new THREE.Mesh(new THREE.BoxGeometry(.018,.018,len),podRailMat);m.position.copy(a).add(b).multiplyScalar(.5).setY((a.y+b.y)/2+h);m.lookAt(b.clone().setY(b.y+h));g.add(m);};
+  rail(new THREE.Vector3(x0,hi,z1),new THREE.Vector3(x1,lo,z1),.16);
+  rail(new THREE.Vector3(-PW/2,top,-PD/2),new THREE.Vector3(PW/2,top,-PD/2),.18);
+  rail(new THREE.Vector3(-side*PW/2,top,-PD/2),new THREE.Vector3(-side*PW/2,top,PD/2),.18);
+  const arr=new THREE.Mesh(new THREE.ConeGeometry(Math.min(.06,W*.3),.14,8),new THREE.MeshBasicMaterial({color:0xe8bd55}));
+  arr.position.set((x0+x1)/2,(hi+lo)/2+.03,zc);arr.rotation.z=-side*Math.PI/2;g.add(arr);
+  deck.userData={kind:'acc',t:'ramp',where:'司令台（含斜坡道）',g};wall.userData=deck.userData;ramp.userData=deck.userData;pickables.push(deck);
+  g.userData.deck=deck;g.rotation.y=th;g.position.set(ca,0,cb);
+}
 function buildRampMesh(g){ // 依 g.userData.r 重建斜坡道：沿本地 +Z 方向由高到低
   const r=g.userData.r;while(g.children.length){const c=g.children[g.children.length-1];g.remove(c);c.geometry&&c.geometry.dispose();const k=pickables.indexOf(c);if(k>=0)pickables.splice(k,1);}
+  if(r.kind==='podium')return buildPodium(g);
   const L=r.len,W=r.w,x0=-W/2,x1=W/2,z0=-L/2,z1=L/2;
   // 貼地：分別量高端與低端下方的地面高度（各取寬度方向 3 點的最高值），斜坡底緣往下埋入地面
   const th=(r.ang+(r.rev?180:0))*Math.PI/180,cs=Math.cos(th),sn=Math.sin(th);const[ca,cb]=P(r.x,r.z);
@@ -1905,7 +1934,7 @@ function accSurfaceY(a,b){ // 斜坡道底部：找下方最高的地面（草�
   rampRay.set(new THREE.Vector3(a,5,b),new THREE.Vector3(0,-1,0));rampRay.far=6;rampRay.camera=camera;
   const hits=rampRay.intersectObjects(scene.children.filter(o=>!o.isSprite),true).filter(h=>h.object.isMesh&&!h.object.isSprite&&h.point.y<0.15&&visDeep(h.object)&&!(function(o){while(o){if(o===accGroup)return true;o=o.parent;}return false;})(h.object));
   return hits.length?Math.max(0,hits[0].point.y):0;}
-function makeRamp(x,z,ang,len,w,rev){const g=new THREE.Group();g.userData={isRamp:true,accT:'ramp',r:{x,z,ang,len,w,rev:rev?1:0}};
+function makeRamp(x,z,ang,len,w,rev,kind){const g=new THREE.Group();g.userData={isRamp:true,accT:'ramp',r:{x,z,ang,len,w,rev:rev?1:0,kind:kind||''}};
   buildRampMesh(g);g.visible=accOn.ramp;accGroup.add(g);accRamps.push(g);return g;}
 ACC_RAMPS.forEach(r=>makeRamp(...r));
 /* 教學大樓、行政大樓各樓層：選到樓層時只顯示該層的無障礙廁所（取自 FLOORS／ADMIN_PLAN）；電梯一律以屋頂圖示顯示 */
@@ -1987,7 +2016,8 @@ const acclist=document.getElementById('acclist'),accbody=document.getElementById
      </div>
      <h4>新增斜坡道（3D 模型）</h4>
      <p>新增後畫面會自動拉近到斜坡道（外圍有橘色閃爍圈）：拖曳移動，選取後可旋轉、改長寬、對調高低端。黃色箭頭指向下坡方向。若畫面中央是建築，會自動放到旁邊最近的空地。</p>
-     <div class="row"><button id="accEdRamp">＋ 新增斜坡道</button></div>
+     <div class="row"><button id="accEdRamp">＋ 新增斜坡道</button><button id="accEdPodium">＋ 新增司令台（含斜坡道）</button></div>
+     <p>司令台選取後同樣可以旋轉、改斜坡長寬；「高低對調」會把斜坡換到司令台另一側。</p>
      <h4>新增設施圖示（會出現在畫面中央，再拖到正確位置）</h4>
      <p>先在「樓層清單」選好教學大樓或行政大樓的某一層再新增，該圖示就只會在那一層顯示；在「外觀」新增則為一般圖示。電梯一律顯示在屋頂。</p>
      <div class="row" id="accEdAdd"></div>
@@ -2028,7 +2058,7 @@ let accPulse=()=>{};
  const r2=v=>+v.toFixed(2);
  const toP=(a,b)=>[r2(a+CX),r2(b+CZ)];
  const current=()=>accItems.map(g=>{const[wx,wz]=accWorldXZ(g);const[x,z]=toP(wx,wz);return g.userData.floor?[g.userData.accT,x,z,g.userData.floor]:[g.userData.accT,x,z];});
- const currentR=()=>accRamps.map(g=>{const r=g.userData.r;return[r2(r.x),r2(r.z),Math.round(r.ang),r2(r.len),r2(r.w),r.rev];});
+ const currentR=()=>accRamps.map(g=>{const r=g.userData.r;const a=[r2(r.x),r2(r.z),Math.round(r.ang),r2(r.len),r2(r.w),r.rev];if(r.kind)a.push(r.kind);return a;});
  const unpick=o=>{const k=pickables.indexOf(o);if(k>=0)pickables.splice(k,1);};
  const removeObj=g=>{if(g.parent)g.parent.remove(g);if(g.userData.isRamp){accRamps.splice(accRamps.indexOf(g),1);unpick(g.userData.deck);}else{accItems.splice(accItems.indexOf(g),1);unpick(g.userData.sp);}};
  const load=(list,ramps)=>{accItems.slice().forEach(removeObj);accRamps.slice().forEach(removeObj);
@@ -2051,7 +2081,7 @@ let accPulse=()=>{};
  const hl=(g,on)=>{if(!g)return;if(g.userData.isRamp)g.userData.deck.material.emissive.setHex(on?0x7a4a00:0x000000);else g.userData.sp.scale.setScalar(on?ACC_ICON_SIZE*1.4:ACC_ICON_SIZE);};
  const setSel=g=>{hl(sel,false);sel=g;if(g&&typeof selectRoute==='function'&&selRt)selectRoute(null);hl(g,true);placeRing();rampTools.hidden=!(g&&g.userData.isRamp);delBtn.disabled=!g;
    if(!g){selEl.textContent='尚未選取，點一下圖示或斜坡道即可選取。';return;}
-   if(g.userData.isRamp){const r=g.userData.r;selEl.textContent=`斜坡道（座標 ${r2(r.x)}, ${r2(r.z)}，角度 ${Math.round(r.ang)}°，長 ${r2(r.len)}、寬 ${r2(r.w)}）`;}
+   if(g.userData.isRamp){const r=g.userData.r;selEl.textContent=`${r.kind==='podium'?'司令台（含斜坡道）':'斜坡道'}（座標 ${r2(r.x)}, ${r2(r.z)}，角度 ${Math.round(r.ang)}°，${r.kind==='podium'?'斜坡':''}長 ${r2(r.len)}、寬 ${r2(r.w)}）`;}
    else{const[wx,wz]=accWorldXZ(g);const[x,z]=toP(wx,wz);const fl=g.userData.floor?`・${ACC_FLOOR_BLD[g.userData.floor.split(':')[0]]} ${g.userData.floor.split(':')[1]}F 專用`:'';selEl.textContent=`${ACC_NAME[g.userData.accT]}${fl}（座標 ${x}, ${z}）`;}};
  /* 路線編輯 */
  const origRt=accRouteObjs.map(g=>g.userData.pts.map(p=>p.slice()));
@@ -2097,6 +2127,7 @@ let accPulse=()=>{};
    if(typeof mode!=='undefined'&&/^[1-4]$/.test(mode))return 'teach:'+mode;
    if(typeof admMode!=='undefined'&&/^[1-3]$/.test(admMode))return 'admin:'+admMode;return '';}
  document.getElementById('accEdRamp').onclick=()=>{ensureOn('ramp');const[x,z]=openSpot(center());const g=makeRamp(x,z,0,0.6,0.2,0);setSel(g);focusOn(g);save();};
+ document.getElementById('accEdPodium').onclick=()=>{ensureOn('ramp');const[x,z]=openSpot(center());const g=makeRamp(x,z,0,0.7,0.22,0,'podium');setSel(g);focusOn(g);save();};
  rampTools.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!sel||!sel.userData.isRamp)return;const r=sel.userData.r,v=+b.dataset.v;
    if(b.dataset.rp==='rot')r.ang=((r.ang+v)%360+360)%360;
    else if(b.dataset.rp==='rev')r.rev=r.rev?0:1;
@@ -2107,7 +2138,7 @@ let accPulse=()=>{};
  document.getElementById('accEdDone').onclick=()=>{
    const list=current(),ramps=currentR();
    outTx.value='【主地圖無障礙設施位置調整】\n共 '+list.length+' 個設施（類型, x, z, 樓層）\n'+JSON.stringify(list)
-     +'\n斜坡道 '+ramps.length+' 座（x, z, 角度, 長, 寬, 高低對調）\n'+JSON.stringify(ramps)
+     +'\n斜坡道 '+ramps.length+' 座（x, z, 角度, 長, 寬, 高低對調, 司令台）\n'+JSON.stringify(ramps)
      +'\n無障礙路線 '+accRouteObjs.length+' 條（每條為依行進方向排列的點 [x, z]）\n'+JSON.stringify(currentRt());
    outBox.hidden=false;outTx.focus();outTx.select();};
  document.getElementById('accEdCopy').onclick=()=>{const ok=()=>{const c=document.getElementById('accEdCopied');c.hidden=false;setTimeout(()=>c.hidden=true,1800);};
