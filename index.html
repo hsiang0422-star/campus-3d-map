@@ -88,7 +88,6 @@ body.acc-editing #c{cursor:move}
 .dzchip{min-width:38px;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--chip);color:var(--fg);font:inherit;font-size:.8rem;cursor:pointer}.dzchip.sel{background:var(--accent);color:var(--accent-fg)}.dzchip.off{opacity:.4;text-decoration:line-through}
 .rpsl{display:grid;grid-template-columns:4.6em 1fr 4.2em;align-items:center;gap:6px;font-size:.75rem}
 .rpsl input{width:100%;min-width:0}.rpsl output{font-variant-numeric:tabular-nums;color:var(--muted);text-align:right}
-body.acc-editing .compass{pointer-events:auto;cursor:move}
 .plist.dragging{box-shadow:0 14px 40px rgba(80,20,10,.35)}
 .plist .plbody{overflow:auto;min-height:0;flex:1}
 .access-dialog{width:min(560px,calc(100% - 24px));max-height:min(82vh,720px);margin:auto;padding:0;border:2px solid var(--line);border-radius:16px;background:var(--panel);color:var(--ink);box-shadow:0 18px 60px rgba(0,0,0,.28)}
@@ -98,13 +97,13 @@ body.acc-editing .compass{pointer-events:auto;cursor:move}
 .access-dialog p,.access-dialog li{font-size:.9rem;line-height:1.7}
 .access-dialog ul{padding-left:1.4em;margin:10px 0}
 .access-dialog .access-close{display:flex;justify-content:flex-end;margin-top:16px}
-.compass{position:absolute;left:0;top:0;width:88px;height:88px;transform:translate(-50%,-50%) scale(.6);transform-origin:50% 50%;border:3px solid #514c47;border-radius:50%;z-index:5;pointer-events:none;color:#514c47}
+.compass{position:fixed;left:0;top:0;width:104px;height:104px;transform:translate(-100%,-50%) scale(.72);transform-origin:50% 50%;border:3px solid #514c47;border-radius:50%;z-index:5;pointer-events:none;color:#514c47}
 .compass-n{position:absolute;left:50%;top:-43px;transform:translateX(-50%);font-size:30px;font-weight:700;line-height:1}
 .compass-pointer{position:absolute;inset:0;transform-origin:50% 50%}
 .compass-needle-north,.compass-needle-south{position:absolute;left:50%;width:0;height:0;transform:translateX(-50%)}
 .compass-needle-north{top:10px;border-left:17px solid transparent;border-right:17px solid transparent;border-bottom:34px solid #514c47}
 .compass-needle-south{top:42px;border-left:15px solid transparent;border-right:15px solid transparent;border-top:34px solid #fff}
-@media(max-width:700px){.compass{transform:translate(-50%,-50%) scale(.5)}.compass-n{top:-34px;font-size:26px}.compass-needle-north{top:8px;border-left-width:14px;border-right-width:14px;border-bottom-width:29px}.compass-needle-south{top:35px;border-left-width:13px;border-right-width:13px;border-top-width:28px}}
+@media(max-width:700px){.compass{transform:translate(-100%,-50%) scale(.66)}.compass-n{top:-34px;font-size:26px}.compass-needle-north{top:8px;border-left-width:14px;border-right-width:14px;border-bottom-width:29px}.compass-needle-south{top:35px;border-left-width:13px;border-right-width:13px;border-top-width:28px}}
 .aseg{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0}.aseg button{font:inherit;font-size:.85rem;padding:5px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}.aseg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
 #apanel{left:auto;right:48px;top:48px;bottom:auto;width:230px;z-index:2}
 .fmin{height:auto!important}
@@ -2278,7 +2277,7 @@ let accPulse=()=>{};
  const edBtn=document.getElementById('accEdit'),box=document.getElementById('accEditBox'),selEl=document.getElementById('accEdSel'),
    delBtn=document.getElementById('accEdDel'),outBox=document.getElementById('accEdOut'),outTx=document.getElementById('accEdText'),note=document.getElementById('accDraftNote'),
    rampTools=document.getElementById('accRampTools');
- let editing=false,sel=null,drag=null,selTree=null,compDrag=false;
+ let editing=false,sel=null,drag=null,selTree=null;
  const r2=v=>+v.toFixed(2);
  const toP=(a,b)=>[r2(a+CX),r2(b+CZ)];
  const current=()=>accItems.map(g=>{const[wx,wz]=accWorldXZ(g);const[x,z]=toP(wx,wz);return[g.userData.accT,x,z,g.userData.floor||'',r2(g.userData.ph||0)];});
@@ -2423,7 +2422,7 @@ let accPulse=()=>{};
      +'\n一般 3D 模型 '+accDecor.length+' 個（類型, x, z, 方向, 大小）\n'+JSON.stringify(currentD())
      +'\n危險角落 '+POINTS.length+' 個（編號, x, z, 顯示 1／隱藏 0）\n'+JSON.stringify(ptSnap())
      +'\n樹木 '+treeSnap().filter(r=>!r[3]).length+' 棵（x, z, 大小, 隱藏 1／顯示 0, 種類）\n'+JSON.stringify(treeSnap().map(r=>r[5]?[r[0],r[1],r[2],r[3],r[5]]:r.slice(0,4)))
-     +'\n指北針位置（x, z）\n'+JSON.stringify(compassRaw());
+     +'\n指北針：固定在瀏覽人數旁，隨地圖方向同步旋轉';
    outBox.hidden=false;outTx.focus();outTx.select();};
  document.getElementById('accEdCopy').onclick=()=>{const ok=()=>{const c=document.getElementById('accEdCopied');c.hidden=false;setTimeout(()=>c.hidden=true,1800);};
    const fb=()=>{outTx.select();try{document.execCommand('copy');}catch(e){}ok();};
@@ -2438,11 +2437,10 @@ let accPulse=()=>{};
  poleBox.innerHTML='<h4>導引線長度</h4><p>選取設施後可調整它的導引線；下方「全部設施」會一起改所有圖示的導引線。</p><div class="rpsl"><label for="poleLen">此設施</label><input type="range" id="poleLen" min="0.1" max="2.5" step="0.05"><output id="poleLenV"></output></div><div class="rpsl"><label for="poleAll">全部設施</label><input type="range" id="poleAll" min="0.1" max="2.5" step="0.05" value="0.42"><output id="poleAllV"></output></div>';
  edbody.appendChild(poleBox);
  const treeBox2=document.createElement('div');treeBox2.className='accedit';
- treeBox2.innerHTML='<h4>樹木與指北針</h4><p>點一下樹木可選取，拖曳即可移動；選取後按 Backspace 或「刪除選取的樹」可刪除。「＋ 新增樹木」會在畫面中央加一棵。指北針：編輯模式下直接拖曳地圖上的指北針即可移動。</p><div class="row"><button id="tkAdd">＋ 新增樹木</button><button id="tkDel" disabled>刪除選取的樹</button><button id="cpReset">指北針回到原位</button></div>';
+ treeBox2.innerHTML='<h4>樹木與指北針</h4><p>點一下樹木可選取，拖曳即可移動；選取後按 Backspace 或「刪除選取的樹」可刪除。「＋ 新增樹木」會在畫面中央加一棵。指北針固定在瀏覽人數旁，並依地圖方向同步旋轉。</p><div class="row"><button id="tkAdd">＋ 新增樹木</button><button id="tkDel" disabled>刪除選取的樹</button></div>';
  edbody.appendChild(treeBox2);
  document.getElementById('tkAdd').onclick=()=>{const[x,z]=openSpot(center());const t={x,z,s:1,c:0x6fb043,hidden:false};treeList.push(t);buildTrees();selectTree(t);focusOn(t.obj);save();};
  document.getElementById('tkDel').onclick=deleteTree;
- document.getElementById('cpReset').onclick=()=>{COMPASS_AT=P(8.3,10.25);placeCompass();save();};
  const pl=document.getElementById('poleLen'),pa=document.getElementById('poleAll');
  pl.addEventListener('input',()=>{if(!sel||!sel.userData.pole)return;accSetPole(sel,+pl.value);document.getElementById('poleLenV').textContent=(+sel.userData.ph).toFixed(2);});
  pl.addEventListener('change',()=>{if(sel&&sel.userData.pole)save();});
@@ -2481,11 +2479,7 @@ let accPulse=()=>{};
    const[ax,az]=P(t.x,t.z);plane.constant=0;rc.ray.intersectPlane(plane,hit);
    drag={id:e.pointerId,tree:t,dx:ax-hit.x,dz:az-hit.z};controls.enabled=false;
    try{canvas.setPointerCapture(e.pointerId);}catch(err){}},true);
- const compassEl=document.querySelector('.compass');
- compassEl.addEventListener('pointerdown',e=>{if(!editing)return;e.stopPropagation();e.preventDefault();compDrag=true;try{compassEl.setPointerCapture(e.pointerId);}catch(err){}});
- compassEl.addEventListener('pointermove',e=>{if(!compDrag)return;setM(e);plane.constant=0;if(rc.ray.intersectPlane(plane,hit)){COMPASS_AT=[hit.x,hit.z];placeCompass();}});
- const compEnd=()=>{if(compDrag){compDrag=false;save();}};compassEl.addEventListener('pointerup',compEnd);compassEl.addEventListener('pointercancel',compEnd);
-stageEl.addEventListener('pointerdown',e=>{if(!editing||!accGroup.visible||e.target!==canvas)return;setM(e);
+ stageEl.addEventListener('pointerdown',e=>{if(!editing||!accGroup.visible||e.target!==canvas)return;setM(e);
    const hh=hdlGroup.children.length?rc.intersectObjects(hdlGroup.children.filter(o=>o.userData.vi!=null),false)[0]:null;
    if(hh){e.stopPropagation();e.preventDefault();selV=hh.object.userData.vi;drawHandles();rtText();plane.constant=0;
      rc.ray.intersectPlane(plane,hit);const[a,b]=P(...selRt.userData.pts[selV]);drag={id:e.pointerId,dx:a-hit.x,dz:b-hit.z,vtx:true};controls.enabled=false;
@@ -2550,9 +2544,10 @@ function accShow(u){const el=document.getElementById('accsel');el.hidden=false;e
 document.getElementById('bReset').onclick=()=>flyTo(HOME.pos.clone(),HOME.target.clone());
 /* 俯視：以北方（+X）為畫面上方；相機略偏東西方向，避免正上方時方向不定 */
 document.getElementById('bTop').onclick=()=>{const tg=new THREE.Vector3(0.5,0,0.8);flyTo(new THREE.Vector3(tg.x+30*Math.sin(0.02),30*Math.cos(0.02),tg.z),tg);};
-/* 指北針固定在長和路二段 140 巷標示的位置（地圖上），隨地圖平移、縮放 */
-function placeCompass(){const compassEl=document.querySelector('.compass');const st=compassEl.parentElement;const w=st.clientWidth,h=st.clientHeight;const q=new THREE.Vector3(COMPASS_AT[0],0.05,COMPASS_AT[1]).project(camera);
-  if(q.z>1){compassEl.style.display='none';return;}compassEl.style.display='';compassEl.style.left=((q.x+1)/2*w)+'px';compassEl.style.top=((1-q.y)/2*h)+'px';}
+/* 指北針固定在瀏覽人數旁；方向仍會依相機視角同步更新 */
+function placeCompass(){const compassEl=document.querySelector('.compass'),countEl=document.getElementById('vcount');if(!compassEl||!countEl)return;
+  const r=countEl.getBoundingClientRect();compassEl.style.display=getComputedStyle(countEl).display==='none'?'none':'';
+  compassEl.style.left=Math.max(108,r.left-10)+'px';compassEl.style.top=Math.max(55,Math.min(innerHeight-40,r.top+r.height/2-12))+'px';}
 const compassPointer=document.getElementById('compassPointer'),northVector=new THREE.Vector3(1,0,0),compassOrigin=new THREE.Vector3(),compassTip=new THREE.Vector3(); // 校園北端在世界座標 +X
 function updateCompass(){
   camera.updateMatrixWorld(true);
