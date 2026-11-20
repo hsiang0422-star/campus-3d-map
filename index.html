@@ -2417,7 +2417,7 @@ let accPulse=()=>{};
  delBtn.onclick=()=>{if(!sel)return;removeObj(sel);setSel(null);save();};
  document.getElementById('accEdDone').onclick=()=>{
    const list=current(),ramps=currentR();
-   outTx.value='【主地圖無障礙設施位置調整】\n共 '+list.length+' 個設施（類型, x, z, 樓層）\n'+JSON.stringify(list)
+   outTx.value='【主地圖無障礙設施位置調整】\\nGitHub 專案：https://github.com/hsiang0422-star/campus-3d-map\\n主地圖檔案：main 分支 / index.html\\n套用指令：請將以下完整調整資料套用至上述主地圖，保留設施類型、樓層、顯示狀態與模型設定，並確認線上版更新。\n共 '+list.length+' 個設施（類型, x, z, 樓層）\n'+JSON.stringify(list)
      +'\n斜坡道 '+ramps.length+' 座（x, z, 角度, 長, 寬, 高低對調, 種類, 大小倍率, 高度）\n'+JSON.stringify(ramps)
      +'\n無障礙路線 '+accRouteObjs.length+' 條（每條為依行進方向排列的點 [x, z]）\n'+JSON.stringify(currentRt())
      +'\n一般 3D 模型 '+accDecor.length+' 個（類型, x, z, 方向, 大小）\n'+JSON.stringify(currentD())
