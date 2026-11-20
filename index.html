@@ -669,7 +669,7 @@ BUILDINGS.forEach(b=>{
 
 /* ---------- trees ---------- */
 /* ---------- 樹木：可在編輯模式選取、拖曳移動、刪除、新增 ---------- */
-let COMPASS_AT=P(8.3,10.25);
+let COMPASS_AT=P(15.83,9.31);
 const TREE_ORIG=TREES.map(([x,z,s],i)=>({x,z,s,c:(i%7===0?0xe9d44a:(i%2?0x3f8f3c:0x6fb043)),hidden:false}));
 let treeList=TREE_ORIG.map(t=>({...t}));
 const preTrees=[]; // 預先建好的樹：街道樹、榕樹、棕櫚（位置也可在編輯模式移動）
